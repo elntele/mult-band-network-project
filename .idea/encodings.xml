@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/bons-multiband/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/bons-multiband/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/cns24/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/cns24/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-algorithm/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-algorithm/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-auto/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-auto/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-component/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-component/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-core/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-lab/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-lab/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-parallel/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-parallel/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-problem/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/jmetal-problem/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/jMetal/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/multiband-network-creator/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/multiband-network-creator/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
