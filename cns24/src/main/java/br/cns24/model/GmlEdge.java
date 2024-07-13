@@ -29,8 +29,6 @@ public class GmlEdge {
 	
 	private String label;
 
-
-
 	private Bands bands;
 	
 	private Map<String, String> informations = new HashMap<String, String>();

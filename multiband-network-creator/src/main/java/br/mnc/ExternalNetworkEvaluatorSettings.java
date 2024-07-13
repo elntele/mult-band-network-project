@@ -1,5 +1,6 @@
 package br.mnc;
 
+import br.bm.core.DataToReloadProblem;
 import br.bm.core.OpticalNetworkProblem;
 import br.cns24.model.Bands;
 import br.cns24.model.EdgeSet;
@@ -22,6 +23,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private GmlData gml;
   private Map<Integer, GmlNode> mapNode;
   public int contEvaluate = 0;
+  private Integer[] upperBoundsMatrixPart;
+  private Integer[] lowerBoundsMatrixPart;
+  private Integer[] upperBounds;
+  private Integer[] lowerBounds;
 
   @Override
   public IntegerSolution createSolution() {
@@ -78,17 +83,16 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (gmlData.containsIsolatedNodes()) {
+    if (gmlData.containsIsolatedNodesInMultiBandModel()) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE;
     } else {
       OpticalNetworkProblem P = new OpticalNetworkProblem();
-      P.reloadProblem(load, gmlData);
+      var dataToReloadProblem = setProblemCharacteristic(solution);
+      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       solution.objectives()[0] = objectives[0];
       solution.objectives()[1] = objectives[1];
-      solution.objectives()[2] = objectives[2];
-      solution.objectives()[3] = 1 / (1 + objectives[3]);
     }
     return solution;
   }
@@ -109,7 +113,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     gmlData.setEdgeSets(buildSet(nodes, vars));
     //gmlData.setEdges(links);
     //gmlData.createComplexNetwork();
-    gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
+   // gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
     return gmlData;
   }
 
@@ -170,13 +174,13 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
                   var fiberThree = varList.get(varIndex[0] + 2);
 
                   if (fiberOne != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberOne));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberOne));
                   }
                   if (fiberTwo != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberTwo));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberTwo));
                   }
                   if (fiberThree != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberThree));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberThree));
 
                   }
                   edgeSets.add(edgeSet);
@@ -249,6 +253,17 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     }
   }
 
+  private DataToReloadProblem setProblemCharacteristic(IntegerSolution solution) {
+
+    return new DataToReloadProblem(
+        solution.variables().size(),
+        solution.objectives().length,
+        solution.variables(),
+        lowerBounds,
+        upperBounds
+    );
+  }
+
   public ExternalNetworkEvaluatorSettings() {
     super();
     gmlBuild();
@@ -256,6 +271,9 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var numberOfNodes = gml.getNodes()
         .size();
     var numberOfVariables = (3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
+
+    this.upperBounds = new Integer[numberOfVariables];
+    this.lowerBounds = new Integer[numberOfVariables];
 
     /**problem configuration */
     List<Integer> ll = new Vector<>();
@@ -266,15 +284,21 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     for (int i = 0; i < matrixConnectionPart; i++) {
       ll.add(0);
       ul.add(7);
+      this.lowerBounds[i]=0;
+      this.upperBounds[i]=7;
     }
 
     for (int i = numberOfVariables - roadmPart; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {
         ll.add(1);
         ul.add(12);
+        this.lowerBounds[i]=1;
+        this.upperBounds[i]=12;
       } else {
         ll.add(4);
         ul.add(40);
+        this.lowerBounds[i]=4;
+        this.upperBounds[i]=40;
       }
     }
     this.variableBounds(ll, ul);

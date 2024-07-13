@@ -122,6 +122,25 @@ public class GmlData implements Cloneable {
     return false;
   }
 
+  /**
+   * Owner: jorge Candeias.
+   * look in all node to verify if
+   * there are almost one set of edge
+   * who connect this node to any other
+   * node in graph.
+   * @return
+   */
+  public boolean containsIsolatedNodesInMultiBandModel() {
+    return nodes.stream().anyMatch(node ->
+        edgeSets.stream().noneMatch(edgeSet ->
+            edgeSet.getEdges().stream().anyMatch(edge ->
+                edge.getSource().equals(node) || edge.getTarget().equals(node)
+            )
+        )
+    );
+  }
+
+
   public boolean containsGbLink() {
     for (GmlEdge edge : edges) {
       if (edge.getLabel() != null && edge.getLabel().toLowerCase().contains("gb")) {
