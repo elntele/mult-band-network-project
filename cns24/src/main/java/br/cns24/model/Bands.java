@@ -1,6 +1,7 @@
 package br.cns24.model;
 
 public enum Bands {
+    NOBAND("000"),
     CBAND("001"),
     LBAND("010"),
     CLBAND("011"),
@@ -11,5 +12,9 @@ public enum Bands {
 
     Bands(String band) {
     }
+
+   /* public Bands getBand(){
+
+    }*/
 }
 

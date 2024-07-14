@@ -1,5 +1,11 @@
 package br.mnc;
 
+/**
+ * class represents the possible connections accords to
+ * restriction to avoid plus band work without c band.
+ *
+ */
+
 public class AllowedConnectionTable {
     private static final String[] noBand = {"0", "000"};
     private static final String[] c = {"1", "001"};

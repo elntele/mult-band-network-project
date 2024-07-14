@@ -1,6 +1,7 @@
 package br.mnc;
 
 import br.bm.core.DataToReloadProblem;
+import br.bm.core.Node;
 import br.bm.core.OpticalNetworkProblem;
 import br.cns24.model.Bands;
 import br.cns24.model.EdgeSet;
@@ -10,6 +11,7 @@ import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
@@ -27,6 +29,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Integer[] lowerBoundsMatrixPart;
   private Integer[] upperBounds;
   private Integer[] lowerBounds;
+  private Integer tailRoadmPlusW;
 
   @Override
   public IntegerSolution createSolution() {
@@ -41,26 +44,58 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private void CreateRandomNetWork(IntegerSolution solution) {
     Random random = new Random();
     var connections = AllowedConnectionTable.getPossibleConnection();
-    IntStream.iterate(0, i -> i + 3)
-        .limit(solution.variables()
-            .size() / 3)
-        .forEach(i -> {
+    var maxLimit = numberOfVariables() - tailRoadmPlusW;
+    IntStream.iterate(0, stepByIndexes -> stepByIndexes + 3)
+        .limit(maxLimit / 3)
+        .forEach(index -> {
           if (random.nextBoolean()) {
             solution.variables()
-                .set(i, 0);
+                .set(index, 0);
             solution.variables()
-                .set(i + 1, 0);
+                .set(index + 1, 0);
             solution.variables()
-                .set(i + 2, 0);
+                .set(index + 2, 0);
           } else {
             solution.variables()
-                .set(i, connections[random.nextInt(connections.length)]);
+                .set(index, connections[random.nextInt(connections.length)]);
             solution.variables()
-                .set(i + 1, connections[random.nextInt(connections.length)]);
+                .set(index + 1, connections[random.nextInt(connections.length)]);
             solution.variables()
-                .set(i + 2, connections[random.nextInt(connections.length)]);
+                .set(index + 2, connections[random.nextInt(connections.length)]);
           }
         });
+
+    var nodeSize = gml.getNodes().size();
+    var roadmPartIndex = numberOfVariables() - (nodeSize + 1); //+1 cause its difference includes w part
+    for (int nodeObservedIndex = 0; nodeObservedIndex < nodeSize; nodeObservedIndex++) {
+      var maxEquipment = 0;
+      for (int otherNodeIndex = (nodeSize * nodeObservedIndex); otherNodeIndex < (nodeSize * nodeObservedIndex +nodeSize); otherNodeIndex++) {
+        if (solution.variables().get(otherNodeIndex) > maxEquipment)
+          maxEquipment = solution.variables().get(otherNodeIndex);
+      }
+      solution.variables().set(roadmPartIndex, selectSwitch(maxEquipment));
+      roadmPartIndex++;
+    }
+  }
+
+
+  private Integer selectSwitch(Integer equipment) {
+    Random random = new Random();
+    switch (equipment) {
+      case 0 -> {
+        return 0;
+      }
+      case 1 -> {
+        return random.nextInt(1, 4);
+      }
+      case 3 -> {
+        return random.nextInt(5, 8);
+      }
+      case 5, 7 -> {
+        return random.nextInt(9, 12);
+      }
+      default -> throw new IllegalStateException("Unexpected value: " + equipment);
+    }
   }
 
   /**
@@ -113,7 +148,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     gmlData.setEdgeSets(buildSet(nodes, vars));
     //gmlData.setEdges(links);
     //gmlData.createComplexNetwork();
-   // gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
+    // gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
     return gmlData;
   }
 
@@ -197,7 +232,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void gmlBuild() {
-    String path = "./selectedCityInPernabucoState.gml";
+    //String path = "./selectedCityInPernabucoState.gml";
+    String path = "./teste.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {
@@ -278,27 +314,28 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     /**problem configuration */
     List<Integer> ll = new Vector<>();
     List<Integer> ul = new Vector<>();
-    var roadmPart = numberOfNodes + 1;
-    var matrixConnectionPart = numberOfVariables - roadmPart;
+    var roadmPlusW_Part = numberOfNodes + 1;
+    this.tailRoadmPlusW = roadmPlusW_Part;
+    var matrixConnectionPart = numberOfVariables - roadmPlusW_Part;
 
     for (int i = 0; i < matrixConnectionPart; i++) {
       ll.add(0);
       ul.add(7);
-      this.lowerBounds[i]=0;
-      this.upperBounds[i]=7;
+      this.lowerBounds[i] = 0;
+      this.upperBounds[i] = 7;
     }
 
-    for (int i = numberOfVariables - roadmPart; i < numberOfVariables; i++) {
+    for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {
         ll.add(1);
         ul.add(12);
-        this.lowerBounds[i]=1;
-        this.upperBounds[i]=12;
+        this.lowerBounds[i] = 1;
+        this.upperBounds[i] = 12;
       } else {
         ll.add(4);
         ul.add(40);
-        this.lowerBounds[i]=4;
-        this.upperBounds[i]=40;
+        this.lowerBounds[i] = 4;
+        this.upperBounds[i] = 40;
       }
     }
     this.variableBounds(ll, ul);
