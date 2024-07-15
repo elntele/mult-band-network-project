@@ -13,8 +13,32 @@ public enum Bands {
     Bands(String band) {
     }
 
-   /* public Bands getBand(){
+    public static Bands getBand(Integer edge){
+        switch (edge) {
+            case 1 -> {
+                return Bands.CBAND;
+            }
+            case 2 -> {
+                return Bands.LBAND;
+            }
+            case 3 -> {
+                return Bands.CLBAND;
+            }
+            case 4 -> {
+                return Bands.SBAND;
+            }
+            case 5 -> {
+                return Bands.CSBAND;
+            }
+            case 6 -> {
+                return Bands.LSBAND;
+            }
+            case 7 -> {
+                return Bands.CLSBAND;
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + edge);
+        }
 
-    }*/
+    }
 }
 

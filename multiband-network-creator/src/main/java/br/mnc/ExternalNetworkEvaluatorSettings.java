@@ -1,7 +1,7 @@
 package br.mnc;
 
 import br.bm.core.DataToReloadProblem;
-import br.bm.core.Node;
+import br.bm.core.OpticalNetworkMultiBandProblem;
 import br.bm.core.OpticalNetworkProblem;
 import br.cns24.model.Bands;
 import br.cns24.model.EdgeSet;
@@ -11,7 +11,6 @@ import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
-import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
@@ -122,7 +121,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE;
     } else {
-      OpticalNetworkProblem P = new OpticalNetworkProblem();
+      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
@@ -258,36 +257,11 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     edge.setTarget(this.mapNode.get(gml.getNodes()
         .get(nodeTargetIndex)
         .getId()));
-    edge.setBand(buildBand(fiber));
+    edge.setBand(Bands.getBand(fiber));
     return edge;
   }
 
-  private Bands buildBand(Integer fiber) {
-    switch (fiber) {
-      case 1 -> {
-        return Bands.CBAND;
-      }
-      case 2 -> {
-        return Bands.LBAND;
-      }
-      case 3 -> {
-        return Bands.CLBAND;
-      }
-      case 4 -> {
-        return Bands.SBAND;
-      }
-      case 5 -> {
-        return Bands.CSBAND;
-      }
-      case 6 -> {
-        return Bands.LSBAND;
-      }
-      case 7 -> {
-        return Bands.CLSBAND;
-      }
-      default -> throw new IllegalStateException("Unexpected value: " + fiber);
-    }
-  }
+
 
   private DataToReloadProblem setProblemCharacteristic(IntegerSolution solution) {
 
