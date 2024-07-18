@@ -15,9 +15,12 @@ public class AllowedConnectionTable {
     private static final Integer[] possibleConnection ={0,1,3,5,7};
 
     public static String[][] getMatrixConverterPossibleConnection(){
+
         return new String[][]{noBand, c, cl, cs, cls};
     }
+
     public static Integer[] getPossibleConnection(){
+
         return possibleConnection;
     }
 }

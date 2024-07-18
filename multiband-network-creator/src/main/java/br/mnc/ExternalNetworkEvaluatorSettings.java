@@ -2,7 +2,6 @@ package br.mnc;
 
 import br.bm.core.DataToReloadProblem;
 import br.bm.core.OpticalNetworkMultiBandProblem;
-import br.bm.core.OpticalNetworkProblem;
 import br.cns24.model.Bands;
 import br.cns24.model.EdgeSet;
 import br.cns24.model.GmlData;
@@ -40,13 +39,40 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     return integerSolution;
   }
 
+  /**
+   * this method create a random solution
+   * considering, in variables, the part of
+   * connections  and the part of ROADM
+   * separated but considering a relationship
+   * between the two parts.
+   * //chromosome sample to 4 nodes: being (123) a 3-fiber set
+   * // (123) (123) (123) (123) (123) (123) Node Node Node Node w
+   * the below matrix represents the connection part
+   * // connection matrix
+   * //   1   2     3     4
+   * // 1 x (123) (123) (123)
+   * // 2     x   (123) (123)
+   * // 3           x   (123)
+   * // 4                 x
+   * The way to running through the variables using the
+   * nodes number in a 'chain for': for(i=...i++){for(j=...j++){}},
+   * is introduced here.
+   * as the column have 3 times more position them line,
+   * the 'chained for' will need an external observer counter
+   * to hold the final index position of the 'internal for'
+   * in each iteration. It's because the 'internal for' next
+   * iteration will begin in the last stopped position +1.
+   * @param solution
+   */
+
   private void CreateRandomNetWork(IntegerSolution solution) {
     Random random = new Random();
     var connections = AllowedConnectionTable.getPossibleConnection();
-    var maxLimit = numberOfVariables() - tailRoadmPlusW;
+    var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
     IntStream.iterate(0, stepByIndexes -> stepByIndexes + 3)
-        .limit(maxLimit / 3)
+        .limit(connectionPartLimit / 3)
         .forEach(index -> {
+          // in 50% of times don't create connection between nodes
           if (random.nextBoolean()) {
             solution.variables()
                 .set(index, 0);
@@ -55,6 +81,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
             solution.variables()
                 .set(index + 2, 0);
           } else {
+            // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
+            // remembering that 0 means no connection and consequently no edge/fiber
             solution.variables()
                 .set(index, connections[random.nextInt(connections.length)]);
             solution.variables()
@@ -64,21 +92,31 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
           }
         });
 
-    var nodeSize = gml.getNodes().size();
-    var roadmPartIndex = numberOfVariables() - (nodeSize + 1); //+1 cause its difference includes w part
-    for (int nodeObservedIndex = 0; nodeObservedIndex < nodeSize; nodeObservedIndex++) {
+    var numNode = gml.getNodes().size();
+    var roadmIndex = numberOfVariables() - (numNode + 1); //+1 cause its difference includes w part
+
+    var externalObserverCount = 0;
+    //here is the 'chained for' described on top of method
+    var offset = 1;
+    for (int i = 0; i < numNode; i++) { //go through matrix column by index i
       var maxEquipment = 0;
-      for (int otherNodeIndex = (nodeSize * nodeObservedIndex); otherNodeIndex < (nodeSize * nodeObservedIndex +nodeSize); otherNodeIndex++) {
-        if (solution.variables().get(otherNodeIndex) > maxEquipment)
-          maxEquipment = solution.variables().get(otherNodeIndex);
+      var nextLimit = externalObserverCount + (numNode - offset) * 3;
+      for (int j = externalObserverCount; j < nextLimit; j++) {//go through matrix line by index j
+        if (solution.variables().get(j) > maxEquipment) {
+          maxEquipment = solution.variables().get(j);
+        }
+        externalObserverCount = j;
       }
-      solution.variables().set(roadmPartIndex, selectSwitch(maxEquipment));
-      roadmPartIndex++;
+      externalObserverCount++;
+      offset += 1;
+
+      solution.variables().set(roadmIndex, randomlySelectSwitch(maxEquipment));
+      roadmIndex++;
     }
   }
 
 
-  private Integer selectSwitch(Integer equipment) {
+  private Integer randomlySelectSwitch(Integer equipment) {
     Random random = new Random();
     switch (equipment) {
       case 0 -> {
@@ -260,7 +298,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     edge.setBand(Bands.getBand(fiber));
     return edge;
   }
-
 
 
   private DataToReloadProblem setProblemCharacteristic(IntegerSolution solution) {

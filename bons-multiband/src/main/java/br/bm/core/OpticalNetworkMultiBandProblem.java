@@ -60,6 +60,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
   public static double[][] SWITCHES_COSTS_AND_LABELS = new double[][]{ { 0.25, 0.5, 0.75, 1, 1.5, 2.0 }, // costs
       { 27, 30, 33, 35, 38, 40 } }; // isolation factor in dB
+  public  List <Integer> switchIndexes;
 
   public static final int BLOQ_WAVELENGTH = -1;
   public static final int BLOQ_BER = -2;
@@ -116,7 +117,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
   protected Integer[] upperLimitVariable;
 
-  protected NetworkProfile net;
+  protected MultiBandNetWorkProfile net;
 
   protected Double[][] traffic;
 
@@ -290,7 +291,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       nodes.add(newNode);
     }
 
-    net = new NetworkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }// aqui
@@ -391,18 +392,22 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
               ganhodinamico_loc);
       }
 
-    net.setEpsilon(
-        pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));
+
+
+
+    /*net.setEpsilon(
+        pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));*/
+    net.setEpsilon(SwitchesAndAmplifiersEquipments.getEpsilonOrIsolationFactorForThisSwitchList(this.switchIndexes));
     net.setLinks(links);
     net.cleanBp();
     net.setCompleteDistances(distances);
     net.setCn(createComplexNetworkDistance(variables));
     net.setRawData(variables);
 
-    objectives[0] = bpEstimator.evaluate(net).getValue();
+ //   objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
-    objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
-    objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
+ //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
+  //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
     // objectives[4] =
     // naturalConnectivityEvaluator.evaluate(net).getValue();
 
@@ -513,11 +518,12 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     Vector<Vector<Double>> adjacencyMatrix_loc = new Vector<Vector<Double>>();
 
     // fills up adjacencyMatrix_loc with zeros
-    for (int i = 0; i < numNodes; i++) {
+    IntStream.iterate(0, i -> i<numNodes, i->i+1).forEach(i->{
       Vector<Double> temp_loc = new Vector<Double>();
       assign(temp_loc, numNodes, 0.0);
       adjacencyMatrix_loc.add(temp_loc);
-    }
+    });
+
     AtomicInteger i = new AtomicInteger(0);
     AtomicInteger j = new AtomicInteger(1);
 
@@ -792,7 +798,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       nodes.add(newNode);
     }
 
-    net = new NetworkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }
@@ -813,6 +819,9 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     numberOfVariables = dataToReloadProblem.numberOfVariables();
 
+    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables-(numNodes +1),numberOfVariables);
+
+
 
     geolocationCoords = new double[numNodes][2];
     int count = 0;
@@ -823,10 +832,6 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       count++;
     }
 
-	/*	defaultSolution = new Integer[numberOfVariables];
-		for (int i = 0; i < numberOfVariables; i++) {
-			defaultSolution[i] = 0;
-		}*/
     defaultSolution = new Integer[numberOfVariables];
 
     IntStream.range(0, dataToReloadProblem.variable().size()).forEach(index ->
@@ -834,37 +839,6 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       defaultSolution[index] = dataToReloadProblem.variable().get(index);
     });
 
-/*
-
-		edgeSets.stream()
-				.flatMap(edgeSet -> edgeSet.getFiberSet().stream())
-				.forEach(edge -> {
-					int[] counter = {0}; // Usando array para permitir modificação dentro do lambda
-					IntStream.range(0, numNodes).forEach(nodeOriginId ->
-							IntStream.range(nodeOriginId + 1, numNodes).forEach(nodeTargetId -> {
-								if ((edge.getSource().getId() == nodeOriginId && edge.getTarget().getId() == nodeTargetId)
-										|| (edge.getSource().getId() == nodeTargetId && edge.getTarget().getId() == nodeOriginId)) {
-									defaultSolution[counter[0]] = 1;
-								}
-								counter[0]++;
-							})
-					);
-				});
-
-		for (GmlEdge edge : data.getEdges()) {
-			count = 0;
-			for (int i = 0; i < numNodes; i++) {
-				for (int j = i + 1; j < numNodes; j++) {
-					if ((edge.getSource().getId() == i && edge.getTarget().getId() == j)
-							|| (edge.getSource().getId() == j && edge.getTarget().getId() == i)) {
-						defaultSolution[count] = 1;
-					}
-					count++;
-				}
-			}
-		}
-		defaultSolution[numberOfVariables - 1] = 40;
-		defaultSolution[numberOfVariables - 2] = 4;*/
 
     locations = new Geolocation[numNodes];
     for (int i = 0; i < locations.length; i++) {
@@ -886,14 +860,6 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     upperLimitVariable = dataToReloadProblem.upperBounds().clone();
     lowerLimitVariable = dataToReloadProblem.lowerBounds().clone();
 
-  /*  for (int i = 0; i < numberOfVariables; i++) {
-      upperLimitVariable[i] = 7;
-      lowerLimitVariable[i] = 0;
-    }
-    upperLimitVariable[numberOfVariables - 1] = 40;
-    lowerLimitVariable[numberOfVariables - 1] = 4;
-    upperLimitVariable[numberOfVariables - 2] = 5;
-    lowerLimitVariable[numberOfVariables - 2] = 0;*/
 
     // build up matrixes with zeros
     // initialize matrix nodePositions_ppr with zeros //aqui
@@ -949,7 +915,9 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       nodes.add(newNode);
     }
 
-    net = new NetworkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+
+
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }
