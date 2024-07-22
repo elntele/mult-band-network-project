@@ -10,12 +10,14 @@ import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
 
 import br.bm.model.cost.capex.CapexEvaluator;
+import br.bm.model.cost.capex.MultiBandCapexEvaluator;
 import br.bm.model.cost.opex.EnergyConsumptionEvaluator;
 import br.bm.model.performance.BlockingProbabilityEstimator;
 import br.bm.model.robustness.AlgebraicConnectivityEvaluator;
@@ -89,7 +91,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
   protected BlockingProbabilityEstimator bpEstimator;
 
-  protected CapexEvaluator capexEvaluator;
+  protected MultiBandCapexEvaluator capexEvaluator;
 
   protected EnergyConsumptionEvaluator energyConsumptionEvaluator;
 
@@ -167,7 +169,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   public OpticalNetworkMultiBandProblem(int networkLoad, String gmlFile) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    capexEvaluator = new CapexEvaluator();
+   // capexEvaluator = new CapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -674,7 +676,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   public void reloadProblem(int networkLoad, GmlData gmlFile) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    capexEvaluator = new CapexEvaluator();
+    //capexEvaluator = new CapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -806,7 +808,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   public void reloadProblemWithMultiBand(int networkLoad, GmlData gmlFile, DataToReloadProblem dataToReloadProblem) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    capexEvaluator = new CapexEvaluator();
+    capexEvaluator = new MultiBandCapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -819,7 +821,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     numberOfVariables = dataToReloadProblem.numberOfVariables();
 
-    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables-(numNodes +1),numberOfVariables);
+    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables-(numNodes +1),numberOfVariables-1);
 
 
 
@@ -833,12 +835,9 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     }
 
     defaultSolution = new Integer[numberOfVariables];
+    var variables= dataToReloadProblem.variable();
 
-    IntStream.range(0, dataToReloadProblem.variable().size()).forEach(index ->
-    {
-      defaultSolution[index] = dataToReloadProblem.variable().get(index);
-    });
-
+    variables.toArray(defaultSolution);
 
     locations = new Geolocation[numNodes];
     for (int i = 0; i < locations.length; i++) {

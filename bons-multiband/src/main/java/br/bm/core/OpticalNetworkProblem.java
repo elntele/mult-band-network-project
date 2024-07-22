@@ -640,7 +640,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
     defaultSolution[numberOfVariables - 1] = 40;
     defaultSolution[numberOfVariables - 2] = 4;
 
-    locations = new Geolocation[numNodes];
+    locations = new Geolocation[numNodes];//841
     for (int i = 0; i < locations.length; i++) {
       locations[i] = new Geolocation(data.getNodes().get(i).getLatitude(), data.getNodes().get(i).getLongitude());
     }
@@ -671,7 +671,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
     // build up matrixes with zeros
     // initialize matrix nodePositions_ppr with zeros
-    for (int i = 0; i < numNodes; i++) {
+    for (int i = 0; i < numNodes; i++) {//864
       Vector<Double> temp_loc = new Vector<Double>();
       for (int j = 0; j < 2; j++) {
         temp_loc.add(0.0);

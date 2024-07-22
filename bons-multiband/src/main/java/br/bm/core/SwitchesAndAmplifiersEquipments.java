@@ -1,8 +1,10 @@
 package br.bm.core;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import br.cns24.model.Bands;
 
@@ -53,9 +55,9 @@ public class SwitchesAndAmplifiersEquipments {
   };
 
 
-  private final static double COST_MODULE_W_FOR_C_BAND=1.0;
-  private final static double COST_MODULE_W_FOR_CL_BAND=1.2;
-  private final static double COST_MODULE_W_FOR_CLS_BAND=1.4;
+  public final static double COST_MODULE_W_FOR_C_BAND=1.0;
+  public final static double COST_MODULE_W_FOR_CL_BAND=1.2;
+  public final static double COST_MODULE_W_FOR_CLS_BAND=1.4;
 
 
 
@@ -155,5 +157,20 @@ public class SwitchesAndAmplifiersEquipments {
       case 9,10,11,12: return Bands.CLSBAND;
       default: throw new RuntimeException("illegal ROADM");
     }
+  }
+
+
+  public static HashMap<Integer, Double> getAmplifiersAsAnHashOfIndexes(List <Integer> indexes){
+    HashMap hashMap = new HashMap<>();
+     IntStream.range(0, indexes.size()).forEach(index->{
+       if (indexes.get(index)>=0 || indexes.get(index)<AMPLIFIERS_COSTS_AND_LABELS[0].length){
+         hashMap.put(indexes. get(index),AMPLIFIERS_COSTS_AND_LABELS[0][index]);
+       }else{
+         throw new IndexOutOfBoundsException("Index out of range: " + indexes.get(index));
+       }
+
+    });
+
+     return hashMap;
   }
 }
