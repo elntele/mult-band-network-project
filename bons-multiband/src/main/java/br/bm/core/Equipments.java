@@ -8,7 +8,7 @@ import java.util.stream.IntStream;
 
 import br.cns24.model.Bands;
 
-public class SwitchesAndAmplifiersEquipments {
+public class Equipments {
 
 
   private final static double[][] SWITCHES_COSTS_AND_LABELS = new double[][]{
@@ -58,6 +58,10 @@ public class SwitchesAndAmplifiersEquipments {
   public final static double COST_MODULE_W_FOR_C_BAND=1.0;
   public final static double COST_MODULE_W_FOR_CL_BAND=1.2;
   public final static double COST_MODULE_W_FOR_CLS_BAND=1.4;
+  public final static double DCF_COST=0.008316;
+  public final static double SSMF_COT=0.03003;
+  public final static double IMPLANT_COST=0.462;
+
 
 
 

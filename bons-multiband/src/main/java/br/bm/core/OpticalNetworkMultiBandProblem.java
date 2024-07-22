@@ -10,13 +10,11 @@ import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
 
-import br.bm.model.cost.capex.CapexEvaluator;
 import br.bm.model.cost.capex.MultiBandCapexEvaluator;
 import br.bm.model.cost.opex.EnergyConsumptionEvaluator;
 import br.bm.model.performance.BlockingProbabilityEstimator;
@@ -399,7 +397,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     /*net.setEpsilon(
         pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));*/
-    net.setEpsilon(SwitchesAndAmplifiersEquipments.getEpsilonOrIsolationFactorForThisSwitchList(this.switchIndexes));
+    net.setEpsilon(Equipments.getEpsilonOrIsolationFactorForThisSwitchList(this.switchIndexes));
     net.setLinks(links);
     net.cleanBp();
     net.setCompleteDistances(distances);
