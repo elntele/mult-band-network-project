@@ -153,6 +153,17 @@ public class Equipments {
         .collect(Collectors.toList());
   }
 
+  /**
+   * this method receive a type of switch
+   * and returns a BAND accord the index
+   * off switch in switch matrix:
+   * 0 no switch.
+   * 1 to 4 switches to c band
+   * 5 to 8 switches to cl band
+   * 9 to 12 switches to cls band.
+   * @param type
+   * @return
+   */
   public static Bands getSwitchType(int type){
     switch (type){
       case 0: return Bands.NOBAND;
