@@ -14,20 +14,27 @@ import br.bm.model.TNetworkIndicator;
 import br.cns24.model.Bands;
 
 public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, NumericalResult> {
+  private List<Integer> variables;
+  private int numNodes;
+  private List<Integer> connections;
 
   @Override
   public NumericalResult evaluate(INetwork network) {
+    MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
+    variables = Arrays.asList(net.getRawData());
+    numNodes = net.getNodes().size();
+    connections = variables.subList(0, variables.size() - (numNodes + 1));
 
-    var amplifierCost_loc = amplifiersCost(network);
-    var waveAndSwitchCost = wavelengthAndSwitchAndCost(network);
-    var wavelengthCost_loc = waveAndSwitchCost.getFirst();
-    var switchCost_loc = waveAndSwitchCost.getSecond();
+    var amplifierCost = amplifiersCost();
+    var waveAndSwitchCost = wavelengthAndSwitchAndCost();
+    var wavelengthCost = waveAndSwitchCost.getFirst();
+    var switchCost = waveAndSwitchCost.getSecond();
     var totalNetworkLength = getTotalFiberLength(network);
-    var dcfCost_loc = Equipments.DCF_COST * totalNetworkLength;
-    var ssmfCost_loc = Equipments.SSMF_COT * totalNetworkLength;
+    var dcfCost = Equipments.DCF_COST * totalNetworkLength;
+    var ssmfCost = Equipments.SSMF_COT * totalNetworkLength;
     var deploymentCost_loc = Equipments.IMPLANT_COST * totalNetworkLength;
     // state the total network cost by adding the separated costs
-    var totalCost_loc = amplifierCost_loc + switchCost_loc + wavelengthCost_loc + dcfCost_loc + ssmfCost_loc
+    var totalCost_loc = amplifierCost + switchCost + wavelengthCost + dcfCost + ssmfCost
         + deploymentCost_loc;
 
     return new NumericalResult(TNetworkIndicator.CAPITAL_EXPENDITURE, totalCost_loc);
@@ -37,13 +44,10 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
   /**
    * this method calculate the amplifiers cost
    *
-   * @param network
    */
-  private double amplifiersCost(INetwork network) {
-    MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
-    List<Integer> decisionVariablesList = Arrays.asList(net.getRawData());
+  private double amplifiersCost() {
+
     var amplifierCost_loc = 0.0;
-    int numNodes = net.getNodes().size();
     var externalObserverCount = 0;
     //Example of works to variable offset:
     // to 4 nodes if you are in the node one, you will analise the
@@ -53,14 +57,16 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
     for (int i = 0; i < numNodes; i++) {
       var nextLimit = externalObserverCount + (numNodes - offset) * 3;
       for (int j = externalObserverCount; j < nextLimit; j++) {
-        if (decisionVariablesList.get(j) != 0) {
-          switch (Bands.getBand(decisionVariablesList.get(j))) {
-            case Bands.CBAND -> amplifierCost_loc += 3.84 * Equipments.getAmplifiersBandC()[0][1];
-            case Bands.CLBAND -> amplifierCost_loc += 3.84 * Equipments.getAmplifiersBandCL()[0][1];
-            case Bands.CSBAND, Bands.CLSBAND -> amplifierCost_loc += 3.84 * Equipments.getAmplifiersBandCLS()[0][1];
+        if (connections.get(j) != 0) {
+          switch (Bands.getBand(connections.get(j))) {
+            case Bands.CBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandC()[0][1]);
+            case Bands.CLBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandCL()[0][1]);
+            case Bands.CSBAND, Bands.CLSBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandCLS()[0][1]);
             default -> throw new RuntimeException("invalid band " + Bands.getBand(j));
           }
+
         }
+        externalObserverCount =j;
       }
       offset++;
       externalObserverCount++;
@@ -75,22 +81,18 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
    * first position and  switch cost in
    * second position
    *
-   * @param network
    */
+  private Pair<Double, Double> wavelengthAndSwitchAndCost() {
 
-  private Pair<Double, Double> wavelengthAndSwitchAndCost(INetwork network) {
-
-    MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
-    List<Integer> variables = Arrays.asList(net.getRawData());
-    int numberOfVariables = variables.size();
-    int numNodes = net.getNodes().size();
-    var nodeEquipments = variables.subList(numberOfVariables - (numNodes + 1), numberOfVariables - 1);
-    int number_w_of_wave_lenghts = variables.get(numberOfVariables - 1);
+    var nodeEquipments = variables.subList( variables.size() - (numNodes + 1),  variables.size() - 1);
+    int numberOfw = variables.get( variables.size() - 1);
     var wavelengthCost = 0.0;
     var switchCost = 0.0;
 
+    Integer[] nodeDegrees= new Integer[numNodes];
+
     List<List<Double>> switches = Equipments.getThisSwitchesList(nodeEquipments);
-    var externalObserverCount = 0;
+    var externalCount = 0;
     var offset = 1;
     //being m the line index to run through matrix line
     for (int i = 0; i < numNodes; i++) {
@@ -99,14 +101,15 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
       int nodeDegreeCls = 0;
       int nodeDegree = 0;
 
-      var nextLimit = externalObserverCount + (numNodes - offset) * 3;
+      var nextLimit = externalCount + (numNodes - offset) * 3;
       // calculate the node degree on index nodePosition
-      for (int j = externalObserverCount; j < nextLimit; j++) {//j  run through matrix column
-        if (variables.get(j) != 0) {
+      //j  run through matrix column
+      for (int j = externalCount; j < nextLimit; j++) {
+        if (connections.get(j) != 0) {
           //here the node degree is calculated in general way
           nodeDegree++;
           //here the node degree is calculated accord the type of band
-          switch (Bands.getBand(variables.get(j))) {
+          switch (Bands.getBand(connections.get(j))) {
             case Bands.CBAND:
               nodeDegreeC++;
             case Bands.CLBAND:
@@ -115,16 +118,18 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
               nodeDegreeCls++;
           }
         }
+        externalCount=j;
       }
+      externalCount++;
       offset++;
       //here the cost of w is differentiated accord the type of band to calculate the w cost
-      wavelengthCost += 2 * number_w_of_wave_lenghts *
+      wavelengthCost += 2 * numberOfw *
           (nodeDegreeC * Equipments.COST_MODULE_W_FOR_C_BAND +
               nodeDegreeCl * Equipments.COST_MODULE_W_FOR_CL_BAND +
               nodeDegreeCls * Equipments.COST_MODULE_W_FOR_CLS_BAND);
 
       //here the node degree in general way is used to calculate the switch cost
-      switchCost += ((0.05225 * number_w_of_wave_lenghts + 6.24) * nodeDegree + 2.5) * switches.get(i).get(
+      switchCost += ((0.05225 * numberOfw + 6.24) * nodeDegree + 2.5) * switches.get(i).get(
           0);
       // the two before equations comes from cost model
     }
@@ -138,12 +143,8 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
    *
    * @param network
    */
-
   private Double getTotalFiberLength(INetwork network) {
     MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
-    var numNodes= net.getNodes().size();
-    var variables = Arrays.asList(net.getRawData());
-    var connections= variables.subList(0,variables.size()-(numNodes+1));
     var totalNetworkLength = 0.0;
     var externalCount = 0;
     var offset = 1;
@@ -166,6 +167,4 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
     }
     return totalNetworkLength;
   }
-
-
 }
