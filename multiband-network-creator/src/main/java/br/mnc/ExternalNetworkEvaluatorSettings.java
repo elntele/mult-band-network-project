@@ -163,7 +163,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-      solution.objectives()[0] = objectives[0];
+  //    solution.objectives()[0] = objectives[0];
       solution.objectives()[1] = objectives[1];
     }
     return solution;

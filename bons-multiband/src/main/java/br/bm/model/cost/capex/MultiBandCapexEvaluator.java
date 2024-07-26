@@ -43,7 +43,6 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
 
   /**
    * this method calculate the amplifiers cost
-   *
    */
   private double amplifiersCost() {
 
@@ -59,14 +58,17 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
       for (int j = externalObserverCount; j < nextLimit; j++) {
         if (connections.get(j) != 0) {
           switch (Bands.getBand(connections.get(j))) {
-            case Bands.CBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandC()[0][1]);
-            case Bands.CLBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandCL()[0][1]);
-            case Bands.CSBAND, Bands.CLSBAND -> amplifierCost_loc += 2*(3.84 * Equipments.getAmplifiersBandCLS()[0][1]);
-            default -> throw new RuntimeException("invalid band " + Bands.getBand(j));
+            case Bands.CBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifiersBandC()[0][1]);
+            case Bands.CLBAND, Bands.LBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifiersBandCL()[0][1]);
+            case Bands.CSBAND, Bands.LSBAND, Bands.SBAND, Bands.CLSBAND ->
+                amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifiersBandCLS()[0][1]);
+            default -> throw new RuntimeException(
+                String.format("invalid band %1$s,  connection position %2$s, connections %3$s", Bands.getBand(
+                    connections.get(j)), j, connections));
           }
 
         }
-        externalObserverCount =j;
+        externalObserverCount = j;
       }
       offset++;
       externalObserverCount++;
@@ -80,57 +82,40 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
    * a tuple with wave length cost in
    * first position and  switch cost in
    * second position
-   *
    */
   private Pair<Double, Double> wavelengthAndSwitchAndCost() {
 
-    var nodeEquipments = variables.subList( variables.size() - (numNodes + 1),  variables.size() - 1);
-    int numberOfw = variables.get( variables.size() - 1);
+    var nodeEquipmentTypes = variables.subList(variables.size() - (numNodes + 1), variables.size() - 1);
+    int wNumber = variables.get(variables.size() - 1);
     var wavelengthCost = 0.0;
     var switchCost = 0.0;
-
-    Integer[] nodeDegrees= new Integer[numNodes];
-
-    List<List<Double>> switches = Equipments.getThisSwitchesList(nodeEquipments);
+    int[] nodeDegrees = new int[numNodes];
+    Arrays.fill(nodeDegrees, 0);
     var externalCount = 0;
     var offset = 1;
     //being m the line index to run through matrix line
     for (int i = 0; i < numNodes; i++) {
-      int nodeDegreeC = 0;
-      int nodeDegreeCl = 0;
-      int nodeDegreeCls = 0;
-      int nodeDegree = 0;
-
+      var indexJ = i + 1;
+      var stepInConnections = 0;
       var nextLimit = externalCount + (numNodes - offset) * 3;
       // calculate the node degree on index nodePosition
       //j  run through matrix column
       for (int j = externalCount; j < nextLimit; j++) {
+        stepInConnections++;
         if (connections.get(j) != 0) {
-          //here the node degree is calculated in general way
-          nodeDegree++;
-          //here the node degree is calculated accord the type of band
-          switch (Bands.getBand(connections.get(j))) {
-            case Bands.CBAND:
-              nodeDegreeC++;
-            case Bands.CLBAND:
-              nodeDegreeCl++;
-            case Bands.CSBAND, Bands.CLSBAND:
-              nodeDegreeCls++;
-          }
+          nodeDegrees[i] += 1;
+          nodeDegrees[indexJ] += 1;
         }
-        externalCount=j;
+        if (stepInConnections % 3 == 0) {
+          indexJ++;
+        }
+        externalCount = j;
       }
       externalCount++;
       offset++;
-      //here the cost of w is differentiated accord the type of band to calculate the w cost
-      wavelengthCost += 2 * numberOfw *
-          (nodeDegreeC * Equipments.COST_MODULE_W_FOR_C_BAND +
-              nodeDegreeCl * Equipments.COST_MODULE_W_FOR_CL_BAND +
-              nodeDegreeCls * Equipments.COST_MODULE_W_FOR_CLS_BAND);
-
-      //here the node degree in general way is used to calculate the switch cost
-      switchCost += ((0.05225 * numberOfw + 6.24) * nodeDegree + 2.5) * switches.get(i).get(
-          0);
+      wavelengthCost += 2 * wNumber * nodeDegrees[i] * Equipments.getOltCost(i);
+      switchCost += ((0.05225 * wNumber + 6.24) * nodeDegrees[i] + 2.5) * Equipments.getSwitchCost(
+          nodeEquipmentTypes.get(i));
       // the two before equations comes from cost model
     }
 
@@ -167,4 +152,5 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
     }
     return totalNetworkLength;
   }
+
 }

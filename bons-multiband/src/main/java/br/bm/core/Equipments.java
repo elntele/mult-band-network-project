@@ -55,9 +55,9 @@ public class Equipments {
   };
 
 
-  public final static double COST_MODULE_W_FOR_C_BAND=1.0;
-  public final static double COST_MODULE_W_FOR_CL_BAND=1.2;
-  public final static double COST_MODULE_W_FOR_CLS_BAND=1.4;
+  private final static double COST_MODULE_W_FOR_C_BAND=1.0;
+  private final static double COST_MODULE_W_FOR_CL_BAND=1.2;
+  private final static double COST_MODULE_W_FOR_CLS_BAND=1.4;
   public final static double DCF_COST=0.008316;
   public final static double SSMF_COT=0.03003;
   public final static double IMPLANT_COST=0.462;
@@ -164,12 +164,12 @@ public class Equipments {
    * @param type
    * @return
    */
-  public static Bands getSwitchType(int type){
+  public static Double getOltCost(int type){
     switch (type){
-      case 0: return Bands.NOBAND;
-      case 1,2,3,4: return Bands.CBAND;
-      case 5,6,7,8: return Bands.CLBAND;
-      case 9,10,11,12: return Bands.CLSBAND;
+      case 0: return 0.0;
+      case 1,2,3,4: return COST_MODULE_W_FOR_C_BAND;
+      case 5,6,7,8: return COST_MODULE_W_FOR_CL_BAND;
+      case 9,10,11,12: return COST_MODULE_W_FOR_CLS_BAND;
       default: throw new RuntimeException("illegal ROADM");
     }
   }
@@ -187,5 +187,8 @@ public class Equipments {
     });
 
      return hashMap;
+  }
+  public static double getSwitchCost(Integer typeForTheIndex){
+    return SWITCHES_COSTS_AND_LABELS[0][typeForTheIndex];
   }
 }

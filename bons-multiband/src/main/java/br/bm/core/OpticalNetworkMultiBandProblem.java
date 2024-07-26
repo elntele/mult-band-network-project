@@ -413,13 +413,13 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     // criar a restricao manualmente, colocando todos para o maximo
     // quando a conectividade algebrica e zero
-    if (objectives[3] < 0.0000001 || objectives[0] > 0.99) {
+   /* if (objectives[3] < 0.0000001 || objectives[0] > 0.99) {
       for (int i = 0; i < getNumberOfObjectives() - 1; i++) {
         objectives[i] = getUpperLimitObjectiveAt(i);
       }
       objectives[3] = 0.0;
       // objectives[4] = 0.0;
-    }
+    }*/
 
     return objectives;
   }
