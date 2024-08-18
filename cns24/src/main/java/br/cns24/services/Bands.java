@@ -1,5 +1,8 @@
-package br.cns24.model;
+package br.cns24.services;
 
+/**
+ * by Jorge Candeias.
+ */
 public enum Bands {
   NOBAND("000"),
   CBAND("001"),

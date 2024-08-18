@@ -17,6 +17,8 @@ package br.cns24.model;
 
 import java.util.*;
 
+import br.cns24.services.Bands;
+
 /**
  * 
  * @author Danilo

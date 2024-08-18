@@ -7,11 +7,11 @@ import org.apache.commons.math3.util.Pair;
 
 import br.bm.core.INetwork;
 import br.bm.core.MultiBandNetWorkProfile;
-import br.bm.core.Equipments;
+import br.cns24.services.Equipments;
 import br.bm.model.INetworkEvaluator;
 import br.bm.model.NumericalResult;
 import br.bm.model.TNetworkIndicator;
-import br.cns24.model.Bands;
+import br.cns24.services.Bands;
 
 public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, NumericalResult> {
   private List<Integer> variables;
@@ -56,6 +56,20 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
     for (int i = 0; i < numNodes; i++) {
       var nextLimit = externalObserverCount + (numNodes - offset) * 3;
       for (int j = externalObserverCount; j < nextLimit; j++) {
+        /**
+         * isso tem que modificar, tem que observar se a conexão é
+         * diferente de zero e parar de observar o link e começar
+         * a observar os dois nós. Ai conta um amplificador de acordo
+         * com o tipo de wss no nó_ij e outro amplificador de acordo
+         * com o tipo de wss no nó_ji.
+         * Observe que esse vezes dois ai de cada opção do switch case
+         * quem colocou fui eu, e ainda assim ta errado, porque ta
+         * considerando o mesmo amplificador nas duas pontas do
+         * enlace tx e rx, mas pode ter um tipo de amplificador
+         * em uma ponta e outro tipo na outra ponta já que os wss
+         * podem ser diferentes, exemplo um nó cl se comunicando com
+         * um nó c porque o enlace é c.
+         */
         if (connections.get(j) != 0) {
           switch (Bands.getBand(connections.get(j))) {
             case Bands.CBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifiersBandC()[0][1]);
@@ -114,7 +128,7 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
       externalCount++;
       offset++;
       wavelengthCost += 2 * wNumber * nodeDegrees[i] * Equipments.getOltCost(i);
-      switchCost += ((0.05225 * wNumber + 6.24) * nodeDegrees[i] + 2.5) * Equipments.getSwitchCost(
+      switchCost += ((0.05225 * wNumber) + (6.24 * nodeDegrees[i]) + 2.5) * Equipments.getSwitchCost(
           nodeEquipmentTypes.get(i));
       // the two before equations comes from cost model
     }

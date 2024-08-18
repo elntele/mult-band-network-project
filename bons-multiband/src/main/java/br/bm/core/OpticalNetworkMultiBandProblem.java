@@ -24,8 +24,9 @@ import br.cns24.Geolocation;
 import br.cns24.GravityModel;
 import br.cns24.TMetric;
 import br.cns24.experiments.ComplexNetwork;
-import br.cns24.model.Bands;
+import br.cns24.services.Bands;
 import br.cns24.model.EdgeSet;
+import br.cns24.services.Equipments;
 import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
@@ -404,7 +405,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     net.setCn(createComplexNetworkDistance(variables));
     net.setRawData(variables);
 
- //   objectives[0] = bpEstimator.evaluate(net).getValue();
+    objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
  //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
   //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();

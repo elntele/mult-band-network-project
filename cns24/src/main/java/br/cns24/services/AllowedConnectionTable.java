@@ -1,9 +1,9 @@
-package br.mnc;
+package br.cns24.services;
 
 /**
  * class represents the possible connections accords to
  * restriction to avoid plus band work without c band.
- *
+ *  by Jorge Candeias.
  */
 
 public class AllowedConnectionTable {

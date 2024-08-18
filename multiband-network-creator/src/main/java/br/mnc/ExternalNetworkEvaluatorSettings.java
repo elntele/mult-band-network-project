@@ -2,7 +2,8 @@ package br.mnc;
 
 import br.bm.core.DataToReloadProblem;
 import br.bm.core.OpticalNetworkMultiBandProblem;
-import br.cns24.model.Bands;
+import br.cns24.services.AllowedConnectionTable;
+import br.cns24.services.Bands;
 import br.cns24.model.EdgeSet;
 import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
