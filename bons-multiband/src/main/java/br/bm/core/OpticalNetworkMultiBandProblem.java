@@ -11,9 +11,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.IntStream;
 
-import br.bm.model.cost.capex.CapexEvaluator;
+import br.bm.model.cost.capex.MultiBandCapexEvaluator;
 import br.bm.model.cost.opex.EnergyConsumptionEvaluator;
 import br.bm.model.performance.BlockingProbabilityEstimator;
 import br.bm.model.robustness.AlgebraicConnectivityEvaluator;
@@ -22,13 +24,18 @@ import br.cns24.Geolocation;
 import br.cns24.GravityModel;
 import br.cns24.TMetric;
 import br.cns24.experiments.ComplexNetwork;
+import br.cns24.services.Bands;
+import br.cns24.model.EdgeSet;
+import br.cns24.services.Equipments;
 import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
 import br.cns24.models.TModel;
 import br.cns24.persistence.GmlDao;
 
-public class OpticalNetworkProblem implements IProblem<Integer, Double> {
+public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double> {
+
+
   public static final int NUMBER_OF_AMPLIFIER_LABELS = 10;
   public static final int NUMBER_OF_SWITCH_LABELS = 5;
   public static final int MAX_NUMBER_OF_WAVELENGHTS = 40;
@@ -54,6 +61,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
   public static double[][] SWITCHES_COSTS_AND_LABELS = new double[][]{ { 0.25, 0.5, 0.75, 1, 1.5, 2.0 }, // costs
       { 27, 30, 33, 35, 38, 40 } }; // isolation factor in dB
+  public  List <Integer> switchIndexes;
 
   public static final int BLOQ_WAVELENGTH = -1;
   public static final int BLOQ_BER = -2;
@@ -82,7 +90,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
   protected BlockingProbabilityEstimator bpEstimator;
 
-  protected CapexEvaluator capexEvaluator;
+  protected MultiBandCapexEvaluator capexEvaluator;
 
   protected EnergyConsumptionEvaluator energyConsumptionEvaluator;
 
@@ -110,7 +118,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
   protected Integer[] upperLimitVariable;
 
-  protected NetworkProfile net;
+  protected MultiBandNetWorkProfile net;
 
   protected Double[][] traffic;
 
@@ -157,10 +165,10 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
     System.out.printf("Tempo do RC4 no transponder = %.2f micro segundos\n", tempo3RC4Transponder * 1e6);
   }
 
-  public OpticalNetworkProblem(int networkLoad, String gmlFile) {
+  public OpticalNetworkMultiBandProblem(int networkLoad, String gmlFile) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    capexEvaluator = new CapexEvaluator();
+   // capexEvaluator = new CapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -284,7 +292,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
       nodes.add(newNode);
     }
 
-    net = new NetworkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }// aqui
@@ -334,8 +342,10 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
     adjacencyMatrixLabels = buildAdjacencyMatrixLabels(networkRepresentation_ppr);
 
-    Vector<Vector<Double>> adjacencyMatrix = buildAdjacencyMatrixDistances(networkRepresentation_ppr,
-        adjacencyMatrixLabels);
+    Vector<Vector<Double>> adjacencyMatrix = buildAdjacencyMatrixDistances(
+        networkRepresentation_ppr,
+        adjacencyMatrixLabels
+    );
 
     int vectorSize_loc = networkRepresentation_ppr.size();
     Double[][] distancias = getDistancias(adjacencyMatrix);
@@ -383,8 +393,12 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
               ganhodinamico_loc);
       }
 
-    net.setEpsilon(
-        pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));
+
+
+
+    /*net.setEpsilon(
+        pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));*/
+    net.setEpsilon(Equipments.getEpsilonOrIsolationFactorForThisSwitchList(this.switchIndexes));
     net.setLinks(links);
     net.cleanBp();
     net.setCompleteDistances(distances);
@@ -393,20 +407,20 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
     objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
-    objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
-    objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
+ //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
+  //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
     // objectives[4] =
     // naturalConnectivityEvaluator.evaluate(net).getValue();
 
     // criar a restricao manualmente, colocando todos para o maximo
     // quando a conectividade algebrica e zero
-    if (objectives[3] < 0.0000001 || objectives[0] > 0.99) {
+   /* if (objectives[3] < 0.0000001 || objectives[0] > 0.99) {
       for (int i = 0; i < getNumberOfObjectives() - 1; i++) {
         objectives[i] = getUpperLimitObjectiveAt(i);
       }
       objectives[3] = 0.0;
       // objectives[4] = 0.0;
-    }
+    }*/
 
     return objectives;
   }
@@ -473,7 +487,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
       Vector<Vector<Double>> labelMatrix_loc) {
     Vector<Vector<Double>> adjacencyMatrix_loc = new Vector<Vector<Double>>();
 
-    // fills up adjacencyMatrix_loc with zeros
+    // fills up adjacencyMatrix_loc with
     for (int i = 0; i < numNodes; i++) {
       Vector<Double> temp_loc = new Vector<Double>();
       assign(temp_loc, numNodes, 0.0);
@@ -505,26 +519,88 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
     Vector<Vector<Double>> adjacencyMatrix_loc = new Vector<Vector<Double>>();
 
     // fills up adjacencyMatrix_loc with zeros
-    for (int i = 0; i < numNodes; i++) {
+    IntStream.iterate(0, i -> i<numNodes, i->i+1).forEach(i->{
       Vector<Double> temp_loc = new Vector<Double>();
       assign(temp_loc, numNodes, 0.0);
       adjacencyMatrix_loc.add(temp_loc);
-    }
-    int i = 0;
-    int j = 1;
+    });
 
-    for (int k = 0; (k < (vectorSize_loc - 2)); k++) {
-      adjacencyMatrix_loc.get(i).set(j, (double) networkRepresentation_ppr.get(k));
-      adjacencyMatrix_loc.get(j).set(i, (double) networkRepresentation_ppr.get(k));
-      j++;
-      if (j == numNodes) {
-        i++;
-        j = i + 1;
+    AtomicInteger i = new AtomicInteger(0);
+    AtomicInteger j = new AtomicInteger(1);
+
+    IntStream.iterate(0, k -> k < (vectorSize_loc - (numNodes + 1)), k -> k + 3).forEach(k -> {
+      var edgeOne = networkRepresentation_ppr.get(k);
+      var edgeTwo = networkRepresentation_ppr.get(k + 1);
+      var edgeTree = networkRepresentation_ppr.get(k + 2);
+      if (edgeOne > 0 || edgeTwo > 0 || edgeTree > 0) {
+        adjacencyMatrix_loc.get(i.get()).set(j.get(), 1.0);
+        adjacencyMatrix_loc.get(j.get()).set(i.get(), 1.0);
+      } else {
+        adjacencyMatrix_loc.get(i.get()).set(j.get(), 0.0);
+        adjacencyMatrix_loc.get(j.get()).set(i.get(), 0.0);
       }
 
-    }
+      j.incrementAndGet();
+      if (j.get() == numNodes) {
+        i.incrementAndGet();
+        j.set(i.get() + 1);
+      }
+    });
+
     return adjacencyMatrix_loc;
   }
+
+
+  private Vector<Vector<EdgeSet>> buildAdjacencyMatrixLabelsMultiBand(List<Integer> networkRepresentation_ppr) {
+
+    int vectorSize_loc = networkRepresentation_ppr.size();
+    Vector<Vector<EdgeSet>> adjacencyMatrix_loc = new Vector<Vector<EdgeSet>>();
+
+    // fills up adjacencyMatrix_loc with zeros
+    IntStream.range(0, numNodes).forEach(i -> {
+      Vector<EdgeSet> temp_loc = new Vector<EdgeSet>();
+      IntStream.range(0, numNodes).forEach(index -> {
+        var edgeset = new EdgeSet();
+        IntStream.range(0, 3).forEach(indexEdge -> {
+          GmlEdge gmlEdge = new GmlEdge();
+          gmlEdge.setBand(Bands.NOBAND);
+          edgeset.getEdges().add(gmlEdge);
+        });
+        temp_loc.add(edgeset);
+      });
+      adjacencyMatrix_loc.add(temp_loc);
+    });
+
+
+    final AtomicIntegerArray i = new AtomicIntegerArray(1);
+    final AtomicIntegerArray j = new AtomicIntegerArray(1);
+    i.set(0, 0);
+    j.set(0, 1);
+
+    IntStream.range(0, (vectorSize_loc - (numNodes + 1))).forEach(k -> {
+      var edgeset = new EdgeSet();
+      GmlEdge gmlEdgeOne = new GmlEdge();
+      GmlEdge gmlEdgeTwo = new GmlEdge();
+      GmlEdge gmlEdgeTree = new GmlEdge();
+      gmlEdgeOne.setBand(Bands.getBand(networkRepresentation_ppr.get(k)));
+      gmlEdgeTwo.setBand(Bands.getBand(networkRepresentation_ppr.get(k + 1)));
+      gmlEdgeTree.setBand(Bands.getBand(networkRepresentation_ppr.get(k + 2)));
+      edgeset.getEdges().add(gmlEdgeOne);
+      edgeset.getEdges().add(gmlEdgeTwo);
+      edgeset.getEdges().add(gmlEdgeTree);
+      adjacencyMatrix_loc.get(i.get(0)).set(j.get(0), edgeset);
+      adjacencyMatrix_loc.get(j.get(0)).set(i.get(0), edgeset);
+      j.addAndGet(0, 1);
+
+      if (j.get(0) == numNodes) {
+        i.addAndGet(0, 1);
+        j.addAndGet(0, i.get(0) + 1);
+      }
+    });
+
+    return adjacencyMatrix_loc;
+  }
+
 
   @Override
   public int getNumberOfObjectives() {
@@ -599,7 +675,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
   public void reloadProblem(int networkLoad, GmlData gmlFile) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    capexEvaluator = new CapexEvaluator();
+    //capexEvaluator = new CapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -640,7 +716,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
     defaultSolution[numberOfVariables - 1] = 40;
     defaultSolution[numberOfVariables - 2] = 4;
 
-    locations = new Geolocation[numNodes];//841
+    locations = new Geolocation[numNodes];
     for (int i = 0; i < locations.length; i++) {
       locations[i] = new Geolocation(data.getNodes().get(i).getLatitude(), data.getNodes().get(i).getLongitude());
     }
@@ -671,7 +747,7 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
 
     // build up matrixes with zeros
     // initialize matrix nodePositions_ppr with zeros
-    for (int i = 0; i < numNodes; i++) {//864
+    for (int i = 0; i < numNodes; i++) {
       Vector<Double> temp_loc = new Vector<Double>();
       for (int j = 0; j < 2; j++) {
         temp_loc.add(0.0);
@@ -723,15 +799,127 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
       nodes.add(newNode);
     }
 
-    net = new NetworkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }
 
+  public void reloadProblemWithMultiBand(int networkLoad, GmlData gmlFile, DataToReloadProblem dataToReloadProblem) {
+    this.networkLoad = networkLoad;
+    bpEstimator = new BlockingProbabilityEstimator(networkLoad);
+    capexEvaluator = new MultiBandCapexEvaluator();
+    energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
+    algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
+    naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
 
-  public OpticalNetworkProblem() {
-    super();
+    numberOfObjectives = dataToReloadProblem.numberOfObjectives();
+
+    data = gmlFile;
+
+    numNodes = data.getNodes().size();
+
+    numberOfVariables = dataToReloadProblem.numberOfVariables();
+
+    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables-(numNodes +1),numberOfVariables-1);
+
+
+
+    geolocationCoords = new double[numNodes][2];
+    int count = 0;
+    GeolocationConverter gc = new GeolocationConverter();
+    for (GmlNode node : data.getNodes()) {
+      geolocationCoords[count][0] = gc.mercX(node.getLongitude());
+      geolocationCoords[count][1] = gc.mercY(node.getLatitude());
+      count++;
+    }
+
+    defaultSolution = new Integer[numberOfVariables];
+    var variables= dataToReloadProblem.variable();
+
+    variables.toArray(defaultSolution);
+
+    locations = new Geolocation[numNodes];
+    for (int i = 0; i < locations.length; i++) {
+      locations[i] = new Geolocation(data.getNodes().get(i).getLatitude(), data.getNodes().get(i).getLongitude());
+    }
+    traffic = createGravityTraffic(data);
+    distances = new Double[numNodes][numNodes];
+    for (int i = 0; i < numNodes; i++) {
+      distances[i][i] = 0.0;
+      for (int j = i + 1; j < numNodes; j++) {
+        distances[i][j] = computeDistance(locations[i], locations[j], true);
+        distances[j][i] = distances[i][j];
+      }
+    }
+
+    lowerLimitObjective = new Double[]{ 0.0, 0.0 };
+    upperLimitObjective = new Double[]{ 1.0, 100000.0 };
+
+    upperLimitVariable = dataToReloadProblem.upperBounds().clone();
+    lowerLimitVariable = dataToReloadProblem.lowerBounds().clone();
+
+
+    // build up matrixes with zeros
+    // initialize matrix nodePositions_ppr with zeros //aqui
+    for (int i = 0; i < numNodes; i++) {
+      Vector<Double> temp_loc = new Vector<Double>();
+      for (int j = 0; j < 2; j++) {
+        temp_loc.add(0.0);
+      }
+      nodePositions.add(temp_loc);
+    }
+
+    // initialize matrix amplifierCostsAndTypes_ppr with zeros
+    for (int i = 0; i < 3; i++) {
+      Vector<Double> temp_loc = new Vector<Double>();
+      for (int j = 0; j < NUMBER_OF_AMPLIFIER_LABELS; j++) {
+        temp_loc.add(0.0);
+      }
+      amplifierCostsAndTypes.add(temp_loc);
+    }
+
+    // initialize matrix switchCostsAndTypes_ppr with zeros
+    for (int i = 0; i < 2; i++) {
+      Vector<Double> temp_loc = new Vector<Double>();
+      for (int j = 0; j < NUMBER_OF_SWITCH_LABELS + 1; j++) {
+        temp_loc.add(0.0);
+      }
+      switchCostsAndTypes.add(temp_loc);
+    }
+    // build up matrixes with correct values
+
+    // initialize matrix nodePositions_ppr with the right values // aqui
+    for (int i = 0; i < nodePositions.size(); i++)
+      for (int j = 0; j < nodePositions.get(i).size(); j++)
+        nodePositions.get(i).set(j, geolocationCoords[i][j]);
+
+    // initialize matrix amplifierCostsAndTypes_ppr with the right values
+    for (int i = 0; i < amplifierCostsAndTypes.size(); i++)
+      for (int j = 0; j < amplifierCostsAndTypes.get(i).size(); j++)
+        amplifierCostsAndTypes.get(i).set(j, AMPLIFIERS_COSTS_AND_LABELS[i][j]);
+
+    // initialize matrix aswitchCostsAndTypes_ppr with the right values
+    for (int i = 0; i < switchCostsAndTypes.size(); i++)
+      for (int j = 0; j < switchCostsAndTypes.get(i).size(); j++)
+        switchCostsAndTypes.get(i).set(j, SWITCHES_COSTS_AND_LABELS[i][j]);
+
+    Vector<Node> nodes = new Vector<Node>();
+    // network nodes
+    double GSWITCH = -3.0; // in dB
+    double SNR = 40.0; // in dB
+    double LPOWER = 0.0; // in DBm
+    for (int k = 0; k < numNodes; k++) {
+      Node newNode = new Node(GSWITCH, LPOWER, SNR);
+      nodes.add(newNode);
+    }
+
+
+
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+        10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
+        MAX_NUMBER_OF_WAVELENGHTS);
   }
 
-
+  public OpticalNetworkMultiBandProblem() {
+  }
 }

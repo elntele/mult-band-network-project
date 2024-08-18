@@ -1,4 +1,10 @@
-package br.mnc;
+package br.cns24.services;
+
+/**
+ * class represents the possible connections accords to
+ * restriction to avoid plus band work without c band.
+ *  by Jorge Candeias.
+ */
 
 public class AllowedConnectionTable {
     private static final String[] noBand = {"0", "000"};
@@ -9,9 +15,12 @@ public class AllowedConnectionTable {
     private static final Integer[] possibleConnection ={0,1,3,5,7};
 
     public static String[][] getMatrixConverterPossibleConnection(){
+
         return new String[][]{noBand, c, cl, cs, cls};
     }
+
     public static Integer[] getPossibleConnection(){
+
         return possibleConnection;
     }
 }

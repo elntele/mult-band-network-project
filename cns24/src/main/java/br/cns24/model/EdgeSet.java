@@ -11,16 +11,16 @@ import java.util.List;
  */
 
 public class EdgeSet {
-    private List<GmlEdge> set = new ArrayList<>();
+    private List<GmlEdge> edges = new ArrayList<>();
 
     public EdgeSet() {
     }
 
-    public List<GmlEdge> getSet() {
-        return set;
+    public List<GmlEdge> getEdges() {
+        return edges;
     }
 
-    public void setSet(List<GmlEdge> set) {
-        this.set = set;
+    public void setEdges(List<GmlEdge> edges) {
+        this.edges = edges;
     }
 }

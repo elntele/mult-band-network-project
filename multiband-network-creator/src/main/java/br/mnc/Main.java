@@ -57,6 +57,9 @@ public class Main {
         int w = 1;
 
         String path = "src/result/print.txt";
+        new File( "src/result/").mkdir();
+        new File( "src/result/gml").mkdirs();
+        String gmlpath = "src/result/gml";
 
         FileWriter arq = null;
         try {
@@ -67,9 +70,7 @@ public class Main {
         PrintWriter gravarArq = new PrintWriter(arq);
 
 
-        new File( "src/result/").mkdir();
-        new File( "src/result/gml").mkdirs();
-        String gmlpath = "src/result/gml";
+
         for (IntegerSolution solution : population) {
             String patch = gmlpath + "/ResultadoGML/" + w + ".gml";
             save(patch, solution);

@@ -1,7 +1,9 @@
 package br.mnc;
 
-import br.bm.core.OpticalNetworkProblem;
-import br.cns24.model.Bands;
+import br.bm.core.DataToReloadProblem;
+import br.bm.core.OpticalNetworkMultiBandProblem;
+import br.cns24.services.AllowedConnectionTable;
+import br.cns24.services.Bands;
 import br.cns24.model.EdgeSet;
 import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
@@ -22,6 +24,11 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private GmlData gml;
   private Map<Integer, GmlNode> mapNode;
   public int contEvaluate = 0;
+  private Integer[] upperBoundsMatrixPart;
+  private Integer[] lowerBoundsMatrixPart;
+  private Integer[] upperBounds;
+  private Integer[] lowerBounds;
+  private Integer tailRoadmPlusW;
 
   @Override
   public IntegerSolution createSolution() {
@@ -33,29 +40,100 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     return integerSolution;
   }
 
+  /**
+   * this method create a random solution
+   * considering, in variables, the part of
+   * connections  and the part of ROADM
+   * separated but considering a relationship
+   * between the two parts.
+   * //chromosome sample to 4 nodes: being (123) a 3-fiber set
+   * // (123) (123) (123) (123) (123) (123) Node Node Node Node w
+   * the below matrix represents the connection part
+   * // connection matrix
+   * //   1   2     3     4
+   * // 1 x (123) (123) (123)
+   * // 2     x   (123) (123)
+   * // 3           x   (123)
+   * // 4                 x
+   * The way to running through the variables using the
+   * nodes number in a 'chain for': for(i=...i++){for(j=...j++){}},
+   * is introduced here.
+   * as the column have 3 times more position them line,
+   * the 'chained for' will need an external observer counter
+   * to hold the final index position of the 'internal for'
+   * in each iteration. It's because the 'internal for' next
+   * iteration will begin in the last stopped position +1.
+   * @param solution
+   */
+
   private void CreateRandomNetWork(IntegerSolution solution) {
     Random random = new Random();
     var connections = AllowedConnectionTable.getPossibleConnection();
-    IntStream.iterate(0, i -> i + 3)
-        .limit(solution.variables()
-            .size() / 3)
-        .forEach(i -> {
+    var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
+    IntStream.iterate(0, stepByIndexes -> stepByIndexes + 3)
+        .limit(connectionPartLimit / 3)
+        .forEach(index -> {
+          // in 50% of times don't create connection between nodes
           if (random.nextBoolean()) {
             solution.variables()
-                .set(i, 0);
+                .set(index, 0);
             solution.variables()
-                .set(i + 1, 0);
+                .set(index + 1, 0);
             solution.variables()
-                .set(i + 2, 0);
+                .set(index + 2, 0);
           } else {
+            // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
+            // remembering that 0 means no connection and consequently no edge/fiber
             solution.variables()
-                .set(i, connections[random.nextInt(connections.length)]);
+                .set(index, connections[random.nextInt(connections.length)]);
             solution.variables()
-                .set(i + 1, connections[random.nextInt(connections.length)]);
+                .set(index + 1, connections[random.nextInt(connections.length)]);
             solution.variables()
-                .set(i + 2, connections[random.nextInt(connections.length)]);
+                .set(index + 2, connections[random.nextInt(connections.length)]);
           }
         });
+
+    var numNode = gml.getNodes().size();
+    var roadmIndex = numberOfVariables() - (numNode + 1); //+1 cause its difference includes w part
+
+    var externalObserverCount = 0;
+    //here is the 'chained for' described on top of method
+    var offset = 1;
+    for (int i = 0; i < numNode; i++) { //go through matrix column by index i
+      var maxEquipment = 0;
+      var nextLimit = externalObserverCount + (numNode - offset) * 3;
+      for (int j = externalObserverCount; j < nextLimit; j++) {//go through matrix line by index j
+        if (solution.variables().get(j) > maxEquipment) {
+          maxEquipment = solution.variables().get(j);
+        }
+        externalObserverCount = j;
+      }
+      externalObserverCount++;
+      offset += 1;
+
+      solution.variables().set(roadmIndex, randomlySelectSwitch(maxEquipment));
+      roadmIndex++;
+    }
+  }
+
+
+  private Integer randomlySelectSwitch(Integer equipment) {
+    Random random = new Random();
+    switch (equipment) {
+      case 0 -> {
+        return 0;
+      }
+      case 1 -> {
+        return random.nextInt(1, 4);
+      }
+      case 3 -> {
+        return random.nextInt(5, 8);
+      }
+      case 5, 7 -> {
+        return random.nextInt(9, 12);
+      }
+      default -> throw new IllegalStateException("Unexpected value: " + equipment);
+    }
   }
 
   /**
@@ -78,17 +156,16 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (gmlData.containsIsolatedNodes()) {
+    if (gmlData.containsIsolatedNodesInMultiBandModel()) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE;
     } else {
-      OpticalNetworkProblem P = new OpticalNetworkProblem();
-      P.reloadProblem(load, gmlData);
+      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
+      var dataToReloadProblem = setProblemCharacteristic(solution);
+      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-      solution.objectives()[0] = objectives[0];
+  //    solution.objectives()[0] = objectives[0];
       solution.objectives()[1] = objectives[1];
-      solution.objectives()[2] = objectives[2];
-      solution.objectives()[3] = 1 / (1 + objectives[3]);
     }
     return solution;
   }
@@ -109,7 +186,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     gmlData.setEdgeSets(buildSet(nodes, vars));
     //gmlData.setEdges(links);
     //gmlData.createComplexNetwork();
-    gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
+    // gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
     return gmlData;
   }
 
@@ -170,13 +247,13 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
                   var fiberThree = varList.get(varIndex[0] + 2);
 
                   if (fiberOne != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberOne));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberOne));
                   }
                   if (fiberTwo != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberTwo));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberTwo));
                   }
                   if (fiberThree != 0) {
-                    edgeSet.getSet().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberThree));
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberThree));
 
                   }
                   edgeSets.add(edgeSet);
@@ -193,7 +270,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void gmlBuild() {
-    String path = "./selectedCityInPernabucoState.gml";
+    //String path = "./selectedCityInPernabucoState.gml";
+    String path = "./teste.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {
@@ -218,35 +296,20 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     edge.setTarget(this.mapNode.get(gml.getNodes()
         .get(nodeTargetIndex)
         .getId()));
-    edge.setBand(buildBand(fiber));
+    edge.setBand(Bands.getBand(fiber));
     return edge;
   }
 
-  private Bands buildBand(Integer fiber) {
-    switch (fiber) {
-      case 1 -> {
-        return Bands.CBAND;
-      }
-      case 2 -> {
-        return Bands.LBAND;
-      }
-      case 3 -> {
-        return Bands.CLBAND;
-      }
-      case 4 -> {
-        return Bands.SBAND;
-      }
-      case 5 -> {
-        return Bands.CSBAND;
-      }
-      case 6 -> {
-        return Bands.LSBAND;
-      }
-      case 7 -> {
-        return Bands.CLSBAND;
-      }
-      default -> throw new IllegalStateException("Unexpected value: " + fiber);
-    }
+
+  private DataToReloadProblem setProblemCharacteristic(IntegerSolution solution) {
+
+    return new DataToReloadProblem(
+        solution.variables().size(),
+        solution.objectives().length,
+        solution.variables(),
+        lowerBounds,
+        upperBounds
+    );
   }
 
   public ExternalNetworkEvaluatorSettings() {
@@ -257,24 +320,34 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         .size();
     var numberOfVariables = (3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
 
+    this.upperBounds = new Integer[numberOfVariables];
+    this.lowerBounds = new Integer[numberOfVariables];
+
     /**problem configuration */
     List<Integer> ll = new Vector<>();
     List<Integer> ul = new Vector<>();
-    var roadmPart = numberOfNodes + 1;
-    var matrixConnectionPart = numberOfVariables - roadmPart;
+    var roadmPlusW_Part = numberOfNodes + 1;
+    this.tailRoadmPlusW = roadmPlusW_Part;
+    var matrixConnectionPart = numberOfVariables - roadmPlusW_Part;
 
     for (int i = 0; i < matrixConnectionPart; i++) {
       ll.add(0);
       ul.add(7);
+      this.lowerBounds[i] = 0;
+      this.upperBounds[i] = 7;
     }
 
-    for (int i = numberOfVariables - roadmPart; i < numberOfVariables; i++) {
+    for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {
         ll.add(1);
         ul.add(12);
+        this.lowerBounds[i] = 1;
+        this.upperBounds[i] = 12;
       } else {
         ll.add(4);
         ul.add(40);
+        this.lowerBounds[i] = 4;
+        this.upperBounds[i] = 40;
       }
     }
     this.variableBounds(ll, ul);

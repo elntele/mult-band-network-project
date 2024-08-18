@@ -17,6 +17,8 @@ package br.cns24.model;
 
 import java.util.*;
 
+import br.cns24.services.Bands;
+
 /**
  * 
  * @author Danilo
@@ -28,8 +30,6 @@ public class GmlEdge {
 	private GmlNode target;
 	
 	private String label;
-
-
 
 	private Bands bands;
 	

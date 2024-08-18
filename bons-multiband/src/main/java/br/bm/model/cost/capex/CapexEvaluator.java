@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import br.bm.core.INetwork;
+import br.bm.core.MultiBandNetWorkProfile;
 import br.bm.core.NetworkProfile;
 import br.bm.model.INetworkEvaluator;
 import br.bm.model.NumericalResult;
