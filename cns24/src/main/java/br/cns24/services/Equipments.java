@@ -65,7 +65,7 @@ public class Equipments {
   public final static double IMPLANT_COST = 0.462;
 
 
-  public static double[][] getEpsilonOrIsolationFactorForThisSwitchList() {
+  public static double[][] getIsolationFactorEpsilonForThisSwitchList() {
     return SWITCHES_COSTS_AND_LABELS;
   }
 
@@ -88,7 +88,7 @@ public class Equipments {
     return new double[][]{ { SWITCHES_COSTS_AND_LABELS[0][index] }, { SWITCHES_COSTS_AND_LABELS[1][index] } };
   }
 
-  public static List<Double> getEpsilonOrIsolationFactorForThisSwitchList(List<Integer> indexes) {
+  public static List<Double> getIsolationFactorEpsilonForThisSwitchList(List<Integer> indexes) {
     return indexes.stream()
         .map(index -> {
           if (index >= 0 && index < SWITCHES_COSTS_AND_LABELS[1].length) {
@@ -204,13 +204,23 @@ public class Equipments {
    * this method receives the i and j index of nodes and
    * returns the index of set in the chromosome connection
    * part.
-   *
+   * Attention: i and j are index begging in zero.
+   * numNode should be the exactly numNodes because the function
+   * Address accord the need.
+   * set size is accord the number of fibers.
    * @return index of chromosome
    */
+  public static int getLinkPosition(int i, int j, int numNodes, int setSize) {
+    int previousIndex = 0;
+    if (i==0){
+      return (j-1)*setSize;
+    }else{
+      previousIndex=i-1;
+    }
+    int maxJ= numNodes-1;
+    return setSize * (maxJ + (maxJ * previousIndex - previousIndex * (previousIndex + 1) / 2)) + setSize*(j - i) - setSize;
 
-  public static int getLinkPosition(int i, int j, int numNodes, int setConnectionsSize) {
-    var positionBeginningOne = (j - (numNodes - 1) * i - i * (i + 1) / 2);
-    var index = positionBeginningOne * setConnectionsSize;
-    return index - setConnectionsSize;
   }
+
+
 }

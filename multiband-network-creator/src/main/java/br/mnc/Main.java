@@ -38,7 +38,7 @@ public class Main {
         CrossoverOperator<IntegerSolution> crossover; // do Jmetal
         MutationOperator<IntegerSolution> mutation; // do Jmetal
         SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
-        problem = new ExternalNetworkEvaluatorSettings();
+        problem = new ExternalNetworkEvaluatorSettings(3);
 
 
         // ****************************

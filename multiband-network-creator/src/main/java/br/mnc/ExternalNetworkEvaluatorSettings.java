@@ -29,6 +29,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Integer[] upperBounds;
   private Integer[] lowerBounds;
   private Integer tailRoadmPlusW;
+  private Integer setSize;
 
   @Override
   public IntegerSolution createSolution() {
@@ -70,8 +71,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     Random random = new Random();
     var connections = AllowedConnectionTable.getPossibleConnection();
     var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
-    IntStream.iterate(0, stepByIndexes -> stepByIndexes + 3)
-        .limit(connectionPartLimit / 3)
+    IntStream.iterate(0, stepByIndexes -> stepByIndexes + setSize)
+        .limit(connectionPartLimit / setSize)
         .forEach(index -> {
           // in 50% of times don't create connection between nodes
           if (random.nextBoolean()) {
@@ -101,7 +102,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var offset = 1;
     for (int i = 0; i < numNode; i++) { //go through matrix column by index i
       var maxEquipment = 0;
-      var nextLimit = externalObserverCount + (numNode - offset) * 3;
+      var nextLimit = externalObserverCount + (numNode - offset) * setSize;
       for (int j = externalObserverCount; j < nextLimit; j++) {//go through matrix line by index j
         if (solution.variables().get(j) > maxEquipment) {
           maxEquipment = solution.variables().get(j);
@@ -257,7 +258,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
                   }
                   edgeSets.add(edgeSet);
-                  varIndex[0] += 3;
+                  varIndex[0] += setSize;
                   return edgeSets;
                 })
                 .flatMap(List::stream))
@@ -312,13 +313,14 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     );
   }
 
-  public ExternalNetworkEvaluatorSettings() {
+  public ExternalNetworkEvaluatorSettings(Integer setSize) {
     super();
+    this.setSize=setSize;
     gmlBuild();
     this.numberOfObjectives(2);
     var numberOfNodes = gml.getNodes()
         .size();
-    var numberOfVariables = (3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
+    var numberOfVariables = (setSize * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
 
     this.upperBounds = new Integer[numberOfVariables];
     this.lowerBounds = new Integer[numberOfVariables];

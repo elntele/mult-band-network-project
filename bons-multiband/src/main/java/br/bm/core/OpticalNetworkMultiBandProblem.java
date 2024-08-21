@@ -333,6 +333,14 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     return (degrees * Math.PI) / 180;
   }
 
+  /**
+   * começa por essa função jorge
+   * ela instancia os enlaces
+   * analisa como deixar no formato de set.
+   * 
+   * @param variables
+   * @return
+   */
   @Override
   public Double[] evaluate(Integer[] variables) {
     Double[] objectives = new Double[numberOfObjectives];
@@ -398,7 +406,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     /*net.setEpsilon(
         pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));*/
-    net.setEpsilon(Equipments.getEpsilonOrIsolationFactorForThisSwitchList(this.switchIndexes));
+    net.setEpsilon(Equipments.getIsolationFactorEpsilonForThisSwitchList(this.switchIndexes));
     net.setLinks(links);
     net.cleanBp();
     net.setCompleteDistances(distances);
