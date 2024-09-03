@@ -1,8 +1,11 @@
 package br.cns24.services;
 
+import static java.util.Map.entry;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,6 +58,19 @@ public class Equipments {
       { 0, 14, 17, 14, 17, 17.7, 22, 17.5, 22, 13, 16, 13, 16 },// saturation power
       { 0, 9, 9, 5, 5, 12.5, 12.5, 7, 7, 12.6, 12.6, 7, 7 } //noise figure
   };
+
+  private static final Map<String, List<List<String>>> edgeEquivalences = Map.ofEntries(
+      entry("c,0,0", List.of(List.of("c,0,0"), List.of("c,0,0"))),
+      entry("c,c,0", List.of(List.of("c,c,c"),List.of("cl,0,0", "cl,0,0"))),
+      entry("c,c,c", List.of(List.of("c,c,c"), List.of("cl,c,0", "cls,0,0"))),
+      entry("cl,0,0", List.of(List.of("c,c,0"), List.of( "cl,0,0"))),
+      entry("cl,c,0", List.of(List.of("cld,0,0"), List.of( "c,c,c"))),
+      entry("cl,cl,0", List.of(List.of("cld,c,c"), List.of( "cls,c,0"))),
+      entry("cl,cl,cl", List.of(List.of("cls,cl,c", "cls,cls"), List.of( "cl,cl,cl"))),
+      entry("cls,0,0", List.of(List.of("c,c,c", "cl,c,0"), List.of( "cls,0,0"))),
+      entry("cls,cl,0", List.of(List.of("cl,c,c", "cl,cl,0"), List.of( "cls,cl,0"))),
+      entry("cls,cls,0", List.of(List.of("cl,cl,cl", "cls,cl,c"), List.of( "cls,cls,0"))),
+      entry("cls,cls,cls", List.of(List.of("cls,cls,cls"), List.of("cls,cls,cls"))));
 
 
   private final static double COST_MODULE_W_FOR_C_BAND = 1.0;
@@ -208,17 +224,18 @@ public class Equipments {
    * numNode should be the exactly numNodes because the function
    * Address accord the need.
    * set size is accord the number of fibers.
+   *
    * @return index of chromosome
    */
   public static int getLinkPosition(int i, int j, int numNodes, int setSize) {
     int previousIndex = 0;
-    if (i==0){
-      return (j-1)*setSize;
-    }else{
-      previousIndex=i-1;
+    if (i == 0) {
+      return (j - 1) * setSize;
+    } else {
+      previousIndex = i - 1;
     }
-    int maxJ= numNodes-1;
-    return setSize * (maxJ + (maxJ * previousIndex - previousIndex * (previousIndex + 1) / 2)) + setSize*(j - i) - setSize;
+    int maxJ = numNodes - 1;
+    return setSize * (maxJ + (maxJ * previousIndex - previousIndex * (previousIndex + 1) / 2)) + setSize * (j - i) - setSize;
 
   }
 

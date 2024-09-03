@@ -9,6 +9,7 @@ import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
+import br.cns24.services.Equipments;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
@@ -36,7 +37,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
         numberOfConstraints());
     //call an initializer here
-    CreateRandomNetWork(integerSolution);
+    //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
+    createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
     System.out.println("oh eu aqui de novo");
     return integerSolution;
   }
@@ -64,6 +66,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * to hold the final index position of the 'internal for'
    * in each iteration. It's because the 'internal for' next
    * iteration will begin in the last stopped position +1.
+   *
    * @param solution
    */
 
@@ -85,6 +88,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
           } else {
             // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
             // remembering that 0 means no connection and consequently no edge/fiber
+            boolean neighbor = false;
             solution.variables()
                 .set(index, connections[random.nextInt(connections.length)]);
             solution.variables()
@@ -115,6 +119,44 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.variables().set(roadmIndex, randomlySelectSwitch(maxEquipment));
       roadmIndex++;
     }
+  }
+
+
+  void createRandomNetworkWithNodeNeighborhoodInformation(
+      IntegerSolution solution
+  ) {
+    Random random = new Random();
+    var connections = AllowedConnectionTable.getPossibleConnection();
+    var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
+    for (int i = 0; i < gml.getNodes().size(); i++) {
+      for (int j = i + 1; i < gml.getNodes().size(); j++) {
+        var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
+        var result = random.nextDouble();
+        //with 87.5% in the first random chosen and 20%
+        // in the second random chosen, to chosen zero
+        // the overall probability to chosen zero is
+        // about 10% in this statistic model.
+        if (result <= 0.875) {
+          for (int w = 0; w < setSize; w++) {
+            solution.variables()
+                .set(index + w, 0);
+          }
+        } else {
+          // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
+          // remembering that 0 means no connection and consequently no edge/fiber
+
+          //feed file attribute of neighborhood
+          for (int w = 0; w < setSize; w++) {
+            var edge = connections[random.nextInt(connections.length)];
+            solution.variables().set(index + w, edge);
+            if (edge != 0)
+              ((DefaultIntegerSolution) solution).file.get(i).add(j);
+          }
+        }
+
+      }
+    }
+
   }
 
 
@@ -165,7 +207,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-  //    solution.objectives()[0] = objectives[0];
+      //    solution.objectives()[0] = objectives[0];
       solution.objectives()[1] = objectives[1];
     }
     return solution;
@@ -315,7 +357,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   public ExternalNetworkEvaluatorSettings(Integer setSize) {
     super();
-    this.setSize=setSize;
+    this.setSize = setSize;
     gmlBuild();
     this.numberOfObjectives(2);
     var numberOfNodes = gml.getNodes()
@@ -338,6 +380,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       this.lowerBounds[i] = 0;
       this.upperBounds[i] = 7;
     }
+
 
     for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {

@@ -2,6 +2,8 @@ package org.uma.jmetal.solution.integersolution.impl;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.IntStream;
 import org.uma.jmetal.solution.AbstractSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
@@ -16,6 +18,8 @@ import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 @SuppressWarnings("serial")
 public class DefaultIntegerSolution extends AbstractSolution<Integer> implements IntegerSolution {
   protected List<Bounds<Integer>> bounds;
+  // added by Jorge Candeias for adequate to proposal
+  public Map<Integer, Set<Integer>> file = new HashMap<>();
 
   /**
    * Constructor
@@ -53,4 +57,6 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
   public DefaultIntegerSolution copy() {
     return new DefaultIntegerSolution(this);
   }
+
+
 }
