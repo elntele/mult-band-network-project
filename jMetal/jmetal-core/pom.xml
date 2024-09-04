@@ -133,5 +133,11 @@
             <artifactId>non-dominated-sorting-implementations</artifactId>
             <version>0.2.1</version>
         </dependency>
+        <dependency>
+            <groupId>br.cns24</groupId>
+            <artifactId>cns24</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>
