@@ -1,5 +1,7 @@
 package br.cns24.services;
 
+import java.util.Random;
+
 /**
  * by Jorge Candeias.
  */
@@ -50,6 +52,37 @@ public enum Bands {
         return Bands.CLSBAND;
       }
       default -> throw new IllegalStateException("Unexpected value: " + edge);
+    }
+
+  }
+
+  public static int getBandForTheNode(int node) {
+    Random random = new Random();
+    var percent = random.nextDouble();
+    switch (node) {
+      case 1, 2, 3, 4 -> {
+        return 1;
+      }
+      case 5, 6, 7, 8 -> {
+
+        if (percent >= 0.8) {
+          return 3;
+        } else {
+          return 1;
+        }
+
+      }
+      case 9, 10, 11, 12 -> {
+        if (percent < 0.8) {
+          return 7;
+        } else if (percent < 0.9) {
+          return 3;
+        } else {
+          return 1;
+        }
+      }
+
+      default -> throw new IllegalStateException("Unexpected value: " + node);
     }
 
   }

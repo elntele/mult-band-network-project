@@ -61,15 +61,15 @@ public class Equipments {
 
   private static final Map<String, List<List<String>>> edgeEquivalences = Map.ofEntries(
       entry("c,0,0", List.of(List.of("c,0,0"), List.of("c,0,0"))),
-      entry("c,c,0", List.of(List.of("c,c,c"),List.of("cl,0,0", "cl,0,0"))),
+      entry("c,c,0", List.of(List.of("c,c,c"), List.of("cl,0,0", "cl,0,0"))),
       entry("c,c,c", List.of(List.of("c,c,c"), List.of("cl,c,0", "cls,0,0"))),
-      entry("cl,0,0", List.of(List.of("c,c,0"), List.of( "cl,0,0"))),
-      entry("cl,c,0", List.of(List.of("cld,0,0"), List.of( "c,c,c"))),
-      entry("cl,cl,0", List.of(List.of("cld,c,c"), List.of( "cls,c,0"))),
-      entry("cl,cl,cl", List.of(List.of("cls,cl,c", "cls,cls"), List.of( "cl,cl,cl"))),
-      entry("cls,0,0", List.of(List.of("c,c,c", "cl,c,0"), List.of( "cls,0,0"))),
-      entry("cls,cl,0", List.of(List.of("cl,c,c", "cl,cl,0"), List.of( "cls,cl,0"))),
-      entry("cls,cls,0", List.of(List.of("cl,cl,cl", "cls,cl,c"), List.of( "cls,cls,0"))),
+      entry("cl,0,0", List.of(List.of("c,c,0"), List.of("cl,0,0"))),
+      entry("cl,c,0", List.of(List.of("cld,0,0"), List.of("c,c,c"))),
+      entry("cl,cl,0", List.of(List.of("cld,c,c"), List.of("cls,c,0"))),
+      entry("cl,cl,cl", List.of(List.of("cls,cl,c", "cls,cls"), List.of("cl,cl,cl"))),
+      entry("cls,0,0", List.of(List.of("c,c,c", "cl,c,0"), List.of("cls,0,0"))),
+      entry("cls,cl,0", List.of(List.of("cl,c,c", "cl,cl,0"), List.of("cls,cl,0"))),
+      entry("cls,cls,0", List.of(List.of("cl,cl,cl", "cls,cl,c"), List.of("cls,cls,0"))),
       entry("cls,cls,cls", List.of(List.of("cls,cls,cls"), List.of("cls,cls,cls"))));
 
 
@@ -228,6 +228,13 @@ public class Equipments {
    * @return index of chromosome
    */
   public static int getLinkPosition(int i, int j, int numNodes, int setSize) {
+    if (j < i) {
+      var tempI = i;
+      var tempJ = j;
+      j = tempI;
+      i = tempJ;
+    }
+
     int previousIndex = 0;
     if (i == 0) {
       return (j - 1) * setSize;
@@ -237,6 +244,14 @@ public class Equipments {
     int maxJ = numNodes - 1;
     return setSize * (maxJ + (maxJ * previousIndex - previousIndex * (previousIndex + 1) / 2)) + setSize * (j - i) - setSize;
 
+  }
+
+  public static boolean compareNodeLevels(int typeNode1, int typeNode2) {
+    return LevelNode.getLevel(typeNode1).equals(LevelNode.getLevel(typeNode2));
+  }
+
+  public static boolean acceptedUpdate(int typeNode) {
+    return (LevelNode.getLevel(typeNode)!= LevelNode.BANDCLS);
   }
 
 
