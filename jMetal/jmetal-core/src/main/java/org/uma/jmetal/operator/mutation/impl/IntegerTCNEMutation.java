@@ -105,6 +105,26 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     return List.of();
   }
 
+  /**
+   * This method make upgrade in a pair of nodes.
+   * This receives a solution and an index of nodes
+   * how will be mutated. The first part is a term of
+   * correction because if the node has no neighbor, so
+   * it is a solution with isolated node and this method
+   * send it to birth method were a connection will birth.
+   * this method randomly choose a neighbor in neighborhood
+   * and equalize the level of node for the higher them. If
+   * there are no node higher this upgrade the two. ofter
+   * that, this upgrade the link with 20% of chance tobe in
+   * the below level technological.
+   * o upgrade de link ta errado, lembrar que tem que seguir
+   * tabela de equivaências, mas pode atracar com o level dos
+   * nós
+   *
+   * @param solution
+   * @param indexOriginNode
+   */
+
   private void upGrade(DefaultIntegerSolution solution, int indexOriginNode) {
     var neighborhood = solution.file.get(indexOriginNode);
     if (neighborhood.isEmpty()) {
