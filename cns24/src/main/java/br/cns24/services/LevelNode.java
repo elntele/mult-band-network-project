@@ -69,4 +69,24 @@ public enum LevelNode {
     }
   }
 
+  public static int belowLevel(int actualLevel) {
+    switch (actualLevel) {
+      case 9, 10, 11, 12 -> {
+        var result = List.of(5, 6, 7, 8);
+        Collections.shuffle(result);
+        return result.get(0);
+
+      }
+      case 1, 2, 3, 4, 5, 6, 7, 8 -> {
+        var result = List.of(1, 2, 3, 4);
+        Collections.shuffle(result);
+        return result.get(0);
+
+      }
+
+      default -> throw new IllegalStateException("Unexpected value: " + actualLevel);
+    }
+  }
+
+
 }

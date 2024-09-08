@@ -9,10 +9,10 @@ import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
-import org.uma.jmetal.util.bounds.Bounds;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 import org.uma.jmetal.util.pseudorandom.RandomGenerator;
 
+import br.cns24.model.MutationAttributes;
 import br.cns24.services.Bands;
 import br.cns24.services.Equipments;
 import br.cns24.services.LevelNode;
@@ -105,6 +105,35 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     return List.of();
   }
 
+  private void upgradeDownGrade(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
+    var neighborhood = solution.file.get(indexOriginNode);
+    if (neighborhood.isEmpty()) {
+      birth(solution, indexOriginNode);
+    }
+    var solutionSize = solution.variables().size();
+    var nodePartBegin = solutionSize - numNodes + 1;
+    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
+    Random random = new Random();
+    var indexDestineNode = random.nextInt(0, neighborhood.size());
+    var originNode = nodesPart.get(indexOriginNode);
+    var destineNode = nodesPart.get(indexDestineNode);
+    // return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
+    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
+    var mAttrs = new MutationAttributes(
+        indexOriginNode,
+        indexDestineNode,
+        originNode,
+        destineNode,
+        compare,
+        nodePartBegin);
+    if (percent <= 0.4) {
+      downGrade(((DefaultIntegerSolution) solution), mAttrs);
+    } else {
+      upGrade(((DefaultIntegerSolution) solution), mAttrs);
+    }
+
+  }
+
   /**
    * This method make upgrade in a pair of nodes.
    * This receives a solution and an index of nodes
@@ -122,53 +151,83 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
    * nós
    *
    * @param solution
-   * @param indexOriginNode
+   * @param mAttrs
    */
 
-  private void upGrade(DefaultIntegerSolution solution, int indexOriginNode) {
-    var neighborhood = solution.file.get(indexOriginNode);
-    if (neighborhood.isEmpty()) {
-      birth(solution, indexOriginNode);
-    }
-    var solutionSize = solution.variables().size();
-    var nodePartBegin = solutionSize - numNodes + 1;
-    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
-    Random random = new Random();
-    var indexNextNode = random.nextInt(0, neighborhood.size());
-    var originNode = nodesPart.get(indexOriginNode);
-    var destineNode = nodesPart.get(indexNextNode);
-    // return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
-    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
-    //node's upgrade
-    if (compare < 0) {
-      // originNode receive update to even
-      originNode = LevelNode.updateForThisLevel(destineNode);
-      solution.variables().set(nodePartBegin + indexOriginNode, originNode);
+  private void upGrade(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
+    var newLevel = 0;
+    if (mAttrs.compare() < 0) { //originNode is minor destine node
+      // originNode receive upGrade to even level of destineNode
+      var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
+      var nextLevel = LevelNode.updateForThisLevel(mAttrs.destineNode());
+      solution.variables().set(indexInChromosome, nextLevel);
+      newLevel=nextLevel;
+    } else if (mAttrs.compare() > 0) { // destine node is minor origin node
+      //  destineNode  receive upGrade to even level of originNode
+      var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
+      var nextLevel = LevelNode.updateForThisLevel(mAttrs.originNode());
+      solution.variables().set(indexInChromosome, nextLevel);
+      newLevel=nextLevel;
+    } else {// two node is in the even level
+      var indexOriginNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
+      var indexDestineNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
+      var nextLevelNodeOrigin = LevelNode.nexLevel(mAttrs.originNode());
+      var nextLevelNodeDestine = LevelNode.nexLevel(mAttrs.destineNode());
 
-    } else if (compare > 0) {
-      destineNode = LevelNode.updateForThisLevel(originNode);
-      solution.variables().set(nodePartBegin + indexNextNode, destineNode);
-    } else {
-      var nextLevel = LevelNode.nexLevel(originNode);
-      solution.variables().set(nodePartBegin + indexOriginNode, nextLevel);
-      solution.variables().set(nodePartBegin + indexNextNode, nextLevel);
+      solution.variables().set(indexOriginNodeInChromosome, nextLevelNodeOrigin);
+      solution.variables().set(indexDestineNodeInChromosome, nextLevelNodeDestine);
+      newLevel = nextLevelNodeOrigin;
+
     }
-    //link upgrade
-    var index= Equipments.getLinkPosition(indexOriginNode, indexNextNode,numNodes,setSize);
-    for (int i =0; i<setSize; i++){
+    //link adjust
+    var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
+    for (int i = 0; i < setSize; i++) {
       //different of zero ,or, it is birth and
       //there is had a birth procedure
-      if (solution.variables().get(index+i)!=0){
-        var link = Bands.getBandForTheNode(nodePartBegin);
-        solution.variables().set(index+i, link );
+      if (solution.variables().get(index + i) != 0) {
+        var link = Bands.getBandForThisNode(newLevel);
+        solution.variables().set(index + i, link);
       }
 
 
     }
   }
 
-  private void downGrade() {
+  private void downGrade(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
+    //node's upgrade
+    var newLevel = 0;
+    if (mAttrs.compare() < 0) { //originNode is minor destine node
+      // destineNode receive downgrade to even level of originNode
+      var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
+      var belowLevelNode = LevelNode.updateForThisLevel(mAttrs.originNode());
+      solution.variables().set(indexInChromosome, belowLevelNode);
+      newLevel = belowLevelNode;
 
+    } else if (mAttrs.compare() > 0) {// destine node is minor origin node
+      // originNode receive downgrade to even level of destineNode
+      var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
+      var belowLevelNode = LevelNode.updateForThisLevel(mAttrs.destineNode());
+      solution.variables().set(indexInChromosome, belowLevelNode);
+      newLevel = belowLevelNode;
+    } else { // two node is in the even level
+      var indexOriginNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
+      var indexDestineNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
+      var belowLevelNodeOrigin = LevelNode.belowLevel(mAttrs.originNode());
+      var belowLevelNodeDestine = LevelNode.belowLevel(mAttrs.destineNode());
+      solution.variables().set(indexOriginNodeInChromosome, belowLevelNodeOrigin);
+      solution.variables().set(indexDestineNodeInChromosome, belowLevelNodeDestine);
+      newLevel = belowLevelNodeOrigin;
+    }
+    //link adjust
+    var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
+    for (int i = 0; i < setSize; i++) {
+      //different of zero ,or, it is birth and
+      //there is had a birth procedure
+      if (solution.variables().get(index + i) != 0) {
+        var link = Bands.getBandForThisNode(newLevel);
+        solution.variables().set(index + i, link);
+      }
+    }
   }
 
   private void birth(DefaultIntegerSolution solution, int node) {

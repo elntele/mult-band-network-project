@@ -56,7 +56,7 @@ public enum Bands {
 
   }
 
-  public static int getBandForTheNode(int node) {
+  public static int getBandForThisNode(int node) {
     Random random = new Random();
     var percent = random.nextDouble();
     switch (node) {
@@ -64,13 +64,11 @@ public enum Bands {
         return 1;
       }
       case 5, 6, 7, 8 -> {
-
         if (percent <= 0.8) {
           return 3;
         } else {
           return 1;
         }
-
       }
       case 9, 10, 11, 12 -> {
         if (percent < 0.8) {
@@ -81,7 +79,6 @@ public enum Bands {
           return 1;
         }
       }
-
       default -> throw new IllegalStateException("Unexpected value: " + node);
     }
 

@@ -58,19 +58,21 @@ public class Equipments {
       { 0, 14, 17, 14, 17, 17.7, 22, 17.5, 22, 13, 16, 13, 16 },// saturation power
       { 0, 9, 9, 5, 5, 12.5, 12.5, 7, 7, 12.6, 12.6, 7, 7 } //noise figure
   };
-
-  private static final Map<String, List<List<String>>> edgeEquivalences = Map.ofEntries(
-      entry("c,0,0", List.of(List.of("c,0,0"), List.of("c,0,0"))),
-      entry("c,c,0", List.of(List.of("c,c,c"), List.of("cl,0,0", "cl,0,0"))),
-      entry("c,c,c", List.of(List.of("c,c,c"), List.of("cl,c,0", "cls,0,0"))),
-      entry("cl,0,0", List.of(List.of("c,c,0"), List.of("cl,0,0"))),
-      entry("cl,c,0", List.of(List.of("cld,0,0"), List.of("c,c,c"))),
-      entry("cl,cl,0", List.of(List.of("cld,c,c"), List.of("cls,c,0"))),
-      entry("cl,cl,cl", List.of(List.of("cls,cl,c", "cls,cls"), List.of("cl,cl,cl"))),
-      entry("cls,0,0", List.of(List.of("c,c,c", "cl,c,0"), List.of("cls,0,0"))),
-      entry("cls,cl,0", List.of(List.of("cl,c,c", "cl,cl,0"), List.of("cls,cl,0"))),
-      entry("cls,cls,0", List.of(List.of("cl,cl,cl", "cls,cl,c"), List.of("cls,cls,0"))),
-      entry("cls,cls,cls", List.of(List.of("cls,cls,cls"), List.of("cls,cls,cls"))));
+// in each list, each 3 position is a set of upgrade or downgrade, because
+// 3 is the set size.
+  private static final Map<String, List<List<Integer>>> edgeEquivalences = Map.ofEntries(
+      // edge as a string       list of downgrade        list upgrade
+      entry("1,0,0", List.of(List.of(1, 0, 0), List.of(1, 0, 0))),
+      entry("1,1,0", List.of(List.of(1, 1, 0), List.of(3, 0, 0))),
+      entry("1,1,1", List.of(List.of(1, 1, 1), List.of(3, 1, 0, 7, 0, 0))),
+      entry("3,0,0", List.of(List.of(1, 1, 0), List.of(3, 0, 0))),
+      entry("3,1,0", List.of(List.of(1, 1, 1), List.of(7, 0, 0))),
+      entry("3,3,0", List.of(List.of(3, 1, 1), List.of(7, 1, 0))),
+      entry("3,3,3", List.of(List.of(3, 3, 3), List.of(7, 3, 1, 7, 7, 0))),
+      entry("7,0,0", List.of(List.of(1, 1, 1, 7, 1, 0), List.of(7, 0, 0))),
+      entry("7,3,0", List.of(List.of(3, 3, 1), List.of(7, 3, 0))),
+      entry("7,7,0", List.of(List.of(3, 3, 3, 7, 3, 1), List.of(7, 7, 0))),
+      entry("7,7,7", List.of(List.of(7, 7, 7), List.of(7, 7, 7))));
 
 
   private final static double COST_MODULE_W_FOR_C_BAND = 1.0;
@@ -251,7 +253,7 @@ public class Equipments {
   }
 
   public static boolean acceptedUpdate(int typeNode) {
-    return (LevelNode.getLevel(typeNode)!= LevelNode.BANDCLS);
+    return (LevelNode.getLevel(typeNode) != LevelNode.BANDCLS);
   }
 
 
