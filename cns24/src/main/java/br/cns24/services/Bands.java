@@ -71,7 +71,7 @@ public enum Bands {
         }
       }
       case 9, 10, 11, 12 -> {
-        if (percent < 0.8) {
+        if (percent <= 0.8) {
           return 7;
         } else if (percent < 0.9) {
           return 3;

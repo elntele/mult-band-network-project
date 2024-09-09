@@ -27,7 +27,8 @@ public enum LevelNode {
   public static int updateForThisLevel(int levelWanted) {
 
     switch (levelWanted) {
-      case 1, 2, 3, 4 -> {
+
+      case 0, 1, 2, 3, 4 -> {
         var result = List.of(1, 2, 3, 4);
         Collections.shuffle(result);
         return result.get(0);
@@ -86,6 +87,21 @@ public enum LevelNode {
 
       default -> throw new IllegalStateException("Unexpected value: " + actualLevel);
     }
+  }
+
+  public static boolean isLinkNotSupportedForThisNode(int node, int link) {
+    switch (node) {
+      case 0, 1, 2, 3, 4 -> {
+        if (link>1) return true;
+      }
+      case 5,6,7,8 ->{
+          if (link>3) return true;
+      }
+      case 9,10,11,12 -> {
+        return false;
+      }
+    }
+    return false;
   }
 
 

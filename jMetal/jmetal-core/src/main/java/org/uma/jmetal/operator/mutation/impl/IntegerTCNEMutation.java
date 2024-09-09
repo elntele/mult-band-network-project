@@ -1,6 +1,7 @@
 package org.uma.jmetal.operator.mutation.impl;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -83,61 +84,9 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
   }
 
   /**
-   * Perform the mutation operation
-   */
-  private void doMutation(IntegerSolution solution) {
-    double y = 0.0, yl = 0.0, yu = 0.0;
-
-
-    for (int i = 0; i < numNodes; i++) {
-      var random = randomGenerator.getRandomValue();
-
-      if (randomGenerator.getRandomValue() <= mutationProbability) {
-
-        y = solutionRepair.repairSolutionVariableValue(y, yl, yu);
-      }
-      solution.variables().set(i, (int) y);
-    }
-  }
-
-  @Override
-  public List<IntegerSolution> execute(List<IntegerSolution> integerSolutions) {
-    return List.of();
-  }
-
-  private void upgradeDownGrade(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
-    var neighborhood = solution.file.get(indexOriginNode);
-    if (neighborhood.isEmpty()) {
-      birth(solution, indexOriginNode);
-    }
-    var solutionSize = solution.variables().size();
-    var nodePartBegin = solutionSize - numNodes + 1;
-    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
-    Random random = new Random();
-    var indexDestineNode = random.nextInt(0, neighborhood.size());
-    var originNode = nodesPart.get(indexOriginNode);
-    var destineNode = nodesPart.get(indexDestineNode);
-    // return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
-    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
-    var mAttrs = new MutationAttributes(
-        indexOriginNode,
-        indexDestineNode,
-        originNode,
-        destineNode,
-        compare,
-        nodePartBegin);
-    if (percent <= 0.4) {
-      downGrade(((DefaultIntegerSolution) solution), mAttrs);
-    } else {
-      upGrade(((DefaultIntegerSolution) solution), mAttrs);
-    }
-
-  }
-
-  /**
-   * This method make upgrade in a pair of nodes.
-   * This receives a solution and an index of nodes
-   * how will be mutated. The first part is a term of
+   This method make upgrade in a pair of nodes.
+   * This receives a solution and some attributes of nodes
+   * por how will be mutated. The first part is a term of
    * correction because if the node has no neighbor, so
    * it is a solution with isolated node and this method
    * send it to birth method were a connection will birth.
@@ -149,7 +98,78 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
    * o upgrade de link ta errado, lembrar que tem que seguir
    * tabela de equivaências, mas pode atracar com o level dos
    * nós
-   *
+   */
+  private void doMutation(IntegerSolution solution) {
+    for (int i = 0; i < numNodes; i++) {
+      var random = randomGenerator.getRandomValue();
+      if (random <= mutationProbability) {
+        selectMutationApproach(((DefaultIntegerSolution) solution), i, random);
+      }
+
+    }
+  }
+
+  @Override
+  public List<IntegerSolution> execute(List<IntegerSolution> integerSolutions) {
+    return List.of();
+  }
+
+  /**
+   * This method select the mutation technic to do mutation
+   * in an exactly one pair of nodes.
+   * This receives a solution and an index origin node and the
+   * percent tax randomly choose for before method. the destine
+   * index node is randomly choose to make a node pair. after
+   * that, an approach to make mutation is chose accord the
+   * percent tax
+   */
+
+  private void selectMutationApproach(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
+    var neighborhood = solution.file.get(indexOriginNode);
+    var solutionSize = solution.variables().size();
+    var nodePartBegin = solutionSize - numNodes + 1;
+    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
+    Random random = new Random();
+    var indexDestineNode = random.nextInt(0, neighborhood.size());
+    while (indexDestineNode==indexOriginNode && !neighborhood.isEmpty()){
+      indexDestineNode = random.nextInt(0, neighborhood.size());
+    }
+    var originNode = nodesPart.get(indexOriginNode);
+    var destineNode = nodesPart.get(indexDestineNode);
+    // compareTo return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
+    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
+    var mAttrs = new MutationAttributes(
+        indexOriginNode,
+        indexDestineNode,
+        originNode,
+        destineNode,
+        compare,
+        nodePartBegin);
+
+    if (neighborhood.isEmpty()) {
+      doBirth(solution, mAttrs);
+    }
+    if (percent <= 0.4) {
+      downGrade(((DefaultIntegerSolution) solution), mAttrs);
+    } else if (percent> 0.4 && percent<=0.8) {
+      upGrade(((DefaultIntegerSolution) solution), mAttrs);
+    } else if (percent> 0.8 &&percent<=0.9) {
+      doBirth(solution, mAttrs);
+    }else {
+      doExtinction(solution, mAttrs);
+    }
+
+  }
+
+  /**
+   * This method make upgrade in a pair of nodes.
+   * This receives a solution and some attributes of nodes
+   * por how will be mutated. This method randomly choose a
+   * neighbor in neighborhood and equalize the level of nodes
+   * for the higher them. If there are no node higher this
+   * upgrade the two nodes. ofter that, this method upgrade the
+   * link with 20% of chance tobe in the below level technological
+   * in relation of nodes.
    * @param solution
    * @param mAttrs
    */
@@ -161,13 +181,13 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
       var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
       var nextLevel = LevelNode.updateForThisLevel(mAttrs.destineNode());
       solution.variables().set(indexInChromosome, nextLevel);
-      newLevel=nextLevel;
+      newLevel = nextLevel;
     } else if (mAttrs.compare() > 0) { // destine node is minor origin node
       //  destineNode  receive upGrade to even level of originNode
       var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
       var nextLevel = LevelNode.updateForThisLevel(mAttrs.originNode());
       solution.variables().set(indexInChromosome, nextLevel);
-      newLevel=nextLevel;
+      newLevel = nextLevel;
     } else {// two node is in the even level
       var indexOriginNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
       var indexDestineNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
@@ -192,6 +212,19 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
 
     }
   }
+
+  /**
+   * This method make downgrade in a pair of nodes.
+   * This receives a solution and some attributes of nodes
+   * por how will be mutated. This method randomly choose a
+   * neighbor in neighborhood and equalize the level of nodes
+   * for the lower them. If there are no node lower this
+   * downgrade the two nodes. ofter that, this method downgrade the
+   * link with 20% of chance tobe in the below level technological
+   * in relation of nodes.
+   * @param solution
+   * @param mAttrs
+   */
 
   private void downGrade(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
     //node's upgrade
@@ -230,12 +263,61 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     }
   }
 
-  private void birth(DefaultIntegerSolution solution, int node) {
-    Random random = new Random();
-    var nextNode = random.nextInt(0, numNodes);
-    while (nextNode == node) {
-      nextNode = random.nextInt(0, numNodes);
+  private void doBirth(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
+    var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
+    var mathLevelNode = LevelNode.updateForThisLevel(mAttrs.destineNode());
+    solution.variables().set(indexInChromosome, mathLevelNode);
+    if (mAttrs.destineNode()==0){
+
+    }
+    var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
+    for (int i = 0; i < setSize; i++) {
+        var link = Bands.getBandForThisNode(mathLevelNode);
+        solution.variables().set(index + i, link);
+    }
+    solution.file.get(mAttrs.originNode()).add(mAttrs.destineNode());
+    solution.file.get(mAttrs.destineNode()).add(mAttrs.originNode());
+  }
+
+
+  private void doExtinction(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
+    var neighborhoodA =   solution.file.get(mAttrs.originNode());
+    var neighborhoodB =   solution.file.get(mAttrs.destineNode());
+    if (neighborhoodA.size()>1 && neighborhoodB.size()>1) {
+      var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
+      for (int i = 0; i < setSize; i++) {
+        if (solution.variables().get(index + i) != 0) {
+          solution.variables().set(index + i, 0);
+        }
+      }
+      solution.file.get(mAttrs.originNode()).remove(mAttrs.destineNode());
+      solution.file.get(mAttrs.destineNode()).remove(mAttrs.originNode());
     }
   }
+
+  //voltar aqui jorge
+  private void correction(DefaultIntegerSolution solution){
+    var solutionSize = solution.variables().size();
+    var nodePartBegin = solutionSize - numNodes + 1;
+    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
+
+    for (int i=0; i< numNodes; i++){
+      var neighborhood = solution.file.get(i);
+      final int  indexNodeOrigin= i;
+      neighborhood.stream().forEach(j -> {
+        var linkBeginPosition  = Equipments.getLinkPosition(indexNodeOrigin,j,numNodes,setSize);
+          for (int w=0; w< setSize; w++ ){
+           var link= solution.variables().get(linkBeginPosition+w);
+
+          }
+      });
+
+      for (int j=0; j<neighborhood.size(); j++){
+
+      }
+    }
+
+  }
+
 }
 
