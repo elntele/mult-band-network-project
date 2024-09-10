@@ -35,16 +35,16 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
   public IntegerTCNECrossover(
       double crossoverProbability,
       RandomGenerator<Double> randomGenerator,
-      Integer[] possibleEdgeTypes,
-      Map<String, List<List<String>>> edgeEquivalences,
+    /*  Integer[] possibleEdgeTypes,
+      Map<String, List<List<String>>> edgeEquivalences,*/
       int numNodes,
       int setSize
   ) {
     Check.probabilityIsValid(crossoverProbability);
     this.crossoverProbability = crossoverProbability;
     this.randomGenerator = randomGenerator;
-    this.possibleEdgeTypes = possibleEdgeTypes;
-    this.edgeEquivalences = edgeEquivalences;
+    /*this.possibleEdgeTypes = possibleEdgeTypes;
+    this.edgeEquivalences = edgeEquivalences;*/
     this.numNodes=numNodes;
     this.setSize=setSize;
   }

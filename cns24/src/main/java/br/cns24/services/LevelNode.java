@@ -2,7 +2,6 @@ package br.cns24.services;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
 public enum LevelNode {
   BANDC,
@@ -89,20 +88,55 @@ public enum LevelNode {
     }
   }
 
-  public static boolean isLinkNotSupportedForThisNode(int node, int link) {
+  /**
+   * this method compare the level of a node and a link.
+   * if the level node lower than level link returns -1
+   * (this is bad because node don't support link).
+   * if level node in the same level link, return 0.
+   * if level node is higher than level link
+   *
+   * @param node
+   * @throws Exception
+   */
+
+  public static int howIsTheBandForThisNode(int node) {
     switch (node) {
-      case 0, 1, 2, 3, 4 -> {
-        if (link>1) return true;
+      case 1, 2, 3, 4 -> {
+        return 1;
       }
-      case 5,6,7,8 ->{
-          if (link>3) return true;
+      case 5, 6, 7, 8 -> {
+        return 3;
+
       }
-      case 9,10,11,12 -> {
-        return false;
+      case 9, 10, 11, 12 -> {
+        return 7;
       }
+      default -> throw new IllegalStateException("node or link not expected " + node);
+
     }
-    return false;
+
   }
 
+  public static int howIsTheNodeForThisBand(Bands bands) {
+    switch (bands) {
+      case Bands.CBAND -> {
+        var result = List.of(1, 2, 3, 4);
+        Collections.shuffle(result);
+        return result.get(0);
+      }
+      case Bands.CLBAND -> {
+        var result = List.of(5, 6, 7, 8);
+        Collections.shuffle(result);
+        return result.get(0);
+      }
+      case Bands.CLSBAND -> {
+        var result = List.of(9, 10, 11, 12);
+        Collections.shuffle(result);
+        return result.get(0);
+      }
+      default -> throw new IllegalStateException("node or link not expected " + bands.name());
+    }
 
+
+  }
 }

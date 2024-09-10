@@ -1,12 +1,14 @@
 package org.uma.jmetal.operator.mutation.impl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.uma.jmetal.operator.crossover.CrossoverOperator;
+
+import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
@@ -23,7 +25,7 @@ import br.cns24.services.LevelNode;
  * This class allows to apply a Technological Control of Nodes and Edges mutation operator using two
  * parent solutions (Integer encoding)
  */
-public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
+public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   private double mutationProbability;
   private RepairDoubleSolution solutionRepair;
@@ -37,10 +39,9 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
 
   public IntegerTCNEMutation(
       double mutationProbability,
-      RepairDoubleSolution solutionRepair,
       RandomGenerator<Double> randomGenerator,
-      Integer[] possibleEdgeTypes,
-      Map<String, List<List<String>>> edgeEquivalences,
+     /* Integer[] possibleEdgeTypes,
+      Map<String, List<List<String>>> edgeEquivalences,*/
       int numNodes,
       int setSize
   ) {
@@ -48,7 +49,6 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
       throw new JMetalException("Mutation probability is negative: " + mutationProbability);
     }
     this.mutationProbability = mutationProbability;
-    this.solutionRepair = solutionRepair;
     this.randomGenerator = randomGenerator;
     this.possibleEdgeTypes = possibleEdgeTypes;
     this.edgeEquivalences = edgeEquivalences;
@@ -56,20 +56,7 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     this.setSize = setSize;
   }
 
-  @Override
-  public double crossoverProbability() {
-    return 0;
-  }
 
-  @Override
-  public int numberOfRequiredParents() {
-    return 0;
-  }
-
-  @Override
-  public int numberOfGeneratedChildren() {
-    return 0;
-  }
 
   /**
    * Execute() method
@@ -83,8 +70,13 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     return solution;
   }
 
+  @Override
+  public double mutationProbability() {
+    return 0;
+  }
+
   /**
-   This method make upgrade in a pair of nodes.
+   * This method make upgrade in a pair of nodes.
    * This receives a solution and some attributes of nodes
    * por how will be mutated. The first part is a term of
    * correction because if the node has no neighbor, so
@@ -109,10 +101,7 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     }
   }
 
-  @Override
-  public List<IntegerSolution> execute(List<IntegerSolution> integerSolutions) {
-    return List.of();
-  }
+
 
   /**
    * This method select the mutation technic to do mutation
@@ -131,7 +120,7 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
     Random random = new Random();
     var indexDestineNode = random.nextInt(0, neighborhood.size());
-    while (indexDestineNode==indexOriginNode && !neighborhood.isEmpty()){
+    while (indexDestineNode == indexOriginNode && !neighborhood.isEmpty()) {
       indexDestineNode = random.nextInt(0, neighborhood.size());
     }
     var originNode = nodesPart.get(indexOriginNode);
@@ -151,13 +140,15 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     }
     if (percent <= 0.4) {
       downGrade(((DefaultIntegerSolution) solution), mAttrs);
-    } else if (percent> 0.4 && percent<=0.8) {
+    } else if (percent > 0.4 && percent <= 0.8) {
       upGrade(((DefaultIntegerSolution) solution), mAttrs);
-    } else if (percent> 0.8 &&percent<=0.9) {
+    } else if (percent > 0.8 && percent <= 0.9) {
       doBirth(solution, mAttrs);
-    }else {
+    } else {
       doExtinction(solution, mAttrs);
     }
+
+    correction(((DefaultIntegerSolution) solution));
 
   }
 
@@ -170,6 +161,7 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
    * upgrade the two nodes. ofter that, this method upgrade the
    * link with 20% of chance tobe in the below level technological
    * in relation of nodes.
+   *
    * @param solution
    * @param mAttrs
    */
@@ -222,6 +214,7 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
    * downgrade the two nodes. ofter that, this method downgrade the
    * link with 20% of chance tobe in the below level technological
    * in relation of nodes.
+   *
    * @param solution
    * @param mAttrs
    */
@@ -267,13 +260,13 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
     var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
     var mathLevelNode = LevelNode.updateForThisLevel(mAttrs.destineNode());
     solution.variables().set(indexInChromosome, mathLevelNode);
-    if (mAttrs.destineNode()==0){
+    if (mAttrs.destineNode() == 0) {
 
     }
     var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
     for (int i = 0; i < setSize; i++) {
-        var link = Bands.getBandForThisNode(mathLevelNode);
-        solution.variables().set(index + i, link);
+      var link = Bands.getBandForThisNode(mathLevelNode);
+      solution.variables().set(index + i, link);
     }
     solution.file.get(mAttrs.originNode()).add(mAttrs.destineNode());
     solution.file.get(mAttrs.destineNode()).add(mAttrs.originNode());
@@ -281,9 +274,9 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
 
 
   private void doExtinction(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
-    var neighborhoodA =   solution.file.get(mAttrs.originNode());
-    var neighborhoodB =   solution.file.get(mAttrs.destineNode());
-    if (neighborhoodA.size()>1 && neighborhoodB.size()>1) {
+    var neighborhoodA = solution.file.get(mAttrs.originNode());
+    var neighborhoodB = solution.file.get(mAttrs.destineNode());
+    if (neighborhoodA.size() > 1 && neighborhoodB.size() > 1) {
       var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
       for (int i = 0; i < setSize; i++) {
         if (solution.variables().get(index + i) != 0) {
@@ -296,27 +289,54 @@ public class IntegerTCNEMutation implements CrossoverOperator<IntegerSolution> {
   }
 
   //voltar aqui jorge
-  private void correction(DefaultIntegerSolution solution){
+  private void correction(DefaultIntegerSolution solution) {
     var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - numNodes + 1;
     var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
-
-    for (int i=0; i< numNodes; i++){
+    // go through all nodes
+    for (int i = 0; i < numNodes; i++) {
       var neighborhood = solution.file.get(i);
-      final int  indexNodeOrigin= i;
+      final int indexNodeOrigin = i;
+      List<Bands> bandsList = new ArrayList<>();
+      List<Integer> linksPositions = new ArrayList<>();
+      // go through all neighbor of one node
       neighborhood.stream().forEach(j -> {
-        var linkBeginPosition  = Equipments.getLinkPosition(indexNodeOrigin,j,numNodes,setSize);
-          for (int w=0; w< setSize; w++ ){
-           var link= solution.variables().get(linkBeginPosition+w);
-
-          }
+        var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
+        //go through all links  of one node
+        for (int w = 0; w < setSize; w++) {
+          var link = solution.variables().get(linkBeginPosition + w);
+          var linkBand = Bands.getBand(link);
+          bandsList.add(linkBand);
+        }
       });
+      Collections.sort(bandsList);
 
-      for (int j=0; j<neighborhood.size(); j++){
+      var linkReference = bandsList.getLast();
+      var node = nodesPart.get(i);
+      Random random = new Random();
+      var percent = random.nextBoolean();
 
+      if (percent) {//adjust node
+        var betterNode = LevelNode.howIsTheNodeForThisBand(linkReference);
+        solution.variables().set(nodePartBegin + i, betterNode);
+      } else { //adjust link
+        final int betterlink = LevelNode.howIsTheBandForThisNode(node);
+        solution.variables().set(nodePartBegin + i, betterlink);
+        neighborhood.stream().forEach(j -> {
+          var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
+          //go through all links  of one node
+          for (int w = 0; w < setSize; w++) {
+            if (solution.variables().get(linkBeginPosition + w) > 0) {
+              solution.variables().set(linkBeginPosition + w, betterlink);
+            }
+            var link = solution.variables().get(linkBeginPosition + w);
+            var linkBand = Bands.getBand(link);
+            bandsList.add(linkBand);
+          }
+        });
       }
+      LevelNode.howIsTheBandForThisNode(node);
     }
-
   }
 
 }

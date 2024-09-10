@@ -6,16 +6,16 @@ import java.util.Random;
  * by Jorge Candeias.
  */
 public enum Bands {
-  NOBAND("000"),
-  CBAND("001"),
-  LBAND("010"),
-  CLBAND("011"),
-  SBAND("100"),
-  CSBAND("101"),
-  LSBAND("110"),
-  CLSBAND("111");
+  NOBAND(0),
+  CBAND(1),
+  LBAND(2),
+  CLBAND(3),
+  SBAND(4),
+  CSBAND(5),
+  LSBAND(6),
+  CLSBAND(7);
 
-  Bands(String band) {
+  Bands(Integer band) {
   }
 
   /**
@@ -54,6 +54,21 @@ public enum Bands {
       default -> throw new IllegalStateException("Unexpected value: " + edge);
     }
 
+  }
+
+  public static int getValue(Bands band){
+    switch (band){
+      case CBAND -> {
+        return 1;
+      }
+      case CLBAND -> {
+        return 3;
+      }
+      case CLSBAND -> {
+        return 7;
+      }
+      default -> throw new IllegalStateException("Unexpected value: " + band);
+    }
   }
 
   public static int getBandForThisNode(int node) {

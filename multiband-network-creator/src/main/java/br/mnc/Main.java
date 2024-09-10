@@ -8,13 +8,16 @@ import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
 import org.uma.jmetal.algorithm.multiobjective.nsgaiii.NSGAIII;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.crossover.impl.IntegerSBXCrossover;
+import org.uma.jmetal.operator.crossover.impl.IntegerTCNECrossover;
 import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.operator.mutation.impl.IntegerPolynomialMutation;
+import org.uma.jmetal.operator.mutation.impl.IntegerTCNEMutation;
 import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.operator.selection.impl.BinaryTournamentSelection;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.JMetalLogger;
+import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -44,13 +47,15 @@ public class Main {
         // ****************************
         double crossoverProbability = 1.0;
         double crossoverDistributionIndex = 20.0;
-        crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+       // crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+        crossover = new IntegerTCNECrossover(crossoverProbability,() -> JMetalRandom.getInstance().nextDouble(),10, 3);
         double mutationProbability = 1.0 / problem.numberOfVariables();
         double mutationDistributionIndex = 20.0;
-        mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
+       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
+        mutation = new IntegerTCNEMutation(mutationProbability,() -> JMetalRandom.getInstance().nextDouble() , 10, 3);
         selection = new BinaryTournamentSelection<IntegerSolution>();
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(1000).build();
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(10000).build();
         AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
         List<IntegerSolution> population;
         population = algorithm.result();
