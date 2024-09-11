@@ -119,9 +119,9 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var nodePartBegin = solutionSize - numNodes + 1;
     var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
     Random random = new Random();
-    var indexDestineNode = random.nextInt(0, neighborhood.size());
+    var indexDestineNode = random.nextInt( neighborhood.size());
     while (indexDestineNode == indexOriginNode && !neighborhood.isEmpty()) {
-      indexDestineNode = random.nextInt(0, neighborhood.size());
+      indexDestineNode = random.nextInt( neighborhood.size());
     }
     var originNode = nodesPart.get(indexOriginNode);
     var destineNode = nodesPart.get(indexDestineNode);

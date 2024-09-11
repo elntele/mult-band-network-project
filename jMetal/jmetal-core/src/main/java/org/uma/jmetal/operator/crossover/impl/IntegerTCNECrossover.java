@@ -80,9 +80,9 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
 
     for (int i = 0; i < numNodes-2; i++) {
       if (randomGenerator.getRandomValue() <= probability) {
-        var j = random.nextInt(i, numNodes-1);
+        var j = random.nextInt( numNodes-1)+i;
         while (j == i) {
-          j = random.nextInt(i, numNodes-1);
+          j = random.nextInt( numNodes-1)+i;
         }
         var NodeIP1 = nodesParent1.get(i);
         var NodeIP2 = nodesParent2.get(i);
