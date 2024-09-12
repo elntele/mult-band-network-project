@@ -46,6 +46,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     bounds = solution.bounds;
 
     attributes = new HashMap<>(solution.attributes);
+    file = solution.file;
   }
 
   @Override

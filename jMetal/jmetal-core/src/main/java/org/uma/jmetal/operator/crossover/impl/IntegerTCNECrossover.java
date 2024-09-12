@@ -70,9 +70,9 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       double probability, IntegerSolution parent1, IntegerSolution parent2) {
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var solutionSize = parent1.variables().size();
-    var nodePartBegin = solutionSize - numNodes + 1;
-    var nodesParent1 = parent1.variables().subList(nodePartBegin, solutionSize);
-    var nodesParent2 = parent2.variables().subList(nodePartBegin, solutionSize);
+    var nodePartBegin = solutionSize - (numNodes + 1);
+    var nodesParent1 = parent1.variables().subList(nodePartBegin, solutionSize-1);
+    var nodesParent2 = parent2.variables().subList(nodePartBegin, solutionSize-1);
 
     offspring.add((IntegerSolution) parent1.copy());
     offspring.add((IntegerSolution) parent2.copy());
@@ -114,12 +114,12 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
 
   @Override
   public int numberOfRequiredParents() {
-    return 0;
+    return 2;
   }
 
   @Override
   public int numberOfGeneratedChildren() {
-    return 0;
+    return 2;
   }
 
   private Integer[] getSetConnection(int i, int j, int setSize, IntegerSolution parent) {

@@ -47,12 +47,12 @@ public class Main {
         // ****************************
         double crossoverProbability = 1.0;
         double crossoverDistributionIndex = 20.0;
-       // crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-        crossover = new IntegerTCNECrossover(crossoverProbability,() -> JMetalRandom.getInstance().nextDouble(),10, 3);
+        crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+        crossover = new IntegerTCNECrossover(crossoverProbability,() -> JMetalRandom.getInstance().nextDouble(),4, 3);
         double mutationProbability = 1.0 / problem.numberOfVariables();
         double mutationDistributionIndex = 20.0;
        // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-        mutation = new IntegerTCNEMutation(mutationProbability,() -> JMetalRandom.getInstance().nextDouble() , 10, 3);
+        mutation = new IntegerTCNEMutation(mutationProbability,() -> JMetalRandom.getInstance().nextDouble() , 4, 3);
         selection = new BinaryTournamentSelection<IntegerSolution>();
 
         algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(10000).build();

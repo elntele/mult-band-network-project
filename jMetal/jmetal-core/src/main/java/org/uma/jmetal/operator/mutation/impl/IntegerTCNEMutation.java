@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -115,10 +116,14 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   private void selectMutationApproach(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
     var neighborhood = solution.file.get(indexOriginNode);
+    if (neighborhood==null){
+      neighborhood= Set.of();
+    }
     var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - numNodes + 1;
     var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
     Random random = new Random();
+
     var indexDestineNode = random.nextInt( neighborhood.size());
     while (indexDestineNode == indexOriginNode && !neighborhood.isEmpty()) {
       indexDestineNode = random.nextInt( neighborhood.size());
@@ -260,9 +265,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
     var mathLevelNode = LevelNode.updateForThisLevel(mAttrs.destineNode());
     solution.variables().set(indexInChromosome, mathLevelNode);
-    if (mAttrs.destineNode() == 0) {
-
-    }
     var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
     for (int i = 0; i < setSize; i++) {
       var link = Bands.getBandForThisNode(mathLevelNode);
@@ -337,6 +339,11 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       }
       LevelNode.howIsTheBandForThisNode(node);
     }
+  }
+
+  private void correctionAnNoLinkNetwork(){
+
+
   }
 
 }

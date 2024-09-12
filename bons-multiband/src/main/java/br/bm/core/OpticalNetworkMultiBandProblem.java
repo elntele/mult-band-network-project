@@ -413,7 +413,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     net.setCn(createComplexNetworkDistance(variables));
     net.setRawData(variables);
 
-    objectives[0] = bpEstimator.evaluate(net).getValue();
+   // objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
  //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
   //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();

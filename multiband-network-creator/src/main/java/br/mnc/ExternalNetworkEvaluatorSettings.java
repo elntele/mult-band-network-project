@@ -129,7 +129,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var connections = AllowedConnectionTable.getPossibleConnection();
     var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
     for (int i = 0; i < gml.getNodes().size(); i++) {
-      for (int j = i + 1; i < gml.getNodes().size(); j++) {
+      for (int j = i + 1; j < gml.getNodes().size(); j++) {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
         var result = random.nextDouble();
         //with 87.5% in the first random chosen and 20%
@@ -150,7 +150,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
             var edge = connections[random.nextInt(connections.length)];
             solution.variables().set(index + w, edge);
             if (edge != 0)
+            try {
               ((DefaultIntegerSolution) solution).file.get(i).add(j);
+            }catch (Exception e){
+              ((DefaultIntegerSolution) solution).file.put(i, Set.of(j));
+            }
+
           }
         }
 
@@ -208,6 +213,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       //    solution.objectives()[0] = objectives[0];
+      solution.objectives()[0] = 1.0;// para testes
       solution.objectives()[1] = objectives[1];
     }
     return solution;
