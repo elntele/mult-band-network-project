@@ -1,5 +1,7 @@
 package br.cns24.services;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -28,23 +30,24 @@ public enum LevelNode {
     switch (levelWanted) {
 
       case 0, 1, 2, 3, 4 -> {
-        var result = List.of(1, 2, 3, 4);
+        Integer [] array= {1,2,3,4};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
 
       }
       case 5, 6, 7, 8 -> {
-        var result = List.of(5, 6, 7, 8);
+        Integer [] array= {5, 6, 7, 8};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
 
       case 9, 10, 11, 12 -> {
-        var result = List.of(9, 10, 11, 12);
+        Integer [] array= {9, 10, 11, 12};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
       default -> throw new IllegalStateException("Unexpected value: " + levelWanted);
     }
@@ -53,16 +56,17 @@ public enum LevelNode {
   public static int nexLevel(int actualLevel) {
     switch (actualLevel) {
       case 1, 2, 3, 4 -> {
-        var result = List.of(5, 6, 7, 8);
+        Integer [] array= {5, 6, 7, 8};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
       case 5, 6, 7, 8, 9, 10, 11, 12 -> {
-        var result = List.of(9, 10, 11, 12);
+
+        Integer [] array= {9, 10, 11, 12};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
 
       default -> throw new IllegalStateException("Unexpected value: " + actualLevel);
@@ -72,16 +76,17 @@ public enum LevelNode {
   public static int belowLevel(int actualLevel) {
     switch (actualLevel) {
       case 9, 10, 11, 12 -> {
-        var result = List.of(5, 6, 7, 8);
+
+        Integer [] array= {5, 6, 7, 8};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
       case 1, 2, 3, 4, 5, 6, 7, 8 -> {
-        var result = List.of(1, 2, 3, 4);
+        Integer [] array= {1, 2, 3, 4};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
-
       }
 
       default -> throw new IllegalStateException("Unexpected value: " + actualLevel);
@@ -120,23 +125,26 @@ public enum LevelNode {
   public static int howIsTheNodeForThisBand(Bands bands) {
     switch (bands) {
       case Bands.CBAND -> {
-        var result = List.of(1, 2, 3, 4);
+        Integer [] array= {1, 2, 3, 4};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
       }
       case Bands.CLBAND -> {
-        var result = List.of(5, 6, 7, 8);
+        Integer [] array= {5, 6, 7, 8};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
       }
-      case Bands.CLSBAND -> {
-        var result = List.of(9, 10, 11, 12);
+
+      case Bands.CSBAND, Bands.CLSBAND -> {
+
+        Integer [] array= {9, 10, 11, 12};
+        List<Integer> result = new ArrayList<Integer>(Arrays.asList(array));
         Collections.shuffle(result);
         return result.get(0);
       }
       default -> throw new IllegalStateException("node or link not expected " + bands.name());
     }
-
-
   }
 }

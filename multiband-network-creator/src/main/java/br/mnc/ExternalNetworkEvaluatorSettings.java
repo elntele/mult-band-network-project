@@ -10,6 +10,7 @@ import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
 import br.cns24.services.Equipments;
+import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
@@ -31,6 +32,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Integer[] lowerBounds;
   private Integer tailRoadmPlusW;
   private Integer setSize;
+  private Integer conteCreate = 0;
 
   @Override
   public IntegerSolution createSolution() {
@@ -39,7 +41,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     //call an initializer here
     //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-    System.out.println("oh eu aqui de novo");
+    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size());
+    //   System.out.println("oh eu aqui de novo");
     return integerSolution;
   }
 
@@ -125,43 +128,44 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   void createRandomNetworkWithNodeNeighborhoodInformation(
       IntegerSolution solution
   ) {
+    fullFillFile((DefaultIntegerSolution) solution);
     Random random = new Random();
-    var connections = AllowedConnectionTable.getPossibleConnection();
-    var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
+    var possibleConnection = AllowedConnectionTable.getPossibleConnection();
     for (int i = 0; i < gml.getNodes().size(); i++) {
       for (int j = i + 1; j < gml.getNodes().size(); j++) {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
         var result = random.nextDouble();
-        //with 87.5% in the first random chosen and 20%
-        // in the second random chosen, to chosen zero
-        // the overall probability to chosen zero is
-        // about 10% in this statistic model.
+
         if (result <= 0.875) {
           for (int w = 0; w < setSize; w++) {
             solution.variables()
                 .set(index + w, 0);
           }
+
         } else {
           // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
           // remembering that 0 means no connection and consequently no edge/fiber
 
           //feed file attribute of neighborhood
           for (int w = 0; w < setSize; w++) {
-            var edge = connections[random.nextInt(connections.length)];
+            var edge = possibleConnection[random.nextInt(possibleConnection.length)];
             solution.variables().set(index + w, edge);
-            if (edge != 0)
-            try {
+            if (edge != 0) {
               ((DefaultIntegerSolution) solution).file.get(i).add(j);
-            }catch (Exception e){
-              ((DefaultIntegerSolution) solution).file.put(i, Set.of(j));
+              ((DefaultIntegerSolution) solution).file.get(j).add(i);
             }
-
           }
         }
-
       }
     }
+  }
 
+
+  private void fullFillFile(DefaultIntegerSolution solution) {
+    for (int i = 0; i < gml.getNodes().size(); i++) {
+      var set = new HashSet<Integer>();
+      solution.file.put(i, set);
+    }
   }
 
 

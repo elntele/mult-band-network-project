@@ -1,10 +1,13 @@
 package org.uma.jmetal.solution.integersolution.impl;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.uma.jmetal.solution.AbstractSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.bounds.Bounds;
@@ -46,7 +49,13 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     bounds = solution.bounds;
 
     attributes = new HashMap<>(solution.attributes);
-    file = solution.file;
+    file = solution.file.entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> new HashSet<>(entry.getValue())
+        ));
+
+
   }
 
   @Override

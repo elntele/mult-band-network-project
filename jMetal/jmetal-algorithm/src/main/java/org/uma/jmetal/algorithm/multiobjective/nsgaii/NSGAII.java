@@ -14,6 +14,8 @@ import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.comparator.dominanceComparator.impl.DefaultDominanceComparator;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
 
+import br.cns24.services.PrintPopulation;
+
 /**
  * @author Antonio J. Nebro <antonio@lcc.uma.es>
  */
@@ -140,6 +142,14 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
         }
       }
     }
+    if (evaluations%10==0 && evaluations>10){
+      offspringPopulation.stream().forEach(s -> {
+        PrintPopulation.printMatrix(((Solution) s).variables(), 4);
+      });
+    }
+
+
+
     return offspringPopulation;
   }
 

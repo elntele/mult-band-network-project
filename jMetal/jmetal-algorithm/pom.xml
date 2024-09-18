@@ -91,5 +91,11 @@
             <artifactId>Juzzy</artifactId>
             <version>2.0</version>
         </dependency>
+        <dependency>
+            <groupId>br.cns24</groupId>
+            <artifactId>cns24</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

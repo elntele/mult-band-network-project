@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
-import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
+import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.Check;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 import org.uma.jmetal.util.pseudorandom.RandomGenerator;
@@ -26,7 +25,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
   private RandomGenerator<Double> randomGenerator;
   private Map<String, List<List<String>>> edgeEquivalences = new HashMap<>();
   private int numNodes;
-  private  int setPosition;
+  private int setPosition;
   private int setSize;
 
   /**
@@ -45,8 +44,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     this.randomGenerator = randomGenerator;
     /*this.possibleEdgeTypes = possibleEdgeTypes;
     this.edgeEquivalences = edgeEquivalences;*/
-    this.numNodes=numNodes;
-    this.setSize=setSize;
+    this.numNodes = numNodes;
+    this.setSize = setSize;
   }
 
   /**
@@ -71,8 +70,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var solutionSize = parent1.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
-    var nodesParent1 = parent1.variables().subList(nodePartBegin, solutionSize-1);
-    var nodesParent2 = parent2.variables().subList(nodePartBegin, solutionSize-1);
+    var nodesParent1 = parent1.variables().subList(nodePartBegin, solutionSize - 1);
+    var nodesParent2 = parent2.variables().subList(nodePartBegin, solutionSize - 1);
 
     offspring.add((IntegerSolution) parent1.copy());
     offspring.add((IntegerSolution) parent2.copy());
@@ -80,27 +79,50 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
 
     for (int i = 0; i < numNodes-2; i++) {
       if (randomGenerator.getRandomValue() <= probability) {
-        var j = random.nextInt( numNodes-1)+i;
-        while (j == i) {
-          j = random.nextInt( numNodes-1)+i;
-        }
-        var NodeIP1 = nodesParent1.get(i);
-        var NodeIP2 = nodesParent2.get(i);
-        var NodeJP1 = nodesParent1.get(j);
-        var NodeJP2 = nodesParent2.get(j);
-
-        var setP1 = getSetConnection(i, j, 3, offspring.get(0));
-        var setP2 = getSetConnection(i, j, 3, offspring.get(1));
-        // Node's switch crossover
-        offspring.get(0).variables().set(i, NodeIP2);
-        offspring.get(1).variables().set(i, NodeIP1);
-        offspring.get(0).variables().set(j, NodeJP2);
-        offspring.get(1).variables().set(i, NodeJP1);
-
-        //set crossover
-        for(int l =0; l<setP1.length; l++){
-          offspring.get(0).variables().set(l, setP2[l]);
-          offspring.get(1).variables().set(l, setP1[l]);
+        for (int j = i + 1; j < numNodes; j++) {
+          var NodeBeginPart = offspring.get(0).variables().size() - (numNodes + 1);
+          var NodeI_S0 = nodesParent1.get(i);
+          var NodeI_S1 = nodesParent2.get(i);
+          var NodeJ_S0 = nodesParent1.get(j);
+          var NodeJ_S1 = nodesParent2.get(j);
+          var initialIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
+          var connectionSetAsAListS0 = getConnectionSetAsAList(i, j, offspring.get(0), initialIndex);
+          var connectionSetAsAListS1 = getConnectionSetAsAList(i, j, offspring.get(1), initialIndex);
+          // Node's switch crossover
+          offspring.get(0).variables().set((i + NodeBeginPart), NodeI_S1);
+          offspring.get(1).variables().set((i + NodeBeginPart), NodeI_S0);
+          offspring.get(0).variables().set((j + NodeBeginPart), NodeJ_S1);
+          offspring.get(1).variables().set((j + NodeBeginPart), NodeJ_S0);
+          var linksInSetS0 = 0;
+          var linksInSetS1 = 0;
+          //crossover of set
+          for (int l = 0; l < setSize; l++) {
+            if (connectionSetAsAListS0[l] > 0) linksInSetS0 += 1;
+            if (connectionSetAsAListS1[l] > 0) linksInSetS1 += 1;
+            offspring.get(0).variables().set(initialIndex + l, connectionSetAsAListS1[l]);
+            offspring.get(1).variables().set(initialIndex + l, connectionSetAsAListS0[l]);
+          }
+          // if set connections in the other solution is full zero
+          // remove reference in this solution file because it
+          // was crossed.
+          if (linksInSetS0 == 0) {
+            ((DefaultIntegerSolution) offspring.get(1)).file.get(i).remove(j);
+            ((DefaultIntegerSolution) offspring.get(1)).file.get(j).remove(i);
+          } else {
+            // if set connections in the other solution is not zero
+            // add a reference in this solution file because it
+            // was crossed. If it is already exists no problem, because set
+            // don't add duplicate registers.
+            ((DefaultIntegerSolution) offspring.get(1)).file.get(i).add(j);
+            ((DefaultIntegerSolution) offspring.get(1)).file.get(j).add(i);
+          }
+          if (linksInSetS1 == 0) {
+            ((DefaultIntegerSolution) offspring.get(0)).file.get(i).remove(j);
+            ((DefaultIntegerSolution) offspring.get(0)).file.get(j).remove(i);
+          } else {
+            ((DefaultIntegerSolution) offspring.get(0)).file.get(i).add(j);
+            ((DefaultIntegerSolution) offspring.get(0)).file.get(j).add(i);
+          }
         }
       }
     }
@@ -122,13 +144,21 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     return 2;
   }
 
-  private Integer[] getSetConnection(int i, int j, int setSize, IntegerSolution parent) {
+  /**
+   * this method returns a connection set
+   * as a list of integers
+   *
+   * @param i
+   * @param j
+   * @param parent
+   * @param initialIndex
+   */
+  private Integer[] getConnectionSetAsAList(int i, int j, IntegerSolution parent, int initialIndex) {
     Integer[] set = new Integer[setSize];
-    var initialIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
     for (int w = 0; w < setSize; w++) {
       set[w] = parent.variables().get(initialIndex + w);
     }
-    this.setPosition=initialIndex;
+    this.setPosition = initialIndex;
     return set;
   }
 

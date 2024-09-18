@@ -55,7 +55,7 @@ public class Main {
         mutation = new IntegerTCNEMutation(mutationProbability,() -> JMetalRandom.getInstance().nextDouble() , 4, 3);
         selection = new BinaryTournamentSelection<IntegerSolution>();
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(10000).build();
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110).build();
         AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
         List<IntegerSolution> population;
         population = algorithm.result();

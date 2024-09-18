@@ -10,6 +10,7 @@ import java.util.Set;
 
 
 import org.uma.jmetal.operator.mutation.MutationOperator;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
@@ -58,7 +59,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
 
-
   /**
    * Execute() method
    */
@@ -103,7 +103,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
 
-
   /**
    * This method select the mutation technic to do mutation
    * in an exactly one pair of nodes.
@@ -115,42 +114,20 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
    */
 
   private void selectMutationApproach(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
+    var mAttrs = getAttributes(solution, indexOriginNode);
     var neighborhood = solution.file.get(indexOriginNode);
-    if (neighborhood==null){
-      neighborhood= Set.of();
-    }
-    var solutionSize = solution.variables().size();
-    var nodePartBegin = solutionSize - numNodes + 1;
-    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
-    Random random = new Random();
-
-    var indexDestineNode = random.nextInt( neighborhood.size());
-    while (indexDestineNode == indexOriginNode && !neighborhood.isEmpty()) {
-      indexDestineNode = random.nextInt( neighborhood.size());
-    }
-    var originNode = nodesPart.get(indexOriginNode);
-    var destineNode = nodesPart.get(indexDestineNode);
-    // compareTo return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
-    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
-    var mAttrs = new MutationAttributes(
-        indexOriginNode,
-        indexDestineNode,
-        originNode,
-        destineNode,
-        compare,
-        nodePartBegin);
-
     if (neighborhood.isEmpty()) {
       doBirth(solution, mAttrs);
-    }
-    if (percent <= 0.4) {
-      downGrade(((DefaultIntegerSolution) solution), mAttrs);
-    } else if (percent > 0.4 && percent <= 0.8) {
-      upGrade(((DefaultIntegerSolution) solution), mAttrs);
-    } else if (percent > 0.8 && percent <= 0.9) {
-      doBirth(solution, mAttrs);
     } else {
-      doExtinction(solution, mAttrs);
+      if (percent <= 0.4) {
+        downGrade(((DefaultIntegerSolution) solution), mAttrs);
+      } else if (percent > 0.4 && percent <= 0.8) {
+        upGrade(((DefaultIntegerSolution) solution), mAttrs);
+      } else if (percent > 0.8 && percent <= 0.9) {
+        doBirth(solution, mAttrs);
+      } else {
+        doExtinction(solution, mAttrs);
+      }
     }
 
     correction(((DefaultIntegerSolution) solution));
@@ -231,6 +208,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       // destineNode receive downgrade to even level of originNode
       var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
       var belowLevelNode = LevelNode.updateForThisLevel(mAttrs.originNode());
+      // here chance destine node
       solution.variables().set(indexInChromosome, belowLevelNode);
       newLevel = belowLevelNode;
 
@@ -238,6 +216,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       // originNode receive downgrade to even level of destineNode
       var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
       var belowLevelNode = LevelNode.updateForThisLevel(mAttrs.destineNode());
+      // here chance oringin node
       solution.variables().set(indexInChromosome, belowLevelNode);
       newLevel = belowLevelNode;
     } else { // two node is in the even level
@@ -245,6 +224,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       var indexDestineNodeInChromosome = mAttrs.nodePartBegin() + mAttrs.indexDestineNode();
       var belowLevelNodeOrigin = LevelNode.belowLevel(mAttrs.originNode());
       var belowLevelNodeDestine = LevelNode.belowLevel(mAttrs.destineNode());
+      // here chance both origin and destine node
       solution.variables().set(indexOriginNodeInChromosome, belowLevelNodeOrigin);
       solution.variables().set(indexDestineNodeInChromosome, belowLevelNodeDestine);
       newLevel = belowLevelNodeOrigin;
@@ -254,12 +234,27 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     for (int i = 0; i < setSize; i++) {
       //different of zero ,or, it is birth and
       //there is had a birth procedure
-      if (solution.variables().get(index + i) != 0) {
-        var link = Bands.getBandForThisNode(newLevel);
-        solution.variables().set(index + i, link);
+      try {
+        if (solution.variables().get(index + i) != 0) {
+          var link = Bands.getBandForThisNode(newLevel);
+          solution.variables().set(index + i, link);
+        }
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     }
   }
+
+  /**
+   * this method link two nodes.
+   * the destine node is update
+   * to be adjusted to origin node.
+   * after that, a link is created
+   * between the two.
+   *
+   * @param solution
+   * @param mAttrs
+   */
 
   private void doBirth(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
     var indexInChromosome = mAttrs.nodePartBegin() + mAttrs.indexOriginNode();
@@ -270,8 +265,9 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       var link = Bands.getBandForThisNode(mathLevelNode);
       solution.variables().set(index + i, link);
     }
-    solution.file.get(mAttrs.originNode()).add(mAttrs.destineNode());
-    solution.file.get(mAttrs.destineNode()).add(mAttrs.originNode());
+    //jorge
+    solution.file.get(mAttrs.indexOriginNode()).add(mAttrs.indexDestineNode());
+    solution.file.get(mAttrs.indexDestineNode()).add(mAttrs.indexOriginNode());
   }
 
 
@@ -281,69 +277,112 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     if (neighborhoodA.size() > 1 && neighborhoodB.size() > 1) {
       var index = Equipments.getLinkPosition(mAttrs.indexOriginNode(), mAttrs.indexDestineNode(), numNodes, setSize);
       for (int i = 0; i < setSize; i++) {
-        if (solution.variables().get(index + i) != 0) {
-          solution.variables().set(index + i, 0);
-        }
+        solution.variables().set(index + i, 0);
       }
       solution.file.get(mAttrs.originNode()).remove(mAttrs.destineNode());
       solution.file.get(mAttrs.destineNode()).remove(mAttrs.originNode());
     }
   }
 
-  //voltar aqui jorge
+
+  /**
+   * this method make correction in solution.
+   * this go through all nodes and upgrade/downgrade
+   * node accord his connections or create a connection
+   * if node is isolated.
+   *
+   * @param solution
+   */
   private void correction(DefaultIntegerSolution solution) {
     var solutionSize = solution.variables().size();
-    var nodePartBegin = solutionSize - numNodes + 1;
-    var nodesPart = solution.variables().subList(nodePartBegin, solutionSize);
+    var nodePartBegin = solutionSize - (numNodes + 1);
+    var nodesPart = solution.variables().subList(nodePartBegin, (solutionSize - 1));
     // go through all nodes
     for (int i = 0; i < numNodes; i++) {
       var neighborhood = solution.file.get(i);
       final int indexNodeOrigin = i;
       List<Bands> bandsList = new ArrayList<>();
-      List<Integer> linksPositions = new ArrayList<>();
       // go through all neighbor of one node
       neighborhood.stream().forEach(j -> {
         var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
         //go through all links  of one node
         for (int w = 0; w < setSize; w++) {
           var link = solution.variables().get(linkBeginPosition + w);
+          if (link > 10 || link < 0) {
+            System.out.println("teste");
+          }
           var linkBand = Bands.getBand(link);
           bandsList.add(linkBand);
         }
       });
       Collections.sort(bandsList);
+      if (bandsList.isEmpty()) {
+        var mAttrs = getAttributes(solution, i);
+        doBirth(solution, mAttrs);
+      } else {
+        var linkReference = bandsList.getLast();
+        if (linkReference == Bands.NOBAND) {
+          System.out.println("teste mutation  noband");
+        }
+        var node = nodesPart.get(i);
+        Random random = new Random();
+        var isToDoNodeAdjust = random.nextBoolean();
 
-      var linkReference = bandsList.getLast();
-      var node = nodesPart.get(i);
-      Random random = new Random();
-      var percent = random.nextBoolean();
-
-      if (percent) {//adjust node
-        var betterNode = LevelNode.howIsTheNodeForThisBand(linkReference);
-        solution.variables().set(nodePartBegin + i, betterNode);
-      } else { //adjust link
-        final int betterlink = LevelNode.howIsTheBandForThisNode(node);
-        solution.variables().set(nodePartBegin + i, betterlink);
-        neighborhood.stream().forEach(j -> {
-          var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
-          //go through all links  of one node
-          for (int w = 0; w < setSize; w++) {
-            if (solution.variables().get(linkBeginPosition + w) > 0) {
-              solution.variables().set(linkBeginPosition + w, betterlink);
+        if (isToDoNodeAdjust) {//adjust node
+          var betterNode = LevelNode.howIsTheNodeForThisBand(linkReference);
+          solution.variables().set(nodePartBegin + i, betterNode);
+        } else { //adjust link
+          final int betterlink = LevelNode.howIsTheBandForThisNode(node);
+          solution.variables().set(nodePartBegin + i, betterlink);
+          neighborhood.stream().forEach(j -> {
+            var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
+            //go through all links  of one node
+            for (int w = 0; w < setSize; w++) {
+              if (solution.variables().get(linkBeginPosition + w) > 0) {
+                solution.variables().set(linkBeginPosition + w, betterlink);
+              }
+              var link = solution.variables().get(linkBeginPosition + w);
+              var linkBand = Bands.getBand(link);
+              bandsList.add(linkBand);
             }
-            var link = solution.variables().get(linkBeginPosition + w);
-            var linkBand = Bands.getBand(link);
-            bandsList.add(linkBand);
-          }
-        });
+          });
+        }
+        LevelNode.howIsTheBandForThisNode(node);
       }
-      LevelNode.howIsTheBandForThisNode(node);
     }
   }
 
-  private void correctionAnNoLinkNetwork(){
+  private MutationAttributes getAttributes(DefaultIntegerSolution solution, int indexOriginNode) {
+    var neighborhood = solution.file.get(indexOriginNode);
+    var solutionSize = solution.variables().size();
+    var nodePartBegin = solutionSize - (numNodes + 1);
+    var nodesPart = solution.variables().subList(nodePartBegin, (solutionSize - 1));
+    Random random = new Random();
+    var indexDestineNode = 0;
+    try {
+      //aqui ver como pegar um elemento de um set
+      var listNeighborhood = new ArrayList<Integer>(neighborhood);
+      Collections.shuffle(listNeighborhood);
+      indexDestineNode = listNeighborhood.get(0);
+    } catch (Exception e) {
+      indexDestineNode = random.nextInt(numNodes);
+      while (indexDestineNode == indexOriginNode) {
+        indexDestineNode = random.nextInt(numNodes);
+      }
 
+    }
 
+    var originNode = nodesPart.get(indexOriginNode);
+    var destineNode = nodesPart.get(indexDestineNode);
+    // compareTo return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
+    var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
+    return new MutationAttributes(
+        indexOriginNode,
+        indexDestineNode,
+        originNode,
+        destineNode,
+        compare,
+        nodePartBegin);
   }
 
 }
