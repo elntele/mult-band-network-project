@@ -2,6 +2,8 @@ package br.cns24.services;
 
 import java.util.List;
 
+import javax.print.DocFlavor;
+
 public class PrintPopulation {
   // Método estático que imprime uma lista de cromossomos 1 a 1
   public static void print(List<List<Integer>> population, int numNodes) {
@@ -44,7 +46,8 @@ public class PrintPopulation {
     }
   }
 
-  public static void printMatrix(List<Integer> solution, int numNodes) {
+  public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo, String constraintTree) {
+    System.out.println("Constraints: "+ constraintOne+", "+constraintTwo+", "+ constraintTree);
     int index = 0;
 
     // Imprime os cabeçalhos das colunas (nós)

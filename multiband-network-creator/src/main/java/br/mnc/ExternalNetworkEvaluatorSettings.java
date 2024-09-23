@@ -47,7 +47,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
     System.out.println("file na criação: "+ ((DefaultIntegerSolution) integerSolution).file);
     System.out.println("variables na criação: ");
-    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size());
+    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none");
     //   System.out.println("oh eu aqui de novo");
     return integerSolution;
   }
@@ -202,7 +202,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    */
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
-   // evaluateConstraints((DefaultIntegerSolution) solution);
+    evaluateConstraints((DefaultIntegerSolution) solution);
     int load = 100;
     Integer[] vars = new Integer[solution.variables()
         .size()];

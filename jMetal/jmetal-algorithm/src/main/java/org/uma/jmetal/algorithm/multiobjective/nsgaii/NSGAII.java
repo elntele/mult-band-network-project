@@ -3,6 +3,7 @@ package org.uma.jmetal.algorithm.multiobjective.nsgaii;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
 import org.uma.jmetal.algorithm.impl.AbstractGeneticAlgorithm;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -142,12 +143,16 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
         }
       }
     }
-    if (evaluations%10==0 && evaluations>10){
+    if (evaluations % 10 == 0 && evaluations > 10) {
       offspringPopulation.stream().forEach(s -> {
-        PrintPopulation.printMatrix(((Solution) s).variables(), 4);
+        var constraint1 = ((Solution) s).constraints()[0];
+        var constraint2 = ((Solution) s).constraints()[1];
+        var constraint3 = ((Solution) s).constraints()[2];
+
+        PrintPopulation.printMatrix(((Solution) s).variables(), 4, Double.toString(constraint1),
+            Double.toString(constraint2), Double.toString(constraint3));
       });
     }
-
 
 
     return offspringPopulation;
