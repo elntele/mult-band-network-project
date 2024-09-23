@@ -57,7 +57,6 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
             Map.Entry::getKey,
             entry -> new HashSet<>(entry.getValue())
         ));
-    System.out.println("Os objetos são iguais? " + (solution.file == file));
   }
 
   @Override
