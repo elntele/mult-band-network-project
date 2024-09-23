@@ -10,13 +10,17 @@ import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
 import br.cns24.services.Equipments;
+import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -41,6 +45,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     //call an initializer here
     //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
+    System.out.println("file na criação: "+ ((DefaultIntegerSolution) integerSolution).file);
+    System.out.println("variables na criação: ");
     PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size());
     //   System.out.println("oh eu aqui de novo");
     return integerSolution;
@@ -194,9 +200,39 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    *
    * @param solution
    */
-
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
+   // evaluateConstraints((DefaultIntegerSolution) solution);
+    int load = 100;
+    Integer[] vars = new Integer[solution.variables()
+        .size()];
+    for (int i = 0; i < vars.length; i++) {
+      vars[i] = (Integer) solution.variables()
+          .get(i);
+    }
+
+    System.out.println("conte Evaluate: " + this.contEvaluate);
+    this.contEvaluate += 1;
+    GmlData gmlData = getGmlData(gml.getNodes(), vars);
+    if (solution.constraints()[0]>0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE;
+    } else {
+      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
+      var dataToReloadProblem = setProblemCharacteristic(solution);
+      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
+      Double[] objectives = P.evaluate(vars);
+      //    solution.objectives()[0] = objectives[0];
+      Random random = new Random();
+      solution.objectives()[0] = random.nextDouble();// para testes
+      solution.objectives()[1] = objectives[1];
+    }
+    return solution;
+  }
+
+ /* @Override
+  public IntegerSolution evaluate(IntegerSolution solution) {
+    evaluateConstraints((DefaultIntegerSolution) solution);
     int load = 100;
     Integer[] vars = new Integer[solution.variables()
         .size()];
@@ -221,6 +257,92 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.objectives()[1] = objectives[1];
     }
     return solution;
+  }*/
+
+
+  /**
+   * this method calculate the  constraint
+   * g1(x), g2(x), g3(x).
+   *
+   * @param solution
+   */
+  public void evaluateConstraints(DefaultIntegerSolution solution) {
+    solution.constraints()[0] = isolatedNodes(solution);
+    solution.constraints()[1] = inadequateEquipment(solution);
+    solution.constraints()[2] = additionalBandBeforeBandC(solution);
+  }
+
+  /**
+   * this method calculate the rate over
+   * node isolated, and it represents
+   * the constraint g1(x).
+   *
+   * @param solution
+   */
+  private Double isolatedNodes(DefaultIntegerSolution solution) {
+    AtomicReference<Double> isolatedNode = new AtomicReference<>(0.0);
+    solution.file.forEach((key, set) -> {
+      if (set.isEmpty()) {
+        var num = isolatedNode.get();
+        num += 1;
+        isolatedNode.set(num);
+      }
+    });
+    var resul = isolatedNode.get();
+    return (resul / gml.getNodes().size()) * 10;
+  }
+
+  /**
+   * this method calculate the rate over
+   * node who not attend the fiber technology,
+   * and it represents the constraint g2(x).
+   *
+   * @param solution
+   */
+  private Double inadequateEquipment(DefaultIntegerSolution solution) {
+    var numNode = gml.getNodes().size();
+    var nodeNoteAttend = 0.0;
+    for (int i = 0; i < numNode; i++) {
+      for (int j = i + 1; j < numNode; j++) {
+        var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
+        for (int w = 0; w < setSize; w++) {
+          var link = solution.variables().get(beginLinkPosition + w);
+          if (LevelNode.thisNodeAddressThisLink(i, link)) {
+            nodeNoteAttend += 1;
+          }
+          if (LevelNode.thisNodeAddressThisLink(j, link)) {
+            nodeNoteAttend += 1;
+          }
+        }
+      }
+    }
+    return (nodeNoteAttend / numNode) * 5;
+  }
+
+  /**
+   * this method calculate the rate over
+   * links with additional band being used
+   * without use of c band, and it represents
+   * the constraint g3(x).
+   *
+   * @param solution
+   */
+  private Double additionalBandBeforeBandC(DefaultIntegerSolution solution) {
+    var numNode = gml.getNodes().size();
+    var setViolateRoles = 0.0;
+    for (int i = 0; i < numNode; i++) {
+      for (int j = i + 1; j < numNode; j++) {
+        var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
+        for (int w = 0; w < setSize; w++) {
+          var link = solution.variables().get(beginLinkPosition + w);
+          switch (link) {
+            case 2, 4, 6 -> setViolateRoles += 1;
+          }
+        }
+      }
+    }
+    var totalFiber = 3 * ((numNode * numNode) - numNode) / 2;
+    return (setViolateRoles / totalFiber) * 2;
   }
 
   /**
@@ -370,6 +492,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     this.setSize = setSize;
     gmlBuild();
     this.numberOfObjectives(2);
+    this.numberOfConstraints(3);
     var numberOfNodes = gml.getNodes()
         .size();
     var numberOfVariables = (setSize * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);

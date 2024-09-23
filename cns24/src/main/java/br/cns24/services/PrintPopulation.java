@@ -48,8 +48,8 @@ public class PrintPopulation {
     int index = 0;
 
     // Imprime os cabeçalhos das colunas (nós)
-    System.out.print("     "); // Espaço para alinhar com os rótulos das linhas
-    for (int i = 1; i <= numNodes; i++) {
+    System.out.print("  "); // Espaço para alinhar com os rótulos das linhas
+    for (int i = 0; i < numNodes; i++) {
       System.out.printf("  %d   ", i);
     }
     System.out.println(); // Quebra de linha após os cabeçalhos
@@ -57,7 +57,7 @@ public class PrintPopulation {
     // Percorre a lista e imprime os valores como uma matriz
     for (int i = 0; i < numNodes; i++) {
       // Imprime o rótulo da linha
-      System.out.printf("%d  ", i + 1);
+      System.out.printf("%d  ", i );
 
       for (int j = 0; j < numNodes; j++) {
         if (i == j) {

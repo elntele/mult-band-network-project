@@ -22,7 +22,7 @@ import br.cns24.services.Equipments;
 public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> {
   private double crossoverProbability;
   private Integer[] possibleEdgeTypes;
-  private RandomGenerator<Double> randomGenerator;
+  private Random randomGenerator;
   private Map<String, List<List<String>>> edgeEquivalences = new HashMap<>();
   private int numNodes;
   private int setPosition;
@@ -33,7 +33,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
    */
   public IntegerTCNECrossover(
       double crossoverProbability,
-      RandomGenerator<Double> randomGenerator,
+     Random randomGenerator,
     /*  Integer[] possibleEdgeTypes,
       Map<String, List<List<String>>> edgeEquivalences,*/
       int numNodes,
@@ -78,7 +78,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     Random random = new Random();
 
     for (int i = 0; i < numNodes-2; i++) {
-      if (randomGenerator.getRandomValue() <= probability) {
+      if (randomGenerator.nextDouble() <= probability) {
         for (int j = i + 1; j < numNodes; j++) {
           var NodeBeginPart = offspring.get(0).variables().size() - (numNodes + 1);
           var NodeI_S0 = nodesParent1.get(i);

@@ -1,22 +1,19 @@
 package br.mnc;
 
-import br.cns24.model.GmlData;
-import br.cns24.persistence.GmlDao;
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.algorithm.examples.AlgorithmRunner;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
-import org.uma.jmetal.algorithm.multiobjective.nsgaiii.NSGAIII;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.crossover.impl.IntegerSBXCrossover;
 import org.uma.jmetal.operator.crossover.impl.IntegerTCNECrossover;
 import org.uma.jmetal.operator.mutation.MutationOperator;
-import org.uma.jmetal.operator.mutation.impl.IntegerPolynomialMutation;
 import org.uma.jmetal.operator.mutation.impl.IntegerTCNEMutation;
 import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.operator.selection.impl.BinaryTournamentSelection;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.JMetalLogger;
+import org.uma.jmetal.util.comparator.constraintcomparator.impl.OverallConstraintViolationDegreeComparator;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
 import java.io.File;
@@ -27,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.regex.Pattern;
 
 import static org.uma.jmetal.util.AbstractAlgorithmRunner.printFinalSolutionSet;
@@ -45,17 +43,21 @@ public class Main {
 
 
         // ****************************
-        double crossoverProbability = 1.0;
+        double crossoverProbability = 0.3;
         double crossoverDistributionIndex = 20.0;
         crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-        crossover = new IntegerTCNECrossover(crossoverProbability,() -> JMetalRandom.getInstance().nextDouble(),4, 3);
+        crossover = new IntegerTCNECrossover(crossoverProbability,new Random(),4, 3);
         double mutationProbability = 1.0 / problem.numberOfVariables();
         double mutationDistributionIndex = 20.0;
        // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-        mutation = new IntegerTCNEMutation(mutationProbability,() -> JMetalRandom.getInstance().nextDouble() , 4, 3);
-        selection = new BinaryTournamentSelection<IntegerSolution>();
+        mutation = new IntegerTCNEMutation(100,new Random() , 4, 3);
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110).build();
+        // new: create a comparator of constraint violation
+        OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
+        // new the constraint comparator now is passed as a parameter
+        selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
+
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110000).build();
         AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
         List<IntegerSolution> population;
         population = algorithm.result();

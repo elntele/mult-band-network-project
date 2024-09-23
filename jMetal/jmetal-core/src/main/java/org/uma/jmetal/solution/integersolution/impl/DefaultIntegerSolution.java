@@ -1,5 +1,6 @@
 package org.uma.jmetal.solution.integersolution.impl;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +13,8 @@ import org.uma.jmetal.solution.AbstractSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.bounds.Bounds;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
+
+import br.cns24.models.FileMap;
 
 /**
  * Defines an implementation of the {@link IntegerSolution} interface
@@ -33,7 +36,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     this.bounds = boundsList;
 
     IntStream.range(0, bounds.size()).forEach(i -> variables().set(
-            i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
+        i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
   }
 
   /**
@@ -54,6 +57,15 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
             Map.Entry::getKey,
             entry -> new HashSet<>(entry.getValue())
         ));
+
+
+    //System.out.println("Código de hash de identidade do HashMap original: " + System.identityHashCode(solution.file));
+    //System.out.println("Código de hash de identidade do HashMap clonado: " + System.identityHashCode(file));
+    System.out.println("Os objetos são iguais? " + (solution.file == file));
+    /*System.out.println("variables: " +solution.variables());
+    System.out.println("file original : " +solution.file);
+    System.out.println("file clone: " +file);*/
+
 
 
   }
