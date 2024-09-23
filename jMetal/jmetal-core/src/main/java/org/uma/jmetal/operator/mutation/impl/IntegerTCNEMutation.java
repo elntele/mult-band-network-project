@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-
 
 import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
@@ -19,7 +17,6 @@ import br.cns24.model.MutationAttributes;
 import br.cns24.services.Bands;
 import br.cns24.services.Equipments;
 import br.cns24.services.LevelNode;
-import br.cns24.services.PrintPopulation;
 
 
 /**
@@ -115,39 +112,22 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   private void selectMutationApproach(DefaultIntegerSolution solution, int indexOriginNode, double percent) {
 
-    System.out.println("##############################################################");
-    System.out.println("file original: " + solution.file);
-    System.out.println("variables original: ");
-    PrintPopulation.printMatrix(solution.variables(), 4);
-
-
     var mAttrs = getAttributes(solution, indexOriginNode);
     var neighborhood = solution.file.get(indexOriginNode);
     if (neighborhood.isEmpty()) {
-      System.out.println("procedimento birth");
       doBirth(solution, mAttrs);
     } else {
       if (percent <= 40) {
-        System.out.println("procedimento downgrade");
         downGrade(((DefaultIntegerSolution) solution), mAttrs);
       } else if (percent > 40 && percent <= 80) {
-        System.out.println("procedimento upgrade");
         upGrade(((DefaultIntegerSolution) solution), mAttrs);
       } else if (percent > 80 && percent <= 90) {
-        System.out.println("procedimento birt");
         doBirth(solution, mAttrs);
       } else {
-        System.out.println("procedimento extinctio");
         doExtinction(solution, mAttrs);
       }
     }
-
-    System.out.println("file antes da correção: " + solution.file);
-    System.out.println("variables antes da correção: ");
-    PrintPopulation.printMatrix(solution.variables(), 4);
-
-    correction(((DefaultIntegerSolution) solution));
-
+    correction(solution);
   }
 
   /**
@@ -279,18 +259,12 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       var link = Bands.getBandForThisNode(mathLevelNode);
       solution.variables().set(index + i, link);
     }
-    //jorge
     solution.file.get(mAttrs.indexOriginNode()).add(mAttrs.indexDestineNode());
     solution.file.get(mAttrs.indexDestineNode()).add(mAttrs.indexOriginNode());
   }
 
 
   private void doExtinction(DefaultIntegerSolution solution, MutationAttributes mAttrs) {
-    System.out.println("doExtinction, file chegado: " + solution.file);
-    System.out.println("doExtinction, variablas chegado: ");
-    PrintPopulation.printMatrix(solution.variables(), 4);
-
-
     var neighborhoodA = solution.file.get(mAttrs.indexOriginNode());
     var neighborhoodB = solution.file.get(mAttrs.indexDestineNode());
     // major than 1, or, it will cause a node isolation
@@ -302,9 +276,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       solution.file.get(mAttrs.indexOriginNode()).remove(mAttrs.indexDestineNode());
       solution.file.get(mAttrs.indexDestineNode()).remove(mAttrs.indexOriginNode());
     }
-    System.out.println("doExtinction, file modificadp: " + solution.file);
-    System.out.println("doExtinction, variablas modificada: ");
-    PrintPopulation.printMatrix(solution.variables(), 4);
   }
 
 
@@ -331,9 +302,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         //go through all links  of one node
         for (int w = 0; w < setSize; w++) {
           var link = solution.variables().get(linkBeginPosition + w);
-          if (link > 10 || link < 0) {
-            System.out.println("teste");
-          }
           var linkBand = Bands.getBand(link);
           bandsList.add(linkBand);
         }
@@ -344,9 +312,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         doBirth(solution, mAttrs);
       } else {
         var linkReference = bandsList.getLast();
-        if (linkReference == Bands.NOBAND) {
-          System.out.println("teste mutation  noband");
-        }
         var node = nodesPart.get(i);
         Random random = new Random();
         var isToDoNodeAdjust = random.nextBoolean();
@@ -363,22 +328,26 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
           // não cabe excitações horizontais
           final int betterlink = LevelNode.howIsTheBandForThisNode(node);
           // jorge aqui ta errado, node parte begin aponta o inicio dos nós e vc ta alterando link
-         // solution.variables().set(nodePartBegin + i, betterlink);
-          var neighborhoodList= new ArrayList<>(neighborhood);
+          // solution.variables().set(nodePartBegin + i, betterlink);
+          var neighborhoodList = new ArrayList<>(neighborhood);
           neighborhoodList.stream().forEach(j -> {
             var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
             //go through all links  of one node
+            var linkEqualZero = 0;
             for (int w = 0; w < setSize; w++) {
               if (solution.variables().get(linkBeginPosition + w) > 0) {
-                // aqui jorge, se vc olha te chande de link retornar 0 mas quando isso acontece você
-                // não altera file ;)
                 var link = LevelNode.chosenLevelLink(betterlink);
                 solution.variables().set(linkBeginPosition + w, link);
-                if (link==0) {
-                  solution.file.get(indexNodeOrigin).remove(j);
-                  solution.file.get(j).remove(indexNodeOrigin);
+                //link can return 0, so if it happens, signaling
+                if (link == 0) {
+                  linkEqualZero += 1;
                 }
-
+              } else {
+                linkEqualZero += 1;
+              }
+              if (linkEqualZero == setSize) {
+                solution.file.get(indexNodeOrigin).remove(j);
+                solution.file.get(j).remove(indexNodeOrigin);
               }
               var link = solution.variables().get(linkBeginPosition + w);
               var linkBand = Bands.getBand(link);
@@ -398,7 +367,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     Random random = new Random();
     var indexDestineNode = 0;
     try {
-      //aqui ver como pegar um elemento de um set
       var listNeighborhood = new ArrayList<Integer>(neighborhood);
       Collections.shuffle(listNeighborhood);
       indexDestineNode = listNeighborhood.get(0);
@@ -421,24 +389,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         destineNode,
         compare,
         nodePartBegin);
-  }
-
-
-
-  private List teste(Set<Integer> neighborhood, int indexNodeOrigin, DefaultIntegerSolution solution) {
-    List <Bands> bandsList = new ArrayList<>();
-
-    neighborhood.stream().forEach(j -> {
-      var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
-      //go through all links  of one node
-
-      for (int w = 0; w < setSize; w++) {
-        var link = solution.variables().get(linkBeginPosition + w);
-        var linkBand = Bands.getBand(link);
-        bandsList.add(linkBand);
-      }
-    });
-    return bandsList;
   }
 
 }

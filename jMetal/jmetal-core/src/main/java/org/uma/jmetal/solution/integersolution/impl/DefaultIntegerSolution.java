@@ -57,17 +57,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
             Map.Entry::getKey,
             entry -> new HashSet<>(entry.getValue())
         ));
-
-
-    //System.out.println("Código de hash de identidade do HashMap original: " + System.identityHashCode(solution.file));
-    //System.out.println("Código de hash de identidade do HashMap clonado: " + System.identityHashCode(file));
     System.out.println("Os objetos são iguais? " + (solution.file == file));
-    /*System.out.println("variables: " +solution.variables());
-    System.out.println("file original : " +solution.file);
-    System.out.println("file clone: " +file);*/
-
-
-
   }
 
   @Override
