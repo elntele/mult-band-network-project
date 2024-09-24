@@ -45,7 +45,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     //call an initializer here
     //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-    System.out.println("file na criação: "+ ((DefaultIntegerSolution) integerSolution).file);
+    System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
     System.out.println("variables na criação: ");
     PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none");
     //   System.out.println("oh eu aqui de novo");
@@ -214,9 +214,15 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (solution.constraints()[0]>0) {
+    if (solution.constraints()[0] > 0) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE;
+    } else if (solution.constraints()[1] > 0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE / 2;
+    } else if (solution.constraints()[2] > 0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE / 5;
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
@@ -289,34 +295,48 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       }
     });
     var resul = isolatedNode.get();
-    return (resul / gml.getNodes().size()) * 10;
+    return (resul / gml.getNodes().size());
   }
 
   /**
    * this method calculate the rate over
-   * node who not attend the fiber technology,
-   * and it represents the constraint g2(x).
+   * node who not address the fiber technology,
+   * and it represents the constraint g2(x):
+   * sun of nodes that do not address each link
+   * divided by node degree sun.
    *
    * @param solution
    */
   private Double inadequateEquipment(DefaultIntegerSolution solution) {
     var numNode = gml.getNodes().size();
+    var nodeBeginPart= solution.variables().size()-(numNode+1);
+    var wssNodes= solution.variables().subList(nodeBeginPart, solution.variables().size()-1);
     var nodeNoteAttend = 0.0;
+    int[] nodesDegree = new int[numNode];
+    for (int i = 0; i < nodesDegree.length; i++) {
+      nodesDegree[i] = 0;
+    }
     for (int i = 0; i < numNode; i++) {
       for (int j = i + 1; j < numNode; j++) {
         var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
         for (int w = 0; w < setSize; w++) {
           var link = solution.variables().get(beginLinkPosition + w);
-          if (LevelNode.thisNodeAddressThisLink(i, link)) {
+          if (link != 0) {
+            nodesDegree[i] += 1;
+            nodesDegree[j] += 1;
+          }
+          if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(i), link)) {
             nodeNoteAttend += 1;
           }
-          if (LevelNode.thisNodeAddressThisLink(j, link)) {
+          if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(j), link)) {
             nodeNoteAttend += 1;
           }
         }
       }
     }
-    return (nodeNoteAttend / numNode) * 5;
+    var sumOfNodeDegrees = Arrays.stream(nodesDegree).sum();
+    if (sumOfNodeDegrees == 0) sumOfNodeDegrees = 1;
+    return (nodeNoteAttend / sumOfNodeDegrees);
   }
 
   /**
@@ -342,7 +362,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       }
     }
     var totalFiber = 3 * ((numNode * numNode) - numNode) / 2;
-    return (setViolateRoles / totalFiber) * 2;
+    return (setViolateRoles / totalFiber);
   }
 
   /**

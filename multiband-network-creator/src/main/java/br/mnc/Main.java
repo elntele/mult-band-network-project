@@ -57,7 +57,7 @@ public class Main {
         // new the constraint comparator now is passed as a parameter
         selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110000).build();
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110).build();
         AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
         List<IntegerSolution> population;
         population = algorithm.result();

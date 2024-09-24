@@ -49,7 +49,12 @@ public class PrintPopulation {
   public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo, String constraintTree) {
     System.out.println("Constraints: "+ constraintOne+", "+constraintTwo+", "+ constraintTree);
     int index = 0;
-
+    var beginNodePart= solution.size()-(numNodes+1);
+    System.out.println("comutadores");
+    for (int i=beginNodePart; i< solution.size()-1; i++ ){
+      System.out.print(" "+solution.get(i)+" ");
+    }
+    System.out.println("\n");
     // Imprime os cabeçalhos das colunas (nós)
     System.out.print("  "); // Espaço para alinhar com os rótulos das linhas
     for (int i = 0; i < numNodes; i++) {
@@ -75,6 +80,7 @@ public class PrintPopulation {
       }
       System.out.println(); // Quebra de linha após cada linha da matriz
     }
+    System.out.println("\n\n");
   }
 
 }
