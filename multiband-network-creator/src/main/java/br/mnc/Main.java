@@ -45,12 +45,12 @@ public class Main {
         // ****************************
         double crossoverProbability = 0.3;
         double crossoverDistributionIndex = 20.0;
-        crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-        crossover = new IntegerTCNECrossover(crossoverProbability,new Random(),4, 3);
+        //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+        crossover = new IntegerTCNECrossover(crossoverProbability,new Random(),10, 3);
         double mutationProbability = 1.0 / problem.numberOfVariables();
         double mutationDistributionIndex = 20.0;
        // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-        mutation = new IntegerTCNEMutation(100,new Random() , 4, 3);
+        mutation = new IntegerTCNEMutation(100,new Random() , 10, 3);
 
         // new: create a comparator of constraint violation
         OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();

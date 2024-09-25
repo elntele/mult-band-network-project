@@ -45,9 +45,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     //call an initializer here
     //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-    System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
-    System.out.println("variables na criação: ");
-    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none");
+  //  System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
+   // System.out.println("variables na criação: ");
+    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none",
+        ((DefaultIntegerSolution) integerSolution).file);
     //   System.out.println("oh eu aqui de novo");
     return integerSolution;
   }
@@ -286,17 +287,16 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * @param solution
    */
   private Double isolatedNodes(DefaultIntegerSolution solution) {
-    AtomicReference<Double> isolatedNode = new AtomicReference<>(0.0);
-    solution.file.forEach((key, set) -> {
+    double isolatedNodeCount = 0.0;
+    for (var entry : solution.file.entrySet()) {
+      Set<Integer> set = (Set<Integer>) entry.getValue();
       if (set.isEmpty()) {
-        var num = isolatedNode.get();
-        num += 1;
-        isolatedNode.set(num);
+        isolatedNodeCount++;
       }
-    });
-    var resul = isolatedNode.get();
-    return (resul / gml.getNodes().size());
+    }
+    return isolatedNodeCount / gml.getNodes().size();
   }
+
 
   /**
    * this method calculate the rate over
@@ -309,8 +309,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    */
   private Double inadequateEquipment(DefaultIntegerSolution solution) {
     var numNode = gml.getNodes().size();
-    var nodeBeginPart= solution.variables().size()-(numNode+1);
-    var wssNodes= solution.variables().subList(nodeBeginPart, solution.variables().size()-1);
+    var nodeBeginPart = solution.variables().size() - (numNode + 1);
+    var wssNodes = solution.variables().subList(nodeBeginPart, solution.variables().size() - 1);
     var nodeNoteAttend = 0.0;
     int[] nodesDegree = new int[numNode];
     for (int i = 0; i < nodesDegree.length; i++) {
@@ -466,7 +466,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   private void gmlBuild() {
     //String path = "./selectedCityInPernabucoState.gml";
-    String path = "./teste.gml";
+    String path = "./teste2.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {

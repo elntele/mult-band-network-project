@@ -133,7 +133,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   /**
    * This method make upgrade in a pair of nodes.
    * This receives a solution and some attributes of nodes
-   * por how will be mutated. This method randomly choose a
+   * por what will be mutated. This method randomly choose a
    * neighbor in neighborhood and equalize the level of nodes
    * for the higher them. If there are no node higher this
    * upgrade the two nodes. ofter that, this method upgrade the
@@ -290,7 +290,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void correction(DefaultIntegerSolution solution) {
     var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
-    var nodesPart = solution.variables().subList(nodePartBegin, (solutionSize - 1));
+    var wssNodes = solution.variables().subList(nodePartBegin, (solutionSize - 1));
     // go through all nodes
     for (int i = 0; i < numNodes; i++) {
       var neighborhood = solution.file.get(i);
@@ -312,27 +312,26 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         doBirth(solution, mAttrs);
       } else {
         var linkReference = bandsList.getLast();
-        var node = nodesPart.get(i);
+        var wssInThisNode = wssNodes.get(i);
         Random random = new Random();
         var isToDoNodeAdjust = random.nextBoolean();
 
-        if (isToDoNodeAdjust) {//adjust node
-          // na proxima linha existe uma observação do maior link recuperado em  bandsList.getLast().
-          // ele vai alterar o nó para um que atenda ao maior link do set, se o nó
-          // já atender ele promove excitação horizontal
+        if (isToDoNodeAdjust) {//adjust wss in Node
+          // On the next line, there is a note about the largest link retrieved
+          // from bandsList.getLast().
+          // It will change the node to one that meets the largest link in the set
+          // if the node already meets it, it promotes horizontal excitation.
           var betterNode = LevelNode.howIsTheNodeForThisBand(linkReference);
           solution.variables().set(nodePartBegin + i, betterNode);
         } else { //adjust link
           // na proxima linha recupera-se um link apropriado para o nó.
           // ele vai alterar o link e retorna exatamente o link apropriado
           // não cabe excitações horizontais
-          final int betterlink = LevelNode.howIsTheBandForThisNode(node);
-          // jorge aqui ta errado, node parte begin aponta o inicio dos nós e vc ta alterando link
-          // solution.variables().set(nodePartBegin + i, betterlink);
+          final int betterlink = LevelNode.howIsTheBandForThisNode(wssInThisNode);
           var neighborhoodList = new ArrayList<>(neighborhood);
           neighborhoodList.stream().forEach(j -> {
             var linkBeginPosition = Equipments.getLinkPosition(indexNodeOrigin, j, numNodes, setSize);
-            //go through all links  of one node
+            //go through all links  of one wssInThisNode
             var linkEqualZero = 0;
             for (int w = 0; w < setSize; w++) {
               if (solution.variables().get(linkBeginPosition + w) > 0) {
@@ -363,7 +362,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var neighborhood = solution.file.get(indexOriginNode);
     var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
-    var nodesPart = solution.variables().subList(nodePartBegin, (solutionSize - 1));
+    var wssInNodes = solution.variables().subList(nodePartBegin, (solutionSize - 1));
     Random random = new Random();
     var indexDestineNode = 0;
     try {
@@ -378,8 +377,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
     }
 
-    var originNode = nodesPart.get(indexOriginNode);
-    var destineNode = nodesPart.get(indexDestineNode);
+    var originNode = wssInNodes.get(indexOriginNode);
+    var destineNode = wssInNodes.get(indexDestineNode);
     // compareTo return -1; 0; 1 respectively: origin< destine; origin=destine; origin>destine
     var compare = LevelNode.getLevel(originNode).compareTo(LevelNode.getLevel(destineNode));
     return new MutationAttributes(

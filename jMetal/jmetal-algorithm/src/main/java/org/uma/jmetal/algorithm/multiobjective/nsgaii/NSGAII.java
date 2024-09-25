@@ -11,6 +11,7 @@ import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.operator.selection.impl.RankingAndCrowdingSelection;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
+import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.comparator.dominanceComparator.impl.DefaultDominanceComparator;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
@@ -87,6 +88,17 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
 
+    if (evaluations==10||evaluations == 100) {
+      population.stream().forEach(s -> {
+        var constraint1 = ((Solution) s).constraints()[0];
+        var constraint2 = ((Solution) s).constraints()[1];
+        var constraint3 = ((Solution) s).constraints()[2];
+
+        PrintPopulation.printMatrix(((Solution) s).variables(), 10, Double.toString(constraint1),
+            Double.toString(constraint2), Double.toString(constraint3), ((DefaultIntegerSolution)s).file);
+      });
+    }
+
     return population;
   }
 
@@ -143,18 +155,6 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
         }
       }
     }
-    if (evaluations % 10 == 0 && evaluations > 10) {
-      offspringPopulation.stream().forEach(s -> {
-        var constraint1 = ((Solution) s).constraints()[0];
-        var constraint2 = ((Solution) s).constraints()[1];
-        var constraint3 = ((Solution) s).constraints()[2];
-
-        PrintPopulation.printMatrix(((Solution) s).variables(), 4, Double.toString(constraint1),
-            Double.toString(constraint2), Double.toString(constraint3));
-      });
-    }
-
-
     return offspringPopulation;
   }
 

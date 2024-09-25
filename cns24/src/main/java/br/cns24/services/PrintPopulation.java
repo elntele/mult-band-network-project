@@ -1,6 +1,8 @@
 package br.cns24.services;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.print.DocFlavor;
 
@@ -46,14 +48,17 @@ public class PrintPopulation {
     }
   }
 
-  public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo, String constraintTree) {
-    System.out.println("Constraints: "+ constraintOne+", "+constraintTwo+", "+ constraintTree);
+  public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
+      String constraintTree, Map<Integer, Set<Integer>> file) {
+    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo + ", " + constraintTree);
     int index = 0;
-    var beginNodePart= solution.size()-(numNodes+1);
+    var beginNodePart = solution.size() - (numNodes + 1);
     System.out.println("comutadores");
-    for (int i=beginNodePart; i< solution.size()-1; i++ ){
-      System.out.print(" "+solution.get(i)+" ");
+    for (int i = beginNodePart; i < solution.size() - 1; i++) {
+      System.out.print(" " + solution.get(i) + " ");
     }
+    System.out.println("\n");
+    System.out.println("file: "+file);
     System.out.println("\n");
     // Imprime os cabeçalhos das colunas (nós)
     System.out.print("  "); // Espaço para alinhar com os rótulos das linhas
@@ -65,7 +70,7 @@ public class PrintPopulation {
     // Percorre a lista e imprime os valores como uma matriz
     for (int i = 0; i < numNodes; i++) {
       // Imprime o rótulo da linha
-      System.out.printf("%d  ", i );
+      System.out.printf("%d  ", i);
 
       for (int j = 0; j < numNodes; j++) {
         if (i == j) {
