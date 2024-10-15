@@ -67,7 +67,8 @@ public class Link implements Cloneable {
 		this.length = length;
 
 		dynamicGain = ganhoDinamico_par;
-
+//TODO jorge, aqui tem algo pra ser feito em relação ao sete. A logica atual fala que um link tem um conjunto
+		//TODO fibras então tem que ver se é aqui que diferencia as bandas e as fibras.
 		for (int i = 1; i <= numFibers; i++) {
 			fibers.add(new Fiber(numOfLambdaPerFiber_par, source, destination, MuxDemuxGainIndB_par,
 					boosterGainIndB_par, boosterNoiseFigure_par, boosterPSat_par, length, fiberGainIndBPerKm_par,

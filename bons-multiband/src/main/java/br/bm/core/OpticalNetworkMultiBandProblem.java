@@ -406,6 +406,9 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     /*net.setEpsilon(
         pow(10, -0.1 * switchCostsAndTypes.get(1).get(networkRepresentation_ppr.get(vectorSize_loc - 2))));*/
+
+    // epsilon é a list os isolationFactor. It was a unique value
+    // but it was changed because now the wss is of different types
     net.setEpsilon(Equipments.getIsolationFactorEpsilonForThisSwitchList(this.switchIndexes));
     net.setLinks(links);
     net.cleanBp();
@@ -413,7 +416,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     net.setCn(createComplexNetworkDistance(variables));
     net.setRawData(variables);
 
-   // objectives[0] = bpEstimator.evaluate(net).getValue();
+    objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
  //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
   //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
@@ -680,137 +683,6 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     this.defaultSolution = defaultSolution;
   }
 
-  public void reloadProblem(int networkLoad, GmlData gmlFile) {
-    this.networkLoad = networkLoad;
-    bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-    //capexEvaluator = new CapexEvaluator();
-    energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
-    algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
-    naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
-
-    numberOfObjectives = 4;
-
-    data = gmlFile;
-
-    numNodes = data.getNodes().size();
-
-    numberOfVariables = numNodes * (numNodes - 1) / 2 + 2;
-
-    geolocationCoords = new double[numNodes][2];
-    int count = 0;
-    GeolocationConverter gc = new GeolocationConverter();
-    for (GmlNode node : data.getNodes()) {
-      geolocationCoords[count][0] = gc.mercX(node.getLongitude());
-      geolocationCoords[count][1] = gc.mercY(node.getLatitude());
-      count++;
-    }
-
-    defaultSolution = new Integer[numberOfVariables];
-    for (int i = 0; i < numberOfVariables; i++) {
-      defaultSolution[i] = 0;
-    }
-    for (GmlEdge edge : data.getEdges()) {
-      count = 0;
-      for (int i = 0; i < numNodes; i++) {
-        for (int j = i + 1; j < numNodes; j++) {
-          if ((edge.getSource().getId() == i && edge.getTarget().getId() == j)
-              || (edge.getSource().getId() == j && edge.getTarget().getId() == i)) {
-            defaultSolution[count] = 1;
-          }
-          count++;
-        }
-      }
-    }
-    defaultSolution[numberOfVariables - 1] = 40;
-    defaultSolution[numberOfVariables - 2] = 4;
-
-    locations = new Geolocation[numNodes];
-    for (int i = 0; i < locations.length; i++) {
-      locations[i] = new Geolocation(data.getNodes().get(i).getLatitude(), data.getNodes().get(i).getLongitude());
-    }
-    traffic = createGravityTraffic(data);
-    distances = new Double[numNodes][numNodes];
-    for (int i = 0; i < numNodes; i++) {
-      distances[i][i] = 0.0;
-      for (int j = i + 1; j < numNodes; j++) {
-        distances[i][j] = computeDistance(locations[i], locations[j], true);
-        distances[j][i] = distances[i][j];
-      }
-    }
-
-    lowerLimitObjective = new Double[]{ 0.0, 0.0, 0.0, 0.0 };
-    upperLimitObjective = new Double[]{ 1.0, 100000.0, 100000000.0, 100.0 };
-
-    upperLimitVariable = new Integer[(numNodes * (numNodes - 1)) / 2 + 2];
-    lowerLimitVariable = new Integer[(numNodes * (numNodes - 1)) / 2 + 2];
-
-    for (int i = 0; i < numberOfVariables; i++) {
-      upperLimitVariable[i] = 1;
-      lowerLimitVariable[i] = 0;
-    }
-    upperLimitVariable[numberOfVariables - 1] = 40;
-    lowerLimitVariable[numberOfVariables - 1] = 4;
-    upperLimitVariable[numberOfVariables - 2] = 5;
-    lowerLimitVariable[numberOfVariables - 2] = 0;
-
-    // build up matrixes with zeros
-    // initialize matrix nodePositions_ppr with zeros
-    for (int i = 0; i < numNodes; i++) {
-      Vector<Double> temp_loc = new Vector<Double>();
-      for (int j = 0; j < 2; j++) {
-        temp_loc.add(0.0);
-      }
-      nodePositions.add(temp_loc);
-    }
-
-    // initialize matrix amplifierCostsAndTypes_ppr with zeros
-    for (int i = 0; i < 3; i++) {
-      Vector<Double> temp_loc = new Vector<Double>();
-      for (int j = 0; j < NUMBER_OF_AMPLIFIER_LABELS; j++) {
-        temp_loc.add(0.0);
-      }
-      amplifierCostsAndTypes.add(temp_loc);
-    }
-
-    // initialize matrix switchCostsAndTypes_ppr with zeros
-    for (int i = 0; i < 2; i++) {
-      Vector<Double> temp_loc = new Vector<Double>();
-      for (int j = 0; j < NUMBER_OF_SWITCH_LABELS + 1; j++) {
-        temp_loc.add(0.0);
-      }
-      switchCostsAndTypes.add(temp_loc);
-    }
-    // build up matrixes with correct values
-
-    // initialize matrix nodePositions_ppr with the right values
-    for (int i = 0; i < nodePositions.size(); i++)
-      for (int j = 0; j < nodePositions.get(i).size(); j++)
-        nodePositions.get(i).set(j, geolocationCoords[i][j]);
-
-    // initialize matrix amplifierCostsAndTypes_ppr with the right values
-    for (int i = 0; i < amplifierCostsAndTypes.size(); i++)
-      for (int j = 0; j < amplifierCostsAndTypes.get(i).size(); j++)
-        amplifierCostsAndTypes.get(i).set(j, AMPLIFIERS_COSTS_AND_LABELS[i][j]);
-
-    // initialize matrix aswitchCostsAndTypes_ppr with the right values
-    for (int i = 0; i < switchCostsAndTypes.size(); i++)
-      for (int j = 0; j < switchCostsAndTypes.get(i).size(); j++)
-        switchCostsAndTypes.get(i).set(j, SWITCHES_COSTS_AND_LABELS[i][j]);
-
-    Vector<Node> nodes = new Vector<Node>();
-    // network nodes
-    double GSWITCH = -3.0; // in dB
-    double SNR = 40.0; // in dB
-    double LPOWER = 0.0; // in DBm
-    for (int k = 0; k < numNodes; k++) {
-      Node newNode = new Node(GSWITCH, LPOWER, SNR);
-      nodes.add(newNode);
-    }
-
-    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
-        10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
-        MAX_NUMBER_OF_WAVELENGHTS);
-  }
 
   public void reloadProblemWithMultiBand(int networkLoad, GmlData gmlFile, DataToReloadProblem dataToReloadProblem) {
     this.networkLoad = networkLoad;

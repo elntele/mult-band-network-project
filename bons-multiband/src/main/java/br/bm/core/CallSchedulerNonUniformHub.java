@@ -177,6 +177,16 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 	private int numberOfNodesInNetwork; // number of nodes in network
 	private double totalNetworkLoad; // current total network load
 
+	/**
+	 * trafficMatrix is an attribute witch in execution
+	 * time  is chosen as a copy of TRAFFICMATRIX_UNIFORM
+	 * or TRAFFICMATRIX_UNIFORM Matrix. In this method
+	 * trafficMatrix if already load with one this two matrix
+	 * and a change is made over trafficMatrix where each
+	 * value is multiplied for the load of network witch is
+	 * an erlang input parameter.
+	 * @param desiredTotalLoad
+	 */
 	private void scaleTrafficMatrix(double desiredTotalLoad) {
 
 		double scaleFactor_loc = desiredTotalLoad / totalNetworkLoad;
@@ -233,6 +243,7 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 	}
 
 	public void initThisScheduler_mpu(Vector<Vector<Double>> trafficMatrix_par, int numberOfNodesInNetwork_par) {
+		// trafficMatrix_par é trafico uniforme TRAFFICMATRIX_UNIFORM
 		Vector<Double> vectorLine_loc = null;
 		Vector<Double> vectorLineA = null;
 		numberOfNodesInNetwork = numberOfNodesInNetwork_par;
@@ -249,7 +260,11 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 				arrivalTimesMatrix.add(vectorLineA);
 			}
 		}
-
+		// os loops funcionais são esse e o proximo, esse atribui
+		// os valores de trafficMatrix_par quando i!=j, lembrando que
+		// trafficMatrix_par, atualmente está sendo instancianda
+		// como a matrix de tráfego uniforme TRAFFICMATRIX_UNIFORM na
+		// linha 124.
 		for (int i = 0; i < numberOfNodesInNetwork_par; i++) {
 			// atribui valores para a matriz de trafego
 			for (int j = 0; j < numberOfNodesInNetwork_par; j++) {
@@ -260,7 +275,8 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 				}
 			}
 		}
-
+// nesse looop a matrix de chegada recebe max_time quando traficMatrix[i][j]==0.0
+		// ou um valor calculado em função de traficMatrix[i][j] quando traficMatrix[i][j]!=0.0
 		for (int i = 0; i < numberOfNodesInNetwork; i++) {
 			// atribui valores para a matriz de chegadas
 			for (int j = 0; j < numberOfNodesInNetwork; j++) {
@@ -271,7 +287,7 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 				}
 			}
 		}
-		
+		// this function make a summation over totalNetworkLoad
 		evaluateTotalNetworkLoad_mpr();
 
 	}
@@ -287,10 +303,24 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 		scaleTrafficMatrix(totalNetworkLoad_par);
 	}
 
+	/**
+	 * this Builder makes 4 things:
+	 * 1 - copy TRAFFICMATRIX_UNIFORM or TRAFFICMATRIX_NON_UNIFORM_RANDOM
+	 *     to the attribute trafficMatrix: the decision is maked in line 124.
+	 * 2 - fulfill the attribute arrivalTimesMatrix in function of trafficMatrix.
+	 * 3 - make a summation over totalNetworkLoad attribute in function of trafficMatrix
+	 * 4 - multiplied each value in trafficMatrix for the load of network witch
+	 *    is an erlang input parameter.
+	 * @param numberOfNodesInNetwork_par
+	 * @param totalNetworkLoad_par
+	 */
+
 	public CallSchedulerNonUniformHub(int numberOfNodesInNetwork_par, double totalNetworkLoad_par) {
 		Vector<Double> vectorLine_loc = null;
 		Vector<Vector<Double>> tempMatrix_loc = new Vector<Vector<Double>>();
 		// cria matriz com valores nulos
+		// by jorge: Is a matrix nxn,  where n is the node number,
+		// where each inside c=vector has n positions fulfilled with 0.0
 		for (int i = 0; i < numberOfNodesInNetwork_par; i++) {
 			for (int j = 0; j < numberOfNodesInNetwork_par; j++) {
 				vectorLine_loc = new Vector<Double>();
@@ -305,6 +335,8 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 		for (int i = 0; i < numberOfNodesInNetwork_par; i++) {
 			for (int j = 0; j < numberOfNodesInNetwork_par; j++) {
 				if (i != j) {
+					// TRAFFICMATRIX is took fromm TRAFFICMATRIX_UNIFORM
+					// in line 124, that is, this is uniform traffic.
 					tempMatrix_loc.get(i).set(j, TRAFFICMATRIX[i][j]);
 				} else {
 					tempMatrix_loc.get(i).set(j, 0.0);
@@ -312,12 +344,26 @@ public class CallSchedulerNonUniformHub extends CallScheduler {
 
 			}
 		}
-		// monta a matriz apartir da ante
-
+		// monta a matriz a partir da anterior
+		// this method has 3 function:
+		// 1 - copy matrix  tempMatrix_loc to attribute trafficMatrix.
+		// 2 - use trafficMatrix to fulfill arrivalTimesMatrix witch is
+		// a time matrix.
+		// 3 -  call a method witch make a summation over totalNetworkLoad attribute.
 		initThisScheduler_mpu(tempMatrix_loc, numberOfNodesInNetwork_par);
+
+		// multiplied each value in trafficMatrix for the load of network witch is an erlang input parameter.
 		scaleTrafficMatrix(totalNetworkLoad_par);
 
 	}
+
+	/**
+	 * this function make a summation over
+	 * attribute totalNetworkLoad accord
+	 * to each value in trafficMatrix
+	 * by danilo
+	 * sentence by jorge
+	 */
 
 	void evaluateTotalNetworkLoad_mpr() {
 		double soma_loc = 0.0;
