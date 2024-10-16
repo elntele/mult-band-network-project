@@ -73,8 +73,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
         // stored in HashMap<Integer, List<Link>> cacheRotas
         dijkstra_fnb(network.getLinks(), k, i, rota, network.getNodes(), ignorePhysicalImpairments);
         cacheRotas.put(k * 1000 + i, rota);
-        // jorge, aqui talvez tenha uma mudança: segundo comentário linha 63 o que se procura é a maior
-        // quantidade de comprimento de onda (w), então, acho que tem que considerar as 3 fibras.
+        //TODO jorge, aqui talvez tenha uma mudança: segundo comentário linha 63 uma das coisas a que se
+        // procura é a maior quantidade de comprimento de onda (w), então,
+        // acho que tem que considerar as 3 fibras.
         if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getLambda())
           nLambdaMax = network.getLinks()[k][i].getFiber(0).getLambda();
       }
