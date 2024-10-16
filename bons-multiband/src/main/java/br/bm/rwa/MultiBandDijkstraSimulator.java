@@ -426,11 +426,20 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       return INF;
     }
     source = path.get(0).getSource();
-    //atenção aqui jorge tem que ver se funciona pegar pelo indice da lista de
-    // características do wss
+    //TODO atenção aqui jorge tem que ver se funciona pegar pelo indice da lista de
+    // características do wss, anteriormente esse parametro era uma double e
+    // agora é uma lista, com a minha modificaçõa foi para uma lista e agora tem
+    // o problema de que tem que multiplicar pelo epsilon de cada nó e não por
+    // um epsilon único, como era no início
+    // Obs: epsilon é o fator de isolamento do WSS.
     epsilon_loc = network.getEpsilon().get(source);
-
+    //TODO epsilon loq tenha que ir como parametro do método somatorioPotSwitch(),
+    // ou o método somatorioPotSwitch() tenha que ter acesso aos tipos de wss do cromossomo
+    // para cunsultar direto na classe Equipaments.
     somatorioPotencias = somatorioPotSwitch(network.getLinks(), network.getNodes(), path, source, lambda);
+    //TODO , jorge aqui por exemoplo: no todo anterior epsilon_loc pega o fator de isolamento
+    // do wss do primeiro nó, mas na nova abordagem o fator de isolamento do primeiro nó pode não ser
+    // o mesmo dos demais nós. então tem que estudar essa parte e modificar se necessário.
     somatorioPotencias *= epsilon_loc;
     nIn = (network.getNodes().get(source).getLaserPower() / network.getNodes().get(source).getLaserSNR())
         + somatorioPotencias;
