@@ -164,6 +164,7 @@ public class Funcoes {
 	 *******************************************************************/
 	public static double somatorioPotSwitch(Link[][] mLinks_par, Vector<Node> vectorOfNodes_par, Vector<Link> path_par,
 			int no, int lambda_par) {
+		//somatorioPotSwitch(network.getLinks(), network.getNodes(), path, source, lambda)
 		double potenciaTemp, somatorioPotencias = 0.0;
 		double potenciaTempA;
 

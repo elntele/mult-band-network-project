@@ -1,12 +1,20 @@
 package org.uma.jmetal.solution.integersolution.impl;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import org.uma.jmetal.solution.AbstractSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.bounds.Bounds;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
+
+import br.cns24.models.FileMap;
 
 /**
  * Defines an implementation of the {@link IntegerSolution} interface
@@ -16,6 +24,8 @@ import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 @SuppressWarnings("serial")
 public class DefaultIntegerSolution extends AbstractSolution<Integer> implements IntegerSolution {
   protected List<Bounds<Integer>> bounds;
+  // added by Jorge Candeias for adequate to proposal
+  public Map<Integer, Set<Integer>> file = new HashMap<>();
 
   /**
    * Constructor
@@ -26,7 +36,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     this.bounds = boundsList;
 
     IntStream.range(0, bounds.size()).forEach(i -> variables().set(
-            i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
+        i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
   }
 
   /**
@@ -42,6 +52,11 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     bounds = solution.bounds;
 
     attributes = new HashMap<>(solution.attributes);
+    file = solution.file.entrySet().stream()
+        .collect(Collectors.toMap(
+            Map.Entry::getKey,
+            entry -> new HashSet<>(entry.getValue())
+        ));
   }
 
   @Override
@@ -53,4 +68,6 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
   public DefaultIntegerSolution copy() {
     return new DefaultIntegerSolution(this);
   }
+
+
 }

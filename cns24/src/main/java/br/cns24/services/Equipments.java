@@ -1,8 +1,11 @@
 package br.cns24.services;
 
+import static java.util.Map.entry;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -55,6 +58,21 @@ public class Equipments {
       { 0, 14, 17, 14, 17, 17.7, 22, 17.5, 22, 13, 16, 13, 16 },// saturation power
       { 0, 9, 9, 5, 5, 12.5, 12.5, 7, 7, 12.6, 12.6, 7, 7 } //noise figure
   };
+// in each list, each 3 position is a set of upgrade or downgrade, because
+// 3 is the set size.
+  private static final Map<String, List<List<Integer>>> edgeEquivalences = Map.ofEntries(
+      // edge as a string       list of downgrade        list upgrade
+      entry("1,0,0", List.of(List.of(1, 0, 0), List.of(1, 0, 0))),
+      entry("1,1,0", List.of(List.of(1, 1, 0), List.of(3, 0, 0))),
+      entry("1,1,1", List.of(List.of(1, 1, 1), List.of(3, 1, 0, 7, 0, 0))),
+      entry("3,0,0", List.of(List.of(1, 1, 0), List.of(3, 0, 0))),
+      entry("3,1,0", List.of(List.of(1, 1, 1), List.of(7, 0, 0))),
+      entry("3,3,0", List.of(List.of(3, 1, 1), List.of(7, 1, 0))),
+      entry("3,3,3", List.of(List.of(3, 3, 3), List.of(7, 3, 1, 7, 7, 0))),
+      entry("7,0,0", List.of(List.of(1, 1, 1, 7, 1, 0), List.of(7, 0, 0))),
+      entry("7,3,0", List.of(List.of(3, 3, 1), List.of(7, 3, 0))),
+      entry("7,7,0", List.of(List.of(3, 3, 3, 7, 3, 1), List.of(7, 7, 0))),
+      entry("7,7,7", List.of(List.of(7, 7, 7), List.of(7, 7, 7))));
 
 
   private final static double COST_MODULE_W_FOR_C_BAND = 1.0;
@@ -65,7 +83,7 @@ public class Equipments {
   public final static double IMPLANT_COST = 0.462;
 
 
-  public static double[][] getEpsilonOrIsolationFactorForThisSwitchList() {
+  public static double[][] getIsolationFactorEpsilonForThisSwitchList() {
     return SWITCHES_COSTS_AND_LABELS;
   }
 
@@ -88,7 +106,7 @@ public class Equipments {
     return new double[][]{ { SWITCHES_COSTS_AND_LABELS[0][index] }, { SWITCHES_COSTS_AND_LABELS[1][index] } };
   }
 
-  public static List<Double> getEpsilonOrIsolationFactorForThisSwitchList(List<Integer> indexes) {
+  public static List<Double> getIsolationFactorEpsilonForThisSwitchList(List<Integer> indexes) {
     return indexes.stream()
         .map(index -> {
           if (index >= 0 && index < SWITCHES_COSTS_AND_LABELS[1].length) {
@@ -204,13 +222,39 @@ public class Equipments {
    * this method receives the i and j index of nodes and
    * returns the index of set in the chromosome connection
    * part.
+   * Attention: i and j are index begging in zero.
+   * numNode should be the exactly numNodes because the function
+   * Address accord the need.
+   * set size is accord the number of fibers.
    *
    * @return index of chromosome
    */
+  public static int getLinkPosition(int i, int j, int numNodes, int setSize) {
+    if (j < i) {
+      var tempI = i;
+      var tempJ = j;
+      j = tempI;
+      i = tempJ;
+    }
 
-  public static int getLinkPosition(int i, int j, int numNodes, int setConnectionsSize) {
-    var positionBeginningOne = (j - (numNodes - 1) * i - i * (i + 1) / 2);
-    var index = positionBeginningOne * setConnectionsSize;
-    return index - setConnectionsSize;
+    int previousIndex = 0;
+    if (i == 0) {
+      return (j - 1) * setSize;
+    } else {
+      previousIndex = i - 1;
+    }
+    int maxJ = numNodes - 1;
+    return setSize * (maxJ + (maxJ * previousIndex - previousIndex * (previousIndex + 1) / 2)) + setSize * (j - i) - setSize;
+
   }
+
+  public static boolean compareNodeLevels(int typeNode1, int typeNode2) {
+    return LevelNode.getLevel(typeNode1).equals(LevelNode.getLevel(typeNode2));
+  }
+
+  public static boolean acceptedUpdate(int typeNode) {
+    return (LevelNode.getLevel(typeNode) != LevelNode.BANDCLS);
+  }
+
+
 }

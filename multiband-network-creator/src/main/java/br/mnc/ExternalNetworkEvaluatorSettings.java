@@ -9,12 +9,18 @@ import br.cns24.model.GmlData;
 import br.cns24.model.GmlEdge;
 import br.cns24.model.GmlNode;
 import br.cns24.persistence.GmlDao;
+import br.cns24.services.Equipments;
+import br.cns24.services.LevelNode;
+import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -29,14 +35,21 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Integer[] upperBounds;
   private Integer[] lowerBounds;
   private Integer tailRoadmPlusW;
+  private Integer setSize;
+  private Integer conteCreate = 0;
 
   @Override
   public IntegerSolution createSolution() {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
         numberOfConstraints());
     //call an initializer here
-    CreateRandomNetWork(integerSolution);
-    System.out.println("oh eu aqui de novo");
+    //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
+    createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
+  //  System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
+   // System.out.println("variables na criação: ");
+    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none",
+        ((DefaultIntegerSolution) integerSolution).file);
+    //   System.out.println("oh eu aqui de novo");
     return integerSolution;
   }
 
@@ -63,6 +76,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * to hold the final index position of the 'internal for'
    * in each iteration. It's because the 'internal for' next
    * iteration will begin in the last stopped position +1.
+   *
    * @param solution
    */
 
@@ -70,8 +84,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     Random random = new Random();
     var connections = AllowedConnectionTable.getPossibleConnection();
     var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
-    IntStream.iterate(0, stepByIndexes -> stepByIndexes + 3)
-        .limit(connectionPartLimit / 3)
+    IntStream.iterate(0, stepByIndexes -> stepByIndexes + setSize)
+        .limit(connectionPartLimit / setSize)
         .forEach(index -> {
           // in 50% of times don't create connection between nodes
           if (random.nextBoolean()) {
@@ -84,6 +98,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
           } else {
             // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
             // remembering that 0 means no connection and consequently no edge/fiber
+            boolean neighbor = false;
             solution.variables()
                 .set(index, connections[random.nextInt(connections.length)]);
             solution.variables()
@@ -101,7 +116,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var offset = 1;
     for (int i = 0; i < numNode; i++) { //go through matrix column by index i
       var maxEquipment = 0;
-      var nextLimit = externalObserverCount + (numNode - offset) * 3;
+      var nextLimit = externalObserverCount + (numNode - offset) * setSize;
       for (int j = externalObserverCount; j < nextLimit; j++) {//go through matrix line by index j
         if (solution.variables().get(j) > maxEquipment) {
           maxEquipment = solution.variables().get(j);
@@ -113,6 +128,50 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
       solution.variables().set(roadmIndex, randomlySelectSwitch(maxEquipment));
       roadmIndex++;
+    }
+  }
+
+
+  void createRandomNetworkWithNodeNeighborhoodInformation(
+      IntegerSolution solution
+  ) {
+    fullFillFile((DefaultIntegerSolution) solution);
+    Random random = new Random();
+    var possibleConnection = AllowedConnectionTable.getPossibleConnection();
+    for (int i = 0; i < gml.getNodes().size(); i++) {
+      for (int j = i + 1; j < gml.getNodes().size(); j++) {
+        var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
+        var result = random.nextDouble();
+
+        if (result <= 0.875) {
+          for (int w = 0; w < setSize; w++) {
+            solution.variables()
+                .set(index + w, 0);
+          }
+
+        } else {
+          // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
+          // remembering that 0 means no connection and consequently no edge/fiber
+
+          //feed file attribute of neighborhood
+          for (int w = 0; w < setSize; w++) {
+            var edge = possibleConnection[random.nextInt(possibleConnection.length)];
+            solution.variables().set(index + w, edge);
+            if (edge != 0) {
+              ((DefaultIntegerSolution) solution).file.get(i).add(j);
+              ((DefaultIntegerSolution) solution).file.get(j).add(i);
+            }
+          }
+        }
+      }
+    }
+  }
+
+
+  private void fullFillFile(DefaultIntegerSolution solution) {
+    for (int i = 0; i < gml.getNodes().size(); i++) {
+      var set = new HashSet<Integer>();
+      solution.file.put(i, set);
     }
   }
 
@@ -142,9 +201,45 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    *
    * @param solution
    */
-
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
+    evaluateConstraints((DefaultIntegerSolution) solution);
+    int load = 100;
+    Integer[] vars = new Integer[solution.variables()
+        .size()];
+    for (int i = 0; i < vars.length; i++) {
+      vars[i] = (Integer) solution.variables()
+          .get(i);
+    }
+
+    System.out.println("conte Evaluate: " + this.contEvaluate);
+    this.contEvaluate += 1;
+    GmlData gmlData = getGmlData(gml.getNodes(), vars);
+    if (solution.constraints()[0] > 0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE;
+    } else if (solution.constraints()[1] > 0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE / 2;
+    } else if (solution.constraints()[2] > 0) {
+      solution.objectives()[0] = 1.0;
+      solution.objectives()[1] = Double.MAX_VALUE / 5;
+    } else {
+      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
+      var dataToReloadProblem = setProblemCharacteristic(solution);
+      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
+      Double[] objectives = P.evaluate(vars);
+      //    solution.objectives()[0] = objectives[0];
+      Random random = new Random();
+      solution.objectives()[0] = random.nextDouble();// para testes
+      solution.objectives()[1] = objectives[1];
+    }
+    return solution;
+  }
+
+ /* @Override
+  public IntegerSolution evaluate(IntegerSolution solution) {
+    evaluateConstraints((DefaultIntegerSolution) solution);
     int load = 100;
     Integer[] vars = new Integer[solution.variables()
         .size()];
@@ -164,10 +259,110 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-  //    solution.objectives()[0] = objectives[0];
+      //    solution.objectives()[0] = objectives[0];
+      solution.objectives()[0] = 1.0;// para testes
       solution.objectives()[1] = objectives[1];
     }
     return solution;
+  }*/
+
+
+  /**
+   * this method calculate the  constraint
+   * g1(x), g2(x), g3(x).
+   *
+   * @param solution
+   */
+  public void evaluateConstraints(DefaultIntegerSolution solution) {
+    solution.constraints()[0] = isolatedNodes(solution);
+    solution.constraints()[1] = inadequateEquipment(solution);
+    solution.constraints()[2] = additionalBandBeforeBandC(solution);
+  }
+
+  /**
+   * this method calculate the rate over
+   * node isolated, and it represents
+   * the constraint g1(x).
+   *
+   * @param solution
+   */
+  private Double isolatedNodes(DefaultIntegerSolution solution) {
+    double isolatedNodeCount = 0.0;
+    for (var entry : solution.file.entrySet()) {
+      Set<Integer> set = (Set<Integer>) entry.getValue();
+      if (set.isEmpty()) {
+        isolatedNodeCount++;
+      }
+    }
+    return isolatedNodeCount / gml.getNodes().size();
+  }
+
+
+  /**
+   * this method calculate the rate over
+   * node who not address the fiber technology,
+   * and it represents the constraint g2(x):
+   * sun of nodes that do not address each link
+   * divided by node degree sun.
+   *
+   * @param solution
+   */
+  private Double inadequateEquipment(DefaultIntegerSolution solution) {
+    var numNode = gml.getNodes().size();
+    var nodeBeginPart = solution.variables().size() - (numNode + 1);
+    var wssNodes = solution.variables().subList(nodeBeginPart, solution.variables().size() - 1);
+    var nodeNoteAttend = 0.0;
+    int[] nodesDegree = new int[numNode];
+    for (int i = 0; i < nodesDegree.length; i++) {
+      nodesDegree[i] = 0;
+    }
+    for (int i = 0; i < numNode; i++) {
+      for (int j = i + 1; j < numNode; j++) {
+        var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
+        for (int w = 0; w < setSize; w++) {
+          var link = solution.variables().get(beginLinkPosition + w);
+          if (link != 0) {
+            nodesDegree[i] += 1;
+            nodesDegree[j] += 1;
+          }
+          if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(i), link)) {
+            nodeNoteAttend += 1;
+          }
+          if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(j), link)) {
+            nodeNoteAttend += 1;
+          }
+        }
+      }
+    }
+    var sumOfNodeDegrees = Arrays.stream(nodesDegree).sum();
+    if (sumOfNodeDegrees == 0) sumOfNodeDegrees = 1;
+    return (nodeNoteAttend / sumOfNodeDegrees);
+  }
+
+  /**
+   * this method calculate the rate over
+   * links with additional band being used
+   * without use of c band, and it represents
+   * the constraint g3(x).
+   *
+   * @param solution
+   */
+  private Double additionalBandBeforeBandC(DefaultIntegerSolution solution) {
+    var numNode = gml.getNodes().size();
+    var setViolateRoles = 0.0;
+    for (int i = 0; i < numNode; i++) {
+      for (int j = i + 1; j < numNode; j++) {
+        var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
+        for (int w = 0; w < setSize; w++) {
+          var link = solution.variables().get(beginLinkPosition + w);
+          switch (link) {
+            case 2, 4, 6 -> setViolateRoles += 1;
+          }
+        }
+      }
+    }
+    var totalFiber = 3 * ((numNode * numNode) - numNode) / 2;
+    return (setViolateRoles / totalFiber);
   }
 
   /**
@@ -257,7 +452,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
                   }
                   edgeSets.add(edgeSet);
-                  varIndex[0] += 3;
+                  varIndex[0] += setSize;
                   return edgeSets;
                 })
                 .flatMap(List::stream))
@@ -271,7 +466,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   private void gmlBuild() {
     //String path = "./selectedCityInPernabucoState.gml";
-    String path = "./teste.gml";
+    String path = "./teste2.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {
@@ -312,13 +507,15 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     );
   }
 
-  public ExternalNetworkEvaluatorSettings() {
+  public ExternalNetworkEvaluatorSettings(Integer setSize) {
     super();
+    this.setSize = setSize;
     gmlBuild();
     this.numberOfObjectives(2);
+    this.numberOfConstraints(3);
     var numberOfNodes = gml.getNodes()
         .size();
-    var numberOfVariables = (3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
+    var numberOfVariables = (setSize * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);
 
     this.upperBounds = new Integer[numberOfVariables];
     this.lowerBounds = new Integer[numberOfVariables];
@@ -336,6 +533,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       this.lowerBounds[i] = 0;
       this.upperBounds[i] = 7;
     }
+
 
     for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {

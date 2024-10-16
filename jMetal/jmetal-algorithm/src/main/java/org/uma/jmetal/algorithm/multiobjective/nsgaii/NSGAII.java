@@ -3,6 +3,7 @@ package org.uma.jmetal.algorithm.multiobjective.nsgaii;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
 import org.uma.jmetal.algorithm.impl.AbstractGeneticAlgorithm;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -10,9 +11,12 @@ import org.uma.jmetal.operator.selection.SelectionOperator;
 import org.uma.jmetal.operator.selection.impl.RankingAndCrowdingSelection;
 import org.uma.jmetal.problem.Problem;
 import org.uma.jmetal.solution.Solution;
+import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.SolutionListUtils;
 import org.uma.jmetal.util.comparator.dominanceComparator.impl.DefaultDominanceComparator;
 import org.uma.jmetal.util.evaluator.SolutionListEvaluator;
+
+import br.cns24.services.PrintPopulation;
 
 /**
  * @author Antonio J. Nebro <antonio@lcc.uma.es>
@@ -83,6 +87,17 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   @Override
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
+
+    if (evaluations==10||evaluations == 100) {
+      population.stream().forEach(s -> {
+        var constraint1 = ((Solution) s).constraints()[0];
+        var constraint2 = ((Solution) s).constraints()[1];
+        var constraint3 = ((Solution) s).constraints()[2];
+
+        PrintPopulation.printMatrix(((Solution) s).variables(), 10, Double.toString(constraint1),
+            Double.toString(constraint2), Double.toString(constraint3), ((DefaultIntegerSolution)s).file);
+      });
+    }
 
     return population;
   }
