@@ -19,6 +19,7 @@ import java.util.Vector;
 import br.bm.core.Call;
 import br.bm.core.CallList;
 import br.bm.core.CallScheduler;
+import br.bm.core.CallSchedulerNonUniformHub;
 import br.bm.core.Fiber;
 import br.bm.core.INetwork;
 import br.bm.core.Link;
@@ -44,8 +45,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
   }
 
 
-  public void simulateMultiBand(INetwork net, CallScheduler scheduler, int minCalls) {
+  public void simulateMultiBand(INetwork net, CallScheduler genericScheduler, int minCalls) {
     MultiBandNetWorkProfile network = (MultiBandNetWorkProfile) net;
+    CallSchedulerNonUniformHub scheduler = (CallSchedulerNonUniformHub) genericScheduler;
     int x = 0, y = 0;
     int nLambdaMax = 0, usarLambda = 0;
     int numCallsBlockedLackOfWaveLenght = 0;
@@ -65,7 +67,7 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       for (int i = 0; i < network.getNodes().size(); i++) {
         Vector<Link> rota = new Vector<Link>();
         // here is inside a loop double for where the first for iterate with k from 0 until
-        // numNodes-1 ande the second with i from 0 until numNodes-1. The dijkstra_fnb()
+        // numNodes-1 and the second with i from 0 until numNodes-1. The dijkstra_fnb()
         // method fulfill the Vector<Link> rota with the path of Links from the origin k node
         // until the last i node.
         // Then, each iterate catch the path from k node until i node, being k de begin node
@@ -87,6 +89,8 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
         listOfCalls.zerachamadas_mpu(scheduler.getCurrentTime());
         scheduler.resetTime_mpu();
       }
+      //this method gerate source node, destine node
+      // call time ??? Ask to danilo
       scheduler.generateCallRequisition();
       x = scheduler.getNextSourceNode();
       y = scheduler.getNextDestinationNode();
@@ -116,6 +120,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       } else if (usarLambda == BLOQ_DISPERSION) {
         numCallsBlockedDispersion++;
       } else { // the call has been accepted no regenerators were used
+        //TODO jorge, acho que aqui é aquele lance que carmelo falou
+        // de totalmente transparente em que escolhe um canal e ocupa ele.
+
         tempCall.setWavelengthUp(usarLambda);
         tempCall.setWavelengthDown(usarLambda);
 
@@ -170,92 +177,14 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
    * @param cacheRotas
    * @param lambdaEncontrado
    */
-  protected int getStatusRota(MultiBandNetWorkProfile network, int origem, int destino, Vector<Link> rotaUplink,
-      Vector<Link> rotaDownlink, Map<Integer, List<Link>> cacheRotas, int[] lambdaEncontrado) {
-    int retorno = -1;
-    rotaUplink.clear(); // limpa a vari�vel q calcula a rota direta
-    rotaDownlink.clear(); // limpa a vari�vel q calcula a rota de volta
-    rotaUplink.addAll(cacheRotas.get(origem * 1000 + destino));
-    // encontra o comprimento de onda por First Fit para os casos de minhops
-    // e menor distancia (dijkstra) reverte a rota encontrada
-    for (int j = rotaUplink.size() - 1; j >= 0; j--) {
-      int destination_loc = rotaUplink.get(j).getSource();
-      int source_loc = rotaUplink.get(j).getDestination();
-      rotaDownlink.add(network.getLinks()[source_loc][destination_loc]);
-    }
-    // procura para cada lambda
-    retorno = firstFit(network, rotaUplink, rotaDownlink, lambdaEncontrado, retorno);
-
-    if (retorno == -1) // nao h� lambda disponivel
-    {
-      return BLOQ_WAVELENGTH;
-    }
-
-    if (!ignorePhysicalImpairments) {
-      // calcula o alargamento temporal devido � PMD da fibra de
-      // transmissao
-      double timePulseBroadeningPmd_loc = TIME_PULSE_BROADENING_PMD_P1
-          * calculoPmd_fnb(rotaUplink, TAXA_BITS, D_PMD);
-      // calcula o alargamento temporal resultante devido a PMD
-      double pulseBroadeningPmd_loc = sqrt(timePulseBroadeningPmd_loc * timePulseBroadeningPmd_loc);
-      // calcula o delta t(%) resultante
-      double totalDeltaPulseBroadening = abs(DELTA_PMD_P1 * pulseBroadeningPmd_loc
-          + calculoRd_fnb(rotaUplink, TAXA_BITS, LARGURA_LINHA, GAMA, retorno));
-
-      if (totalDeltaPulseBroadening > DELTA) {
-        return BLOQ_DISPERSION;
-      }
-      // a qualidade do servico e insuficiente, retorna valor
-      // apropriado a
-      // ser
-      // tratado
-      if (getSNR(network, rotaUplink, retorno) < SNR_THRESHOLD
-          || getSNR(network, rotaDownlink, retorno) < SNR_THRESHOLD) {
-        return BLOQ_BER;
-      }
-    }
-    double latency = 0;
-    double latencyAux = 0;
-    // TODO: gravar dados de lat�ncia do trasmissor
-    // delay de interfaces de rede
-    latencyAux = 2 * 51.2e-9;
-    latency += latencyAux;
-    // delay de transponders
-    latencyAux = 2 * 10e-6;
-    latency += latencyAux;
-    // delay de booster e pre
-    latencyAux = 2 * 0.15e-6;
-    latency += latencyAux;
-    for (int j = rotaUplink.size() - 1; j >= 0; j--) {
-      // TODO: gravar dados de latencia da rota
-      latencyAux = 4.9e-6 * rotaUplink.get(j).getLength();
-      latency += latencyAux;
-      // delay de compensadores de dispers�o
-      latencyAux = latencyAux * 0.25;
-      latency += latencyAux;
-
-    }
-    // TODO: gravar dados de latencia no receptor
-//		System.out.printf("Lat�ncia = %.4f\n", latency * 1e6);
-
-    return retorno;
-  }
-
-
-  /**
-   * Retorna um lambda para uso ou um codigo de erro.
-   *
-   * @param network
-   * @param origem
-   * @param destino
-   * @param rotaUplink
-   * @param rotaDownlink
-   * @param cacheRotas
-   * @param lambdaEncontrado
-   */
-  protected int getStatusMultiBandRota(MultiBandNetWorkProfile network, int origem, int destino,
+  protected int getStatusMultiBandRota(
+      MultiBandNetWorkProfile network,
+      int origem, int destino,
       Vector<Link> rotaUplink,
-      Vector<Link> rotaDownlink, Map<Integer, List<Link>> cacheRotas, int[] lambdaEncontrado) {
+      Vector<Link> rotaDownlink,
+      Map<Integer,
+      List<Link>> cacheRotas,
+      int[] lambdaEncontrado) {
     int retorno = -1;
     rotaUplink.clear(); // limpa a vari�vel q calcula a rota direta
     rotaDownlink.clear(); // limpa a vari�vel q calcula a rota de volta
@@ -268,6 +197,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       rotaDownlink.add(network.getLinks()[source_loc][destination_loc]);
     }
     // procura para cada lambda
+    //TODO jorge, nesse ponto chama a função pra encontrar caminho de luz disponível
+    // é quase certeza que vai precisar alterar essa função firstFit pra procurar
+    // nas 3 fibras e nas 3 bandas.
     retorno = firstFit(network, rotaUplink, rotaDownlink, lambdaEncontrado, retorno);
 
     if (retorno == -1) // nao h� lambda disponivel
@@ -275,6 +207,8 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       return BLOQ_WAVELENGTH;
     }
 
+    //TODO jorge, aqui vem a questão dos impedimentos da camada física como
+    // alargamento temporal, de certeza tem que alterar de acordo com a banda.
     if (!ignorePhysicalImpairments) {
       // calcula o alargamento temporal devido � PMD da fibra de
       // transmissao
@@ -298,6 +232,8 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
         return BLOQ_BER;
       }
     }
+    //TODO jorge, essas latências talvez devam virar parametros e serem escolhidas
+    // conforme a banda.
     double latency = 0;
     double latencyAux = 0;
     // TODO: gravar dados de lat�ncia do trasmissor
@@ -347,7 +283,7 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       rotaDownlink.add(network.getLinks()[source_loc][destination_loc]);
     }
     // procura para cada lambda
-   // retorno = firstFit(network, rotaUplink, rotaDownlink, lambdaEncontrado, retorno);
+    // retorno = firstFit(network, rotaUplink, rotaDownlink, lambdaEncontrado, retorno);
     // retorno = newMostUsed(network, rotaUplink, rotaDownlink,
     // lambdaEncontrado, retorno, mapa);
 
@@ -441,8 +377,10 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
     // do wss do primeiro nó, mas na nova abordagem o fator de isolamento do primeiro nó pode não ser
     // o mesmo dos demais nós. então tem que estudar essa parte e modificar se necessário.
     somatorioPotencias *= epsilon_loc;
+    // nIn deve ser noiseIn
     nIn = (network.getNodes().get(source).getLaserPower() / network.getNodes().get(source).getLaserSNR())
         + somatorioPotencias;
+    //sIn deve ser signalIn
     sIn = network.getNodes().get(source).getLaserPower();
 
     for (int j = 0; j < path.size(); j++) {
@@ -453,6 +391,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       destino = path.get(j).getDestination();
 
       swAtenuation = network.getNodes().get(destino).getSwitchAtenuation();
+      //TODO, jorge, aqui em muxDemuxGain, fiberGain, LMux2Exp, G1G2 e nInPart3 vai depender
+      // da banda que a fibra opera, eu acredito, isso provavelmente vai depender
+      // de estudos para ser elucidado
       muxDemuxGain = path.get(j).getFiber(0).getMuxDemuxGain();
       fiberGain = path.get(j).getFiber(0).getGain();
       LMux2Exp = muxDemuxGain * muxDemuxGain * path.get(j).getFiber(0).getGain();

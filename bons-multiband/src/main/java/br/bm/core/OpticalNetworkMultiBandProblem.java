@@ -386,7 +386,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     int NLAMBDAS = networkRepresentation_ppr.get(vectorSize_loc - 1);
 
     // instancia os enlaces
-    //TODO nesse ponto se constroem os links que foi verificado o uso na probabilidade
+    //TODO jorge nesse ponto se constroem os links que foi verificado o uso na probabilidade
     // de bloqueio desde o loop que informa o dijkstra na parte onde se calcuna nLambida
     // maximo. É preciso estudar esse loop e vê como considerar os 3 enlaces para calculo
     // do lambida.
