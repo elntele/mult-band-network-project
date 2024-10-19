@@ -50,6 +50,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   private Vector<Vector<Double>> nodePositions = new Vector<Vector<Double>>();
   private Vector<Vector<Double>> amplifierCostsAndTypes = new Vector<Vector<Double>>();
   private Vector<Vector<Double>> switchCostsAndTypes = new Vector<Vector<Double>>();
+  private Integer setSize;
 
   public static double[][] AMPLIFIERS_COSTS_AND_LABELS = new double[][]{
       { 0, 0.75, 1.5, 2.25, 0.5, 1, 1.5, 0.25, 0.5, 0.75 }, // cost
@@ -61,7 +62,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
   public static double[][] SWITCHES_COSTS_AND_LABELS = new double[][]{ { 0.25, 0.5, 0.75, 1, 1.5, 2.0 }, // costs
       { 27, 30, 33, 35, 38, 40 } }; // isolation factor in dB
-  public  List <Integer> switchIndexes;
+  public List<Integer> switchIndexes;
 
   public static final int BLOQ_WAVELENGTH = -1;
   public static final int BLOQ_BER = -2;
@@ -168,7 +169,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   public OpticalNetworkMultiBandProblem(int networkLoad, String gmlFile) {
     this.networkLoad = networkLoad;
     bpEstimator = new BlockingProbabilityEstimator(networkLoad);
-   // capexEvaluator = new CapexEvaluator();
+    // capexEvaluator = new CapexEvaluator();
     energyConsumptionEvaluator = new EnergyConsumptionEvaluator();
     algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
@@ -292,7 +293,8 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
       nodes.add(newNode);
     }
 
-    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false,
+        true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }// aqui
@@ -334,53 +336,61 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   }
 
   /**
-   * começa por essa função jorge
-   * ela instancia os enlaces
-   * analisa como deixar no formato de set.
-   * 
+   * description by jorge: solutions is a list of Integer and
+   * variables is a copy of solution as an Array and
+   * networkRepresentation_ppr is an of variable as a list
+   *
    * @param variables
-   * @return
    */
   @Override
   public Double[] evaluate(Integer[] variables) {
     Double[] objectives = new Double[numberOfObjectives];
-
+    //TODO: jorge, after all, investigate if these conversions are really
+    // necessary, for this, begin the investigation on evaluate method in
+    // ExternalNetworkEvaluateSettings class.
     List<Integer> networkRepresentation_ppr = Arrays.asList(variables);
     Vector<Vector<Double>> adjacencyMatrixLabels;
-
+    //already adapted to set connection concept
     adjacencyMatrixLabels = buildAdjacencyMatrixLabels(networkRepresentation_ppr);
-
+    //already adapted to set connection concept
     Vector<Vector<Double>> adjacencyMatrix = buildAdjacencyMatrixDistances(
-        networkRepresentation_ppr,
         adjacencyMatrixLabels
     );
 
     int vectorSize_loc = networkRepresentation_ppr.size();
+    //me parece que distancias e adjacencyMatrix são exattamente a
+    // mesma coisa, investigar depois e ver qual a necessidade
     Double[][] distancias = getDistancias(adjacencyMatrix);
-    Link[][] links;
-    double[][] matrizGanho;
 
-    // Creating the matrix that defines network topology
-    links = new Link[numNodes][numNodes];
+
+    // Creating the matrix of Links that defines network topology
+    var links = new Link[numNodes][numNodes];
     for (int k = 0; k < numNodes; k++)
       links[k] = new Link[numNodes];
 
     // Creating the matrix that defines the gains in amp on network
-    matrizGanho = new double[numNodes][numNodes];
+    var GainMatrix = new double[numNodes][numNodes];
     for (int k = 0; k < numNodes; k++)
-      matrizGanho[k] = new double[numNodes];
+      GainMatrix[k] = new double[numNodes];
 
-    // inicia matriz de ganhos com zeros
-    for (int k = 0; k < numNodes; k++)
-      for (int w = 0; w < numNodes; w++)
-        matrizGanho[k][w] = 0;
+    // fulfill gainMatrix with zeros
+    for (int k = 0; k < numNodes; k++) {
+      for (int w = 0; w < numNodes; w++) {
+        GainMatrix[k][w] = 0;
+      }
+    }
 
-    // inicia matriz de ganhos com valor de ganhos corretos
-    for (int k = 0; k < numNodes; k++)
-      for (int w = 0; w < numNodes; w++)
-        if (distancias[k][w] != INF)
-          matrizGanho[k][w] = ((distancias[k][w] / 2.0) * 0.2 - GMUX - GSWITCH / 2) * MF;
-
+    // fulfill gainMatrix with zeros definitive values
+    for (int k = 0; k < numNodes; k++) {
+      for (int w = 0; w < numNodes; w++) {
+        if (distancias[k][w] != INF) {
+          // the mux gain and wss gain is not defined since last project. So, the both gain is given
+          // as the last project without optimization and equals  GMUX and GSWITCH constants.
+          // therefore, it's already adapted to the concepts od multi band and Set.
+          GainMatrix[k][w] = ((distancias[k][w] / 2.0) * 0.2 - GMUX - GSWITCH / 2) * MF;
+        }
+      }
+    }
     // determines the number of wavelength per link
 
     int NLAMBDAS = networkRepresentation_ppr.get(vectorSize_loc - 1);
@@ -390,19 +400,20 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     // de bloqueio desde o loop que informa o dijkstra na parte onde se calcuna nLambida
     // maximo. É preciso estudar esse loop e vê como considerar os 3 enlaces para calculo
     // do lambida.
-    for (int k = 0; k < numNodes; k++)
+    for (int k = 0; k < numNodes; k++) {
       for (int w = 0; w < numNodes; w++) {
         // reads the amplifier satuarion power and noise figure
         double NF = amplifierCostsAndTypes.get(2).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
         double PSAT = amplifierCostsAndTypes.get(1).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
 
         if (distancias[k][w] != INF)
-          links[k][w] = new Link(k, w, FIBRAS, NLAMBDAS, GMUX, matrizGanho[k][w], NF, PSAT, distancias[k][w],
-              GFIBRA, matrizGanho[k][w], NF, PSAT, ganhodinamico_loc);
+          links[k][w] = new Link(k, w, FIBRAS, NLAMBDAS, GMUX, GainMatrix[k][w], NF, PSAT, distancias[k][w],
+              GFIBRA, GainMatrix[k][w], NF, PSAT, ganhodinamico_loc);
         else
           links[k][w] = new Link(k, w, FIBRAS, 0, -4.0, 0.0, 5.0, 16.0, INF, -0.2, 0.0, 5.0, 16.0,
               ganhodinamico_loc);
       }
+    }
 
 
 
@@ -421,8 +432,8 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
- //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
-  //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
+    //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
+    //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
     // objectives[4] =
     // naturalConnectivityEvaluator.evaluate(net).getValue();
 
@@ -497,18 +508,29 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     return distancias;
   }
 
-  private Vector<Vector<Double>> buildAdjacencyMatrixDistances(List<Integer> solution,
+  /**
+   * description by jorge:
+   * this method fulfill a distance matrix where
+   * if nodeI and nodeJ is not connected or nodeI
+   * is equals nodeJ distanceMatrix[i][j] = INF,
+   * where INF is a constant witch means infinite
+   * distance. Otherwise, distanceMatrix[i][j] =
+   * real distance. This method don't need adaptations
+   * to work with set concept.
+   *
+   * @param labelMatrix_loc
+   */
+  private Vector<Vector<Double>> buildAdjacencyMatrixDistances(
       Vector<Vector<Double>> labelMatrix_loc) {
-    Vector<Vector<Double>> adjacencyMatrix_loc = new Vector<Vector<Double>>();
+    var adjacencyMatrix_loc = new Vector<Vector<Double>>();
 
-    // fills up adjacencyMatrix_loc with
+    // fills up adjacencyMatrix_loc with zero
     for (int i = 0; i < numNodes; i++) {
       Vector<Double> temp_loc = new Vector<Double>();
       assign(temp_loc, numNodes, 0.0);
       adjacencyMatrix_loc.add(temp_loc);
     }
-    // melhorar este algoritmo dps da para fazer o segundo for comecando
-    // apenas do i atual
+
     for (int i = 0; i < numNodes; i++)
       for (int j = 0; j < numNodes; j++) {
         if ((i == j) || (labelMatrix_loc.get(i).get(j) == 0))
@@ -521,46 +543,68 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     return adjacencyMatrix_loc;
   }
 
+  /**
+   * this function receives an empty Vector<Double>
+   * called temp_loc and fulfill with a value in
+   * variable val and repeat this until arrive in size
+   * indicated in variable tam.
+   *
+   * @param temp_loc
+   * @param tam
+   * @param val
+   */
   private void assign(Vector<Double> temp_loc, int tam, double val) {
     for (int i = 0; i < tam; i++) {
       temp_loc.add(val);
     }
   }
 
+  /**
+   * by jorge:
+   * List<Integer> networkRepresentation_ppr is a
+   * copy of solution including all parts.
+   * This function is already adapted to consider a connection set.
+   * Then, considering the setSize the method verify all connection
+   * in each connection set in chromosome and decide if a node is
+   * connected or not with others. So, this method build and return
+   * a connection matrix.
+   * this method was inspired in original by Danilo
+   *
+   * @param networkRepresentation_ppr
+   */
+
   private Vector<Vector<Double>> buildAdjacencyMatrixLabels(List<Integer> networkRepresentation_ppr) {
 
     int vectorSize_loc = networkRepresentation_ppr.size();
     Vector<Vector<Double>> adjacencyMatrix_loc = new Vector<Vector<Double>>();
 
-    // fills up adjacencyMatrix_loc with zeros
-    IntStream.iterate(0, i -> i<numNodes, i->i+1).forEach(i->{
+    // fills up adjacencyMatrix_loc[nodesSize][nodesSize] with zeros
+    IntStream.iterate(0, i -> i < numNodes, i -> i + 1).forEach(i -> {
       Vector<Double> temp_loc = new Vector<Double>();
       assign(temp_loc, numNodes, 0.0);
       adjacencyMatrix_loc.add(temp_loc);
     });
 
-    AtomicInteger i = new AtomicInteger(0);
-    AtomicInteger j = new AtomicInteger(1);
-
-    IntStream.iterate(0, k -> k < (vectorSize_loc - (numNodes + 1)), k -> k + 3).forEach(k -> {
-      var edgeOne = networkRepresentation_ppr.get(k);
-      var edgeTwo = networkRepresentation_ppr.get(k + 1);
-      var edgeTree = networkRepresentation_ppr.get(k + 2);
-      if (edgeOne > 0 || edgeTwo > 0 || edgeTree > 0) {
-        adjacencyMatrix_loc.get(i.get()).set(j.get(), 1.0);
-        adjacencyMatrix_loc.get(j.get()).set(i.get(), 1.0);
-      } else {
-        adjacencyMatrix_loc.get(i.get()).set(j.get(), 0.0);
-        adjacencyMatrix_loc.get(j.get()).set(i.get(), 0.0);
+    // this loop run over chromosome walking with step setSize by setSize
+    // over connection matrix part. To do it, is used the function
+    // Equipments.getLinkPosition() witch returns chromosome's index in
+    // connections matrix part.
+    for (int i = 0; i < numNodes; i++) {
+      for (int j = i + 1; j < numNodes; j++) {
+        var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
+        var sumLinks = 0;
+        for (int set = 0; set < setSize; set++) {
+          sumLinks += networkRepresentation_ppr.get(index + set);
+        }
+        if (sumLinks > 0) {
+          adjacencyMatrix_loc.get(i).set(j, 1.0);
+          adjacencyMatrix_loc.get(j).set(i, 1.0);
+        } else {
+          adjacencyMatrix_loc.get(i).set(j, 0.0);
+          adjacencyMatrix_loc.get(j).set(i, 0.0);
+        }
       }
-
-      j.incrementAndGet();
-      if (j.get() == numNodes) {
-        i.incrementAndGet();
-        j.set(i.get() + 1);
-      }
-    });
-
+    }
     return adjacencyMatrix_loc;
   }
 
@@ -696,6 +740,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     naturalConnectivityEvaluator = new NaturalConnectivityEvaluator();
 
     numberOfObjectives = dataToReloadProblem.numberOfObjectives();
+    setSize = dataToReloadProblem.setSize();
 
     data = gmlFile;
 
@@ -703,8 +748,8 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     numberOfVariables = dataToReloadProblem.numberOfVariables();
 
-    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables-(numNodes +1),numberOfVariables-1);
-
+    this.switchIndexes = dataToReloadProblem.variable().subList(numberOfVariables - (numNodes + 1),
+        numberOfVariables - 1);
 
 
     geolocationCoords = new double[numNodes][2];
@@ -717,7 +762,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     }
 
     defaultSolution = new Integer[numberOfVariables];
-    var variables= dataToReloadProblem.variable();
+    var variables = dataToReloadProblem.variable();
 
     variables.toArray(defaultSolution);
 
@@ -797,8 +842,8 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     }
 
 
-
-    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false, true,
+    net = new MultiBandNetWorkProfile(null, nodes, networkLoad, 0.01, 100000, SNR_BLOCK, true, true, true, true, false,
+        true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
   }

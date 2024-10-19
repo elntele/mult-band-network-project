@@ -503,7 +503,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         solution.objectives().length,
         solution.variables(),
         lowerBounds,
-        upperBounds
+        upperBounds,
+        setSize
     );
   }
 
