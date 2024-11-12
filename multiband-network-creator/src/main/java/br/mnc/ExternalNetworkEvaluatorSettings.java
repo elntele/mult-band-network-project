@@ -231,7 +231,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       Double[] objectives = P.evaluate(vars);
       //    solution.objectives()[0] = objectives[0];
       Random random = new Random();
-      solution.objectives()[0] = random.nextDouble();// para testes
+      solution.objectives()[0] = objectives[0]/*random.nextDouble()*/;// para testes
       solution.objectives()[1] = objectives[1];
     }
     return solution;
@@ -465,8 +465,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void gmlBuild() {
-    //String path = "./selectedCityInPernabucoState.gml";
-    String path = "./teste2.gml";
+  //  String path = "./selectedCityInPernabucoState.gml";
+    String path = "./teste.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {

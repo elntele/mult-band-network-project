@@ -22,7 +22,6 @@ import br.bm.core.CallScheduler;
 import br.bm.core.Fiber;
 import br.bm.core.Link;
 import br.bm.core.NetworkProfile;
-import br.bm.rwa.OpticalNetworkSimulatorAbstract;
 
 public class SimulatorLowEffects extends OpticalNetworkSimulatorAbstract {
 
@@ -59,8 +58,8 @@ public class SimulatorLowEffects extends OpticalNetworkSimulatorAbstract {
 				Vector<Link> rota = new Vector<Link>();
 				dijkstra_fnb(network.getLinks(), k, i, rota, network.getNodes());
 				cacheRotas.put(k * 1000 + i, rota);
-				if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getLambda())
-					nLambdaMax = network.getLinks()[k][i].getFiber(0).getLambda();
+				if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getcLambda())
+					nLambdaMax = network.getLinks()[k][i].getFiber(0).getcLambda();
 			}
 		}
 		network.setnLambdaMax(nLambdaMax);

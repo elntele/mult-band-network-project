@@ -66,7 +66,7 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
     for (int k = 0; k < network.getNodes().size(); k++) {
       for (int i = 0; i < network.getNodes().size(); i++) {
         Vector<Link> rota = new Vector<Link>();
-        // here is inside a loop double for where the first for iterate with k from 0 until
+        // here is inside a 'double loop for' where the first for iterate with k from 0 until
         // numNodes-1 and the second with i from 0 until numNodes-1. The dijkstra_fnb()
         // method fulfill the Vector<Link> rota with the path of Links from the origin k node
         // until the last i node.
@@ -78,8 +78,13 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
         //TODO jorge, aqui talvez tenha uma mudança: segundo comentário linha 63 uma das coisas a que se
         // procura é a maior quantidade de comprimento de onda (w), então,
         // acho que tem que considerar as 3 fibras.
-        if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getLambda())
-          nLambdaMax = network.getLinks()[k][i].getFiber(0).getLambda();
+        // ATUALIZAÇÂO: ja teve alreração - mostrar a danilo:
+        // antes er agetLambda() e não tinha o for, era só a fibra zero e agora ta getTotalLambda()
+        // e tem o for pra pegar todas as fibras
+        for (int j=0; j< network.getLinks()[k][i].getNumFibers(); j++){
+        if (nLambdaMax < network.getLinks()[k][i].getFiber(j).getTotalLambda())
+          nLambdaMax = network.getLinks()[k][i].getFiber(j).getTotalLambda();
+        }
       }
     }
     network.setnLambdaMax(nLambdaMax);
@@ -111,6 +116,9 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
       // regenerators
 
       int[] lambdaEncontrado_loc = { 0 };
+      //TODO, jorge, acho que tem que se concentrar aqui pra estabelecer se houve um bloqueio
+      // porque um caminho de luz que se iniciou na banda c encntrou um estágio que só tinha l e s
+      // no caminho. Se isso acontecer é BLOQ_WAVELENGTH
       usarLambda = getStatusMultiBandRota(network, x, y, rotaUplink, rotaDownlink, cacheRotas, lambdaEncontrado_loc);
       // ve se realmente existe uma rota
       if (usarLambda == BLOQ_WAVELENGTH) {
@@ -319,7 +327,7 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
     return retorno;
   }
 
-  /**
+  /** lambda encontrado começa com {0} e retorno -1
    * @param network
    * @param rotaUplink
    * @param rotaDownlink
@@ -329,18 +337,51 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
   public int firstFit(MultiBandNetWorkProfile network, Vector<Link> rotaUplink, Vector<Link> rotaDownlink,
       int[] lambdaEncontrado, int retorno) {
     boolean lambdaDisponivel_loc;
+    //TODO, jorge, aqui é que usa o lambda maximo, e pela logica antiga o lambida máximo
+    // era um característica geral, todavia, agora é uma característica do link, e tem que pestar
+    // atenção ali no otaUplink.get(i).getFiber(0) porque ta consultando o lambida sõ na fibra 0
+    // e o lambida pode estar na outra fibra se houver mais de uma.
     for (int nLambda_loc = 0; (nLambda_loc < network.getnLambdaMax()); nLambda_loc++) {
       lambdaDisponivel_loc = true;
-      for (int i = 0; i < rotaUplink.size(); i++) {
+      // this loop look all links between a pair of nodes origin destine, including all node in path
+      // and appoint if a lambda is free for all path.
+      /*for (int i = 0; i < rotaUplink.size(); i++) {
         // se lambda nao disponivel
-        if ((!rotaUplink.get(i).getFibers().isEmpty()
-            && rotaUplink.get(i).getFiber(0).isLambdaAvailable(nLambda_loc) == false)
-            || (!rotaDownlink.get(i).getFibers().isEmpty()
-            && rotaDownlink.get(i).getFiber(0).isLambdaAvailable(nLambda_loc) == false)) {
+        // in this if verify route: first in up link, after in down link.
+        if ((!rotaUplink.get(i).getFibers().isEmpty()// if route i in up link is not empty.
+            && rotaUplink.get(i).getFiber(0).isLambdaAvailable(nLambda_loc) == false)// if route to go, if fiber 0 is free
+            || (!rotaDownlink.get(i).getFibers().isEmpty()// if route i in down link is not empty.
+            && rotaDownlink.get(i).getFiber(0).isLambdaAvailable(nLambda_loc) == false)) {// if route to back, if fiber 0 is free
           lambdaDisponivel_loc = false;
           break;
         }
+      }*/
+
+      for (int i = 0; i < rotaUplink.size(); i++) {
+        // se lambda nao disponivel
+        // in this if verify route: first in up link, after in down link.
+        for (int w=0; w<network.getSetSize(); w++) {
+          if(!rotaUplink.get(i).getFibers().isEmpty()){
+
+            if (rotaUplink.get(i).getFiber(0).isLambdaAvailable(
+                nLambda_loc) == false){
+
+            }
+          }
+          if ((!rotaUplink.get(i).getFibers().isEmpty()// if route i in up link is not empty.
+              && rotaUplink.get(i).getFiber(0).isLambdaAvailable(
+              nLambda_loc) == false)// if route to go, if fiber 0 is free
+              || (!rotaDownlink.get(i).getFibers().isEmpty()// if route i in down link is not empty.
+              && rotaDownlink.get(i).getFiber(0).isLambdaAvailable(
+              nLambda_loc) == false)) {// if route to back, if fiber 0 is free
+            lambdaDisponivel_loc = false;
+            break;
+          }
+        }
       }
+
+
+
       if (lambdaDisponivel_loc) {
         retorno = nLambda_loc;
         lambdaEncontrado[0] = retorno;

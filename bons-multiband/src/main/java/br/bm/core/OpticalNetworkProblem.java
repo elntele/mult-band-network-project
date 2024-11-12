@@ -375,12 +375,12 @@ public class OpticalNetworkProblem implements IProblem<Integer, Double> {
         double NF = amplifierCostsAndTypes.get(2).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
         double PSAT = amplifierCostsAndTypes.get(1).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
 
-        if (distancias[k][w] != INF)
+      /*  if (distancias[k][w] != INF)
           links[k][w] = new Link(k, w, FIBRAS, NLAMBDAS, GMUX, matrizGanho[k][w], NF, PSAT, distancias[k][w],
               GFIBRA, matrizGanho[k][w], NF, PSAT, ganhodinamico_loc);
         else
           links[k][w] = new Link(k, w, FIBRAS, 0, -4.0, 0.0, 5.0, 16.0, INF, -0.2, 0.0, 5.0, 16.0,
-              ganhodinamico_loc);
+              ganhodinamico_loc);*/
       }
 
     net.setEpsilon(

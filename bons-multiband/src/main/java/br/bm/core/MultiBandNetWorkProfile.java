@@ -38,6 +38,7 @@ public class MultiBandNetWorkProfile implements INetwork{
   private double oxcIsolationFactor;
   private Double[][] completeDistances;
   private ComplexNetwork cn;
+  private int setSize;
 
   public MultiBandNetWorkProfile(){
     super();
@@ -620,5 +621,13 @@ public class MultiBandNetWorkProfile implements INetwork{
 
   public void setNetworkLoad(int networkLoad) {
     this.networkLoad = networkLoad;
+  }
+
+  public int getSetSize() {
+    return setSize;
+  }
+
+  public void setSetSize(int setSize) {
+    this.setSize = setSize;
   }
 }

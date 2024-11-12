@@ -9,10 +9,13 @@ import static java.lang.Math.sqrt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import br.bm.model.cost.capex.MultiBandCapexEvaluator;
@@ -48,6 +51,9 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   private boolean ganhodinamico_loc = true;
 
   private Vector<Vector<Double>> nodePositions = new Vector<Vector<Double>>();
+  // amplifierCostsAndTypes ta pegando valores de  AMPLIFIERS_COSTS_AND_LABELS
+  // na linha 843, tem que ver se isso tem que ser corrigido porque tem as caracteristicas
+  // do amplificador que são passadas para o objeto Link
   private Vector<Vector<Double>> amplifierCostsAndTypes = new Vector<Vector<Double>>();
   private Vector<Vector<Double>> switchCostsAndTypes = new Vector<Vector<Double>>();
   private Integer setSize;
@@ -147,9 +153,11 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     return time;
   }
 
+  /*  */
+
   /**
    * Teste da funcao que converte para os tempos do tramsponder
-   */
+   *//*
   public static void main(String[] args) {
     //os tres tempos a seguir devem ser os tempos que voc� obt�m em tempo de execu��o
     double tempoAES256 = 1548;
@@ -164,6 +172,132 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     System.out.printf("Tempo do AES no transponder = %.2f micro segundos\n", tempoAESTransponder * 1e6);
     System.out.printf("Tempo do 3DES no transponder = %.2f micro segundos\n", tempo3DESTransponder * 1e6);
     System.out.printf("Tempo do RC4 no transponder = %.2f micro segundos\n", tempo3RC4Transponder * 1e6);
+  }*/
+  public static void main(String[] args) {
+    var setSize = 3;
+    var nodeNumber = 4;
+    var numberOfObjectives = 2;
+    var roadmPlusW_Part = nodeNumber + 1;
+    var solutionSize = (setSize * nodeNumber * (nodeNumber - 1) / 2) + roadmPlusW_Part;
+    var matrixConnectionPart = solutionSize - roadmPlusW_Part;
+    Integer[] vars = new Integer[solutionSize];
+    var str = "3 0 3 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 5 5 1 9 22";
+    var arrayStr = str.split(" ");
+    for (int i = 0; i < vars.length; i++) {
+      vars[i] = Integer.parseInt(arrayStr[i]);
+    }
+    List<Integer> solutionRawDateAsList = Arrays.asList(vars);
+    var upperBounds = new Integer[solutionSize];
+    var lowerBounds = new Integer[solutionSize];
+    for (int i = 0; i < matrixConnectionPart; i++) {
+      lowerBounds[i] = 0;
+      upperBounds[i] = 7;
+    }
+
+    for (int i = solutionSize - roadmPlusW_Part; i < solutionSize; i++) {
+      if (i < solutionSize - 1) {
+        lowerBounds[i] = 1;
+        upperBounds[i] = 12;
+      } else {
+        lowerBounds[i] = 4;
+        upperBounds[i] = 40;
+      }
+    }
+
+
+    var dataToReloadProblem = new DataToReloadProblem(
+        solutionSize,
+        numberOfObjectives,
+        solutionRawDateAsList,
+        lowerBounds,
+        upperBounds,
+        setSize
+    );
+
+    String path = "./teste.gml";
+    GmlData gml = null;
+    try {
+      gml = new GmlDao().loadGmlData(path);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    Map<Integer, GmlNode> mapNode = new HashMap<Integer, GmlNode>();
+    gml.getNodes()
+        .stream()
+        .forEach(node -> mapNode.put(node.getId(), node));
+
+    GmlData gmlData = getGmlData(gml.getNodes(), vars, setSize, gml, mapNode);
+    OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
+    P.reloadProblemWithMultiBand(100, gmlData, dataToReloadProblem);
+    Double[] objectives = P.evaluate(vars);
+  }
+
+  /**
+   * this is an aid function to main function for test
+   *
+   * @param nodes
+   * @param vars
+   */
+  private static GmlData getGmlData(List<GmlNode> nodes, Integer[] vars, int setSize, GmlData gml,
+      Map<Integer, GmlNode> mapNode) {
+    GmlData gmlData = new GmlData();
+    gmlData.setNodes(nodes);
+    gmlData.setEdgeSets(buildSet(nodes, vars, setSize, gml, mapNode));
+    return gmlData;
+  }
+
+  private static List<EdgeSet> buildSet(List<GmlNode> nodesList, Integer[] vars, int setSize, GmlData gml,
+      Map<Integer, GmlNode> mapNode) {
+    //it is used to allows modification inside lambda
+    int[] varIndex = { 0 };
+    List<Integer> varList = Arrays.asList(vars);
+
+    return IntStream.range(0, nodesList.size()).boxed().flatMap(
+            nodeOriginIndex -> IntStream.range(nodeOriginIndex, nodesList.size()).filter(
+                    nodeTargetIndex -> nodeOriginIndex != nodeTargetIndex).mapToObj(nodeTargetIndex -> {
+                  List<EdgeSet> edgeSets = new ArrayList<>();
+                  var edgeSet = new EdgeSet();
+                  var fiberOne = varList.get(varIndex[0]);
+                  var fiberTwo = varList.get(varIndex[0] + 1);
+                  var fiberThree = varList.get(varIndex[0] + 2);
+
+                  if (fiberOne != 0) {
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberOne, gml, mapNode));
+                  }
+                  if (fiberTwo != 0) {
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberTwo, gml, mapNode));
+                  }
+                  if (fiberThree != 0) {
+                    edgeSet.getEdges().add(buildEdge(nodeOriginIndex, nodeTargetIndex, fiberThree, gml, mapNode));
+
+                  }
+                  edgeSets.add(edgeSet);
+                  varIndex[0] += setSize;
+                  return edgeSets;
+                })
+                .flatMap(List::stream))
+        .collect(Collectors.toList());
+
+  }
+
+  /**
+   * * this is an aid function to main function for test
+   *
+   * @param nodeOriginIndex
+   * @param nodeTargetIndex
+   * @param fiber
+   */
+  private static GmlEdge buildEdge(Integer nodeOriginIndex, Integer nodeTargetIndex, Integer fiber, GmlData gml,
+      Map<Integer, GmlNode> mapNode) {
+    var edge = new GmlEdge();
+    edge.setSource(mapNode.get(gml.getNodes()
+        .get(nodeOriginIndex)
+        .getId()));
+    edge.setTarget(mapNode.get(gml.getNodes()
+        .get(nodeTargetIndex)
+        .getId()));
+    edge.setBand(Bands.getBand(fiber));
+    return edge;
   }
 
   public OpticalNetworkMultiBandProblem(int networkLoad, String gmlFile) {
@@ -338,7 +472,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   /**
    * description by jorge: solutions is a list of Integer and
    * variables is a copy of solution as an Array and
-   * networkRepresentation_ppr is an of variable as a list
+   * networkRepresentation_ppr is a copy of variable as a list
    *
    * @param variables
    */
@@ -400,18 +534,32 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     // de bloqueio desde o loop que informa o dijkstra na parte onde se calcuna nLambida
     // maximo. É preciso estudar esse loop e vê como considerar os 3 enlaces para calculo
     // do lambida.
+    // já mexido:
+    // numero de fibra passou de uma para o numero de fibras do set; foi adicionado o parametro
+    // lista bands, que é uma lista de bandas que pode conter os valores esperados c, cl e cls
+    // de acordo com as fibras do set no cromossomo.
     for (int k = 0; k < numNodes; k++) {
       for (int w = 0; w < numNodes; w++) {
         // reads the amplifier satuarion power and noise figure
         double NF = amplifierCostsAndTypes.get(2).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
         double PSAT = amplifierCostsAndTypes.get(1).get((int) round(adjacencyMatrixLabels.get(k).get(w)));
 
-        if (distancias[k][w] != INF)
-          links[k][w] = new Link(k, w, FIBRAS, NLAMBDAS, GMUX, GainMatrix[k][w], NF, PSAT, distancias[k][w],
-              GFIBRA, GainMatrix[k][w], NF, PSAT, ganhodinamico_loc);
-        else
+        if (distancias[k][w] != INF) {
+          var indexOfSet = Equipments.getLinkPosition(k, w, numNodes, setSize);
+          var numberOdFibers = 0;
+          var bands = new ArrayList<Integer>();
+          for (int i = 0; i < setSize; i++) {
+            if (networkRepresentation_ppr.get(indexOfSet + i) != 0) {
+              numberOdFibers += 1;
+              bands.add(networkRepresentation_ppr.get(indexOfSet + i));
+            }
+          }
+          links[k][w] = new Link(k, w, numberOdFibers, NLAMBDAS, GMUX, GainMatrix[k][w], NF, PSAT, distancias[k][w],
+              GFIBRA, GainMatrix[k][w], NF, PSAT, ganhodinamico_loc, bands);
+        } else {
           links[k][w] = new Link(k, w, FIBRAS, 0, -4.0, 0.0, 5.0, 16.0, INF, -0.2, 0.0, 5.0, 16.0,
-              ganhodinamico_loc);
+              ganhodinamico_loc, List.of(0));
+        }
       }
     }
 
@@ -608,7 +756,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     return adjacencyMatrix_loc;
   }
 
-
+/*
   private Vector<Vector<EdgeSet>> buildAdjacencyMatrixLabelsMultiBand(List<Integer> networkRepresentation_ppr) {
 
     int vectorSize_loc = networkRepresentation_ppr.size();
@@ -657,7 +805,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     });
 
     return adjacencyMatrix_loc;
-  }
+  }*/
 
 
   @Override
@@ -846,6 +994,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
         true,
         10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
         MAX_NUMBER_OF_WAVELENGHTS);
+  net.setSetSize(setSize);
   }
 
   public OpticalNetworkMultiBandProblem() {
