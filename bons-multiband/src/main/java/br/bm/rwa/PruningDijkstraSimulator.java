@@ -49,8 +49,8 @@ public class PruningDijkstraSimulator extends SimpleDijkstraSimulator {
 				Vector<Link> rota = new Vector<Link>();
 				dijkstra_fnb(network.getLinks(), k, i, rota, network.getNodes());
 				cacheRotas.put(k * 1000 + i, rota);
-				if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getcLambda())
-					nLambdaMax = network.getLinks()[k][i].getFiber(0).getcLambda();
+				if (nLambdaMax < network.getLinks()[k][i].getFiber(0).getLambda())
+					nLambdaMax = network.getLinks()[k][i].getFiber(0).getLambda();
 			}
 
 		}

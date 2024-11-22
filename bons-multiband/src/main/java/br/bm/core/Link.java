@@ -71,10 +71,9 @@ public class Link implements Cloneable {
 //TODO jorge, aqui tem algo pra ser feito em relação ao sete. A logica atual fala que um link
 // tem um conjunto fibras então tem que ver se é aqui que diferencia as bandas e as fibras.
     for (int i = 1; i <= numFibers; i++) {
-      var lambdaInitial = numOfLambdaPerFiber_par*i;
       fibers.add(new Fiber(numOfLambdaPerFiber_par, source, destination, MuxDemuxGainIndB_par,
           boosterGainIndB_par, boosterNoiseFigure_par, boosterPSat_par, length, fiberGainIndBPerKm_par,
-          preAmpGainIndB_par, preAmpNoiseFigure_par, preAmprPSat_par, dynamicGain, band.get(i - 1), lambdaInitial));
+          preAmpGainIndB_par, preAmpNoiseFigure_par, preAmprPSat_par, dynamicGain, band.get(i - 1)));
       fibers.get(i - 1).setSourceNode(source); //
       fibers.get(i - 1).setDestinationNode(destination); //
     }
@@ -91,7 +90,8 @@ public class Link implements Cloneable {
 
   public int getAvailableFiber(int lambda) {
     for (int i = 0; i < fibers.size(); i++) {
-      if (fibers.get(i).isLambdaAvailable(lambda)) {
+      if (fibers.get(i).isBelowMaxLambda(lambda) &&
+          fibers.get(i).isLambdaAvailable(lambda)) {
         return i;
       }
     }
@@ -252,7 +252,7 @@ public class Link implements Cloneable {
     this.fibers = fibers;
   }
 
-  public boolean getLambdaStatus(int lambda) {
+  public boolean lambdaIsAvaliable(int lambda) {
     boolean isFree = false;
     for (int i = 0; i < numFibers; i++) {
       if (fibers.get(i).isBelowMaxLambda(lambda) &&

@@ -7,15 +7,14 @@ import java.util.Set;
 import java.util.Vector;
 
 import br.cns24.services.Bands;
+import br.cns24.services.Equipments;
 
 public class Fiber {
 	public static final double LAMBDA_INICIAL = 1528.77e-9;
 	public static final double FREQUENCIA_FINAL = (C) / (LAMBDA_INICIAL);
 	public static final double ESPACAMENTO_FREQUENCIA = 100e9;
 
-	private int cLambda;
-	private int lLambda;
-	private int sLambda;
+	private int lambda;
 	private int sourceNode;
 	private int destinationNode;
 	private boolean dynamicGain;
@@ -42,7 +41,7 @@ public class Fiber {
 	private OpticalAmplifier preAmplifier;
 	private double time;
 	private Bands bands;
-	private int lambdaInitial;
+
 
 	public Bands getBands() {
 		return bands;
@@ -70,10 +69,10 @@ public class Fiber {
 		initialize(cLambda);
 	}
 
-	public Fiber(int cLambda, int sourceNode, int destinationNode, double MuxDemuxGainIndB_par,
+	public Fiber(int lambda, int sourceNode, int destinationNode, double MuxDemuxGainIndB_par,
 			double boosterGainIndB_par, double boosterNoiseFigure_par, double boosterPsat_par, double length,
 			double fiberGainDbKm, double preAmpGainIndB_par, double preAmpNoiseFigure_par, double preAmpPsat_par,
-			boolean dynamicGain, int band, int lambdaInitial) {
+			boolean dynamicGain, int band) {
 
 		// creates new boster and pre amp objects
 		booster = new OpticalAmplifier(boosterGainIndB_par, boosterNoiseFigure_par, boosterPsat_par);
@@ -86,8 +85,7 @@ public class Fiber {
 		setCoeficienteAtenuacao(-fiberGainDbKm);
 		setGainMuxDemuxDb(MuxDemuxGainIndB_par);
 		this.bands= Bands.getBand(band);
-		this.lambdaInitial=lambdaInitial;
-		initialize(cLambda);
+		initialize(lambda);
 		time = 0.0;
 	}
 
@@ -114,7 +112,7 @@ public class Fiber {
 
 	public int getNumUsedLambda() {
 		int usedLambda = 0;
-		for (int i = 0; i < cLambda; i++)
+		for (int i = 0; i < lambda; i++)
 			if (!isLambdaAvailable(i))
 				usedLambda++;
 
@@ -126,7 +124,8 @@ public class Fiber {
 	}
 
 	public boolean isLambdaAvailable(int lambda) {
-		return !powerA.isEmpty() && powerA.get(lambda) == 0.0 ;
+			return !powerA.isEmpty() && powerA.get(lambda) == 0.0 ;
+
 	}
 
 	public boolean isMultiBandLambdaAvailable(int lambda) {
@@ -161,28 +160,17 @@ public class Fiber {
 		sumPowerE = 0.0;
 		sumPowerF = 0.0;
 
-		this.cLambda = lambda;
+		this.lambda = lambda;
 	}
 
 	public void initialize(int lambda) {
-		switch (bands){
-      case CBAND -> this.cLambda = lambda;
-      case CLBAND ->{
-        this.cLambda = lambda;
-        this.lLambda = lambda;
-      }
-      case CLSBAND -> {
-        this.cLambda = lambda;
-        this.lLambda = lambda;
-        this.sLambda = lambda;
-      }
-      default -> this.cLambda = lambda;
-    }
-    var lambdaTotal = cLambda+lLambda+sLambda;
+
+		this.lambda = Bands.getTotalChannels(bands, (double) lambda);
+
+		for (int i = 1; i <= this.lambda; i++) {
     //TODO, jorge, mostrar a danilo: aqui foi alretado
     // esse loop interava até lambda e eu coloquei para
     // lambdaTotal que é a soma dos 3 lambidas
-		for (int i = 1; i <= lambdaTotal; i++) {
 			powerA.add(0.0);
 			powerB.add(0.0);
 			powerC.add(0.0);
@@ -259,7 +247,7 @@ public class Fiber {
 		Set<FWMCombination> combinations = FWMUtil.getInstance().getCombinations(usarLambda_par);
 
 		for (FWMCombination combination : combinations){
-			if (combination.i >= this.getcLambda() || combination.j >= this.getcLambda() || combination.k >= this.getcLambda()){
+			if (combination.i >= this.getLambda() || combination.j >= this.getLambda() || combination.k >= this.getLambda()){
 				continue;
 			}
 			// se a combincao existe e os canais foram alocados
@@ -295,7 +283,7 @@ public class Fiber {
 		double[] listaPotencias, potTemp; // potencia de FWM
 		double sumPower;
 
-		nLambda = this.getcLambda();
+		nLambda = this.getLambda();
 		tamanho = 100;
 		count = 0;
 		sumPower = 0.0;
@@ -391,6 +379,9 @@ public class Fiber {
 	}
 
 	public double getPowerF(int lambda) {
+		if (lambda>=  powerF.size()){
+			System.out.println("dsfsvsfv");
+		}
 		return powerF.get(lambda);
 	}
 
@@ -456,18 +447,18 @@ public class Fiber {
 	 *
 	 * @return O valor de lambda
 	 */
-	public int getcLambda() {
-		return cLambda;
+	public int getLambda() {
+		return lambda;
 	}
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo lambda.
 	 *
-	 * @param cLambda
+	 * @param lambda
 	 *            O novo valor de lambda
 	 */
-	public void setcLambda(int cLambda) {
-		this.cLambda = cLambda;
+	public void setLambda(int lambda) {
+		this.lambda = lambda;
 	}
 
 	/**
@@ -907,12 +898,12 @@ public class Fiber {
 	}
 
 	public int getTotalLambda(){
-    return cLambda+lLambda+sLambda;
+    return lambda;
   }
 
 	public boolean isBelowMaxLambda(int lambda){
-    return lambda <= lambdaInitial + cLambda + lambda + sLambda;
-  }
+		return lambda< this.lambda;
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
@@ -922,7 +913,7 @@ public class Fiber {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + destinationNode;
-		result = prime * result + cLambda;
+		result = prime * result + lambda;
 		long temp;
 		temp = Double.doubleToLongBits(length);
 		result = prime * result + (int) (temp ^ (temp >>> 32));
@@ -944,7 +935,7 @@ public class Fiber {
 		Fiber other = (Fiber) obj;
 		if (destinationNode != other.destinationNode)
 			return false;
-		if (cLambda != other.cLambda)
+		if (lambda != other.lambda)
 			return false;
 		if (Double.doubleToLongBits(length) != Double.doubleToLongBits(other.length))
 			return false;

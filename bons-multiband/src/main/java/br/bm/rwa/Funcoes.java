@@ -66,10 +66,16 @@ public class Funcoes {
 		return (sqrt(somatorioPmd_loc) * taxaBits_par * 100);
 	}
 
+
+
 	public static double calculoPmd_fnb(Vector<Link> path_par, double taxaBits_par, double Dpmd_par) {
 		double somatorioPmd_loc = 0.0;
 		double quadDpmd_loc = pow(Dpmd_par, 2);// quadrado de Dpmd
-
+	// Todo, jorge aqui tem que calcular esse pmd de acordo com as características do enlace
+	// então de ante mão já se vê que tem que saber o canal pra entender de qual banda se trata e
+	// 	e calcular quadDpmd_loc de acordo com a tecnologia da banda. Veja que como de 1 a 40
+	// é banda c, de 41 a 120 é banda l e de 121 a 300 (números só de exemplo), já dá pra saber
+	// qual é a banda de numero de w.
 		for (int i = 0; i < path_par.size(); i++) {
 			somatorioPmd_loc += (path_par.get(i).getLength() * (1000.0) * quadDpmd_loc);
 		}

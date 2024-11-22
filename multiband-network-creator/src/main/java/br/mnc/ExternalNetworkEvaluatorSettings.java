@@ -466,7 +466,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   private void gmlBuild() {
   //  String path = "./selectedCityInPernabucoState.gml";
-    String path = "./teste.gml";
+    String path = "./teste2.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {
@@ -543,10 +543,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         this.lowerBounds[i] = 1;
         this.upperBounds[i] = 12;
       } else {
-        ll.add(4);
-        ul.add(40);
-        this.lowerBounds[i] = 4;
-        this.upperBounds[i] = 40;
+        ll.add(10);
+        ul.add(100);
+        this.lowerBounds[i] = 10;
+        this.upperBounds[i] = 100;
       }
     }
     this.variableBounds(ll, ul);

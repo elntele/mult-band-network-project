@@ -175,13 +175,33 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
   }*/
   public static void main(String[] args) {
     var setSize = 3;
-    var nodeNumber = 4;
+    var nodeNumber = 10;
     var numberOfObjectives = 2;
     var roadmPlusW_Part = nodeNumber + 1;
     var solutionSize = (setSize * nodeNumber * (nodeNumber - 1) / 2) + roadmPlusW_Part;
     var matrixConnectionPart = solutionSize - roadmPlusW_Part;
     Integer[] vars = new Integer[solutionSize];
-    var str = "3 0 3 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 5 5 1 9 22";
+    /**
+     * 6  4  2  11  6  12  6  10  5  11
+     *
+     * file: {0=[1,2,6], 1=[2,5,7], 2=[1,7], 3=[4, 5], 4=[3, 8], 5=[3,8,9], 6=[0,7], 7=[6,9], 8=[4,5], 9=[5,7]}
+     *
+     *
+     *     0     1     2     3     4     5     6     7     8     9
+     * 0    x  (107) (330) (000) (000) (000) (033) (000) (000) (000)
+     * 1          x  (001) (000) (000) (010) (000) (030) (000) (000)
+     * 2                x  (010) (000) (000) (000) (000) (000) (000)
+     * 3                      x  (030) (717) (000) (000) (000) (000)
+     * 4                            x  (000) (000) (000) (303) (000)
+     * 5                                  x  (000) (000) (030) (001)
+     * 6                                        x  (077) (000) (000)
+     * 7                                              x  (000) (070)
+     * 8                                                    x  (000)
+     * 9                                                          x
+     */
+
+    //var str = "3 0 3 1 1 0 1 0 0 1 0 0 0 1 0 0 0 0 5 5 1 9 22";
+    var str = "1 0 7 3 3 0 0 0 0 0 0 0 0 0 0 0 3 3 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0 0 0 3 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0 7 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0 3 0 0 0 0 0 0 0 0 0 0 3 0 0 0 1 0 7 7 0 0 0 0 0 0 0 0 0 0 7 0 0 0 0 6 4 2 11 6 12 6 10 5 11 80";
     var arrayStr = str.split(" ");
     for (int i = 0; i < vars.length; i++) {
       vars[i] = Integer.parseInt(arrayStr[i]);
@@ -199,8 +219,8 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
         lowerBounds[i] = 1;
         upperBounds[i] = 12;
       } else {
-        lowerBounds[i] = 4;
-        upperBounds[i] = 40;
+        lowerBounds[i] = 10;
+        upperBounds[i] = 100;
       }
     }
 
@@ -214,7 +234,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
         setSize
     );
 
-    String path = "./teste.gml";
+    String path = "./teste2.gml";
     GmlData gml = null;
     try {
       gml = new GmlDao().loadGmlData(path);
@@ -547,15 +567,19 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
         if (distancias[k][w] != INF) {
           var indexOfSet = Equipments.getLinkPosition(k, w, numNodes, setSize);
           var numberOdFibers = 0;
-          var bands = new ArrayList<Integer>();
+          var bandsInEachFiber = new ArrayList<Integer>();
+          //Here, the chromosome fiber order lost its sense: if there
+          //are f1 and f3, it doesn’t matter, it’s just 2 fibers, and
+          //in the first one, there is one of the bands which is in the
+          //first position of the list `bandsInEachFiber`, and so on.
           for (int i = 0; i < setSize; i++) {
             if (networkRepresentation_ppr.get(indexOfSet + i) != 0) {
               numberOdFibers += 1;
-              bands.add(networkRepresentation_ppr.get(indexOfSet + i));
+              bandsInEachFiber.add(networkRepresentation_ppr.get(indexOfSet + i));
             }
           }
           links[k][w] = new Link(k, w, numberOdFibers, NLAMBDAS, GMUX, GainMatrix[k][w], NF, PSAT, distancias[k][w],
-              GFIBRA, GainMatrix[k][w], NF, PSAT, ganhodinamico_loc, bands);
+              GFIBRA, GainMatrix[k][w], NF, PSAT, ganhodinamico_loc, bandsInEachFiber);
         } else {
           links[k][w] = new Link(k, w, FIBRAS, 0, -4.0, 0.0, 5.0, 16.0, INF, -0.2, 0.0, 5.0, 16.0,
               ganhodinamico_loc, List.of(0));
