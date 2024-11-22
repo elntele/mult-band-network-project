@@ -22,7 +22,6 @@ import br.bm.core.CallScheduler;
 import br.bm.core.Fiber;
 import br.bm.core.Link;
 import br.bm.core.NetworkProfile;
-import br.bm.rwa.OpticalNetworkSimulatorAbstract;
 
 public class SimulatorLowEffects extends OpticalNetworkSimulatorAbstract {
 

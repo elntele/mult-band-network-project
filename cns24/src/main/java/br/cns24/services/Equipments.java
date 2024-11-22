@@ -82,6 +82,11 @@ public class Equipments {
   public final static double SSMF_COT = 0.03003;
   public final static double IMPLANT_COST = 0.462;
 
+  //number of channels for band:
+  public final static int cBandChannels=40;
+  public final static int lBandChannels=80;
+  public final static int sBandChannels=120;
+
 
   public static double[][] getIsolationFactorEpsilonForThisSwitchList() {
     return SWITCHES_COSTS_AND_LABELS;

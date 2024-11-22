@@ -56,8 +56,8 @@ public enum Bands {
 
   }
 
-  public static int getValue(Bands band){
-    switch (band){
+  public static int getValue(Bands band) {
+    switch (band) {
       case CBAND -> {
         return 1;
       }
@@ -97,6 +97,40 @@ public enum Bands {
       default -> throw new IllegalStateException("Unexpected value: " + node);
     }
 
+  }
+
+  /**
+   * The number w of wavelength path will be a number from
+   * 10 to 100 and will represent the percentage of channels
+   * deployed in the last bands, with the previous bands 100%
+   * deployed. So, this method will return the sum between
+   * the before bands fulfilled and the percent of major band.
+   *
+   * @param bands
+   * @param percent
+   */
+
+  public static int getTotalChannels(Bands bands, Double percent) {
+    switch (bands) {
+      case NOBAND -> {
+        return 0;
+      }
+      case CBAND -> {
+        double value = Equipments.cBandChannels * (percent / 100);
+        return (int) Math.floor(value);
+      }
+      case CLBAND -> {
+        double value = Equipments.lBandChannels * (percent / 100);
+        int clFloor = (int) Math.floor(value);
+        return Equipments.cBandChannels + clFloor;
+      }
+      case CLSBAND -> {
+        double value = Equipments.sBandChannels * (percent / 100);
+        int clsFloor = (int) Math.floor(value);
+        return Equipments.cBandChannels + Equipments.lBandChannels + clsFloor;
+      }
+      default -> throw new RuntimeException("illegal band in getTotalChannels method");
+    }
   }
 }
 

@@ -8,6 +8,7 @@ public record DataToReloadProblem(
     Integer numberOfObjectives,
     List<Integer> variable,
     Integer[] lowerBounds,
-    Integer[] upperBounds
+    Integer[] upperBounds,
+    Integer setSize
 ) {
 }

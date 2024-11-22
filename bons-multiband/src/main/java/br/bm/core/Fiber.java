@@ -6,6 +6,9 @@ import static java.lang.Math.pow;
 import java.util.Set;
 import java.util.Vector;
 
+import br.cns24.services.Bands;
+import br.cns24.services.Equipments;
+
 public class Fiber {
 	public static final double LAMBDA_INICIAL = 1528.77e-9;
 	public static final double FREQUENCIA_FINAL = (C) / (LAMBDA_INICIAL);
@@ -19,6 +22,7 @@ public class Fiber {
 	private double length;
 	private double gain;
 	private double coeficienteAtenuacao;
+	//TODO jorge tem que ver se esses powers servem para as bandas l e s também.
 	private double sumPowerA;
 	private double sumPowerB;
 	private double sumPowerC;
@@ -36,28 +40,39 @@ public class Fiber {
 	private OpticalAmplifier booster;
 	private OpticalAmplifier preAmplifier;
 	private double time;
-	
+	private Bands bands;
+
+
+	public Bands getBands() {
+		return bands;
+	}
+
+	public void setBands(Bands bands) {
+		this.bands = bands;
+	}
+
+
 	public Fiber() {
 		super();
 	}
 
-	public Fiber(int lambda, double length) {
+	public Fiber(int cLambda, double length) {
 		this.length = length;
 
-		initialize(lambda);
+		initialize(cLambda);
 	}
 
-	public Fiber(int lambda, double ganhoPreDb, double perdaMuxDemuxDb, double length, double perdaFibraDbKm,
+	public Fiber(int cLambda, double ganhoPreDb, double perdaMuxDemuxDb, double length, double perdaFibraDbKm,
 			double boosterGainDB) {
 		this.length = length;
 
-		initialize(lambda);
+		initialize(cLambda);
 	}
 
 	public Fiber(int lambda, int sourceNode, int destinationNode, double MuxDemuxGainIndB_par,
 			double boosterGainIndB_par, double boosterNoiseFigure_par, double boosterPsat_par, double length,
 			double fiberGainDbKm, double preAmpGainIndB_par, double preAmpNoiseFigure_par, double preAmpPsat_par,
-			boolean dynamicGain) {
+			boolean dynamicGain, int band) {
 
 		// creates new boster and pre amp objects
 		booster = new OpticalAmplifier(boosterGainIndB_par, boosterNoiseFigure_par, boosterPsat_par);
@@ -69,7 +84,7 @@ public class Fiber {
 		setFiberGainDbKm(fiberGainDbKm);
 		setCoeficienteAtenuacao(-fiberGainDbKm);
 		setGainMuxDemuxDb(MuxDemuxGainIndB_par);
-
+		this.bands= Bands.getBand(band);
 		initialize(lambda);
 		time = 0.0;
 	}
@@ -109,6 +124,11 @@ public class Fiber {
 	}
 
 	public boolean isLambdaAvailable(int lambda) {
+			return !powerA.isEmpty() && powerA.get(lambda) == 0.0 ;
+
+	}
+
+	public boolean isMultiBandLambdaAvailable(int lambda) {
 		return !powerA.isEmpty() && powerA.get(lambda) == 0.0 ;
 	}
 
@@ -144,8 +164,13 @@ public class Fiber {
 	}
 
 	public void initialize(int lambda) {
-		this.lambda = lambda;
-		for (int i = 1; i <= lambda; i++) {
+
+		this.lambda = Bands.getTotalChannels(bands, (double) lambda);
+
+		for (int i = 1; i <= this.lambda; i++) {
+    //TODO, jorge, mostrar a danilo: aqui foi alretado
+    // esse loop interava até lambda e eu coloquei para
+    // lambdaTotal que é a soma dos 3 lambidas
 			powerA.add(0.0);
 			powerB.add(0.0);
 			powerC.add(0.0);
@@ -218,9 +243,9 @@ public class Fiber {
 		listaPotencias = new double[tamanho];
 		inicializarVetor(listaPotencias, tamanho);
 		// procuraram as combina��es de canais que geram o FWM
-		
+
 		Set<FWMCombination> combinations = FWMUtil.getInstance().getCombinations(usarLambda_par);
-		
+
 		for (FWMCombination combination : combinations){
 			if (combination.i >= this.getLambda() || combination.j >= this.getLambda() || combination.k >= this.getLambda()){
 				continue;
@@ -251,7 +276,7 @@ public class Fiber {
 
 		return sumPower;
 	}
-	
+
 	public double getSumPowerFWM(int usarLambda_par, Vector<Node> vectorOfNodes_par) {
 		int nLambda; // variaveis relacionadas aos comprimentos de onda
 		int count, tamanho;
@@ -265,7 +290,7 @@ public class Fiber {
 		listaPotencias = new double[tamanho];
 		inicializarVetor(listaPotencias, tamanho);
 		// procuraram as combinacoees de canais que geram o FWM
-		
+
 		for (int i = 0; i < nLambda; i++)
 			for (int j = 0; j < nLambda; j++)
 				for (int k = 0; k < nLambda; k++){
@@ -292,7 +317,7 @@ public class Fiber {
 						}
 					}
 				}
-					
+
 		listaPotencias = null;
 
 		return sumPower;
@@ -354,6 +379,9 @@ public class Fiber {
 	}
 
 	public double getPowerF(int lambda) {
+		if (lambda>=  powerF.size()){
+			System.out.println("dsfsvsfv");
+		}
 		return powerF.get(lambda);
 	}
 
@@ -416,7 +444,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo lambda.
-	 * 
+	 *
 	 * @return O valor de lambda
 	 */
 	public int getLambda() {
@@ -425,7 +453,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo lambda.
-	 * 
+	 *
 	 * @param lambda
 	 *            O novo valor de lambda
 	 */
@@ -435,7 +463,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sourceNode.
-	 * 
+	 *
 	 * @return O valor de sourceNode
 	 */
 	public int getSourceNode() {
@@ -444,7 +472,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sourceNode.
-	 * 
+	 *
 	 * @param sourceNode
 	 *            O novo valor de sourceNode
 	 */
@@ -454,7 +482,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo destinationNode.
-	 * 
+	 *
 	 * @return O valor de destinationNode
 	 */
 	public int getDestinationNode() {
@@ -463,7 +491,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo destinationNode.
-	 * 
+	 *
 	 * @param destinationNode
 	 *            O novo valor de destinationNode
 	 */
@@ -473,7 +501,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo dynamicGain.
-	 * 
+	 *
 	 * @return O valor de dynamicGain
 	 */
 	public boolean isDynamicGain() {
@@ -482,7 +510,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo dynamicGain.
-	 * 
+	 *
 	 * @param dynamicGain
 	 *            O novo valor de dynamicGain
 	 */
@@ -492,7 +520,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo muxDemuxGain.
-	 * 
+	 *
 	 * @return O valor de muxDemuxGain
 	 */
 	public double getMuxDemuxGain() {
@@ -501,7 +529,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo length.
-	 * 
+	 *
 	 * @return O valor de length
 	 */
 	public double getLength() {
@@ -510,7 +538,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo length.
-	 * 
+	 *
 	 * @param length
 	 *            O novo valor de length
 	 */
@@ -520,7 +548,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo gain.
-	 * 
+	 *
 	 * @return O valor de gain
 	 */
 	public double getGain() {
@@ -529,7 +557,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo coeficienteAtenuacao.
-	 * 
+	 *
 	 * @return O valor de coeficienteAtenuacao
 	 */
 	public double getCoeficienteAtenuacao() {
@@ -538,7 +566,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo coeficienteAtenuacao.
-	 * 
+	 *
 	 * @param coeficienteAtenuacao
 	 *            O novo valor de coeficienteAtenuacao
 	 */
@@ -548,7 +576,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sumPowerA.
-	 * 
+	 *
 	 * @return O valor de sumPowerA
 	 */
 	public double getSumPowerA() {
@@ -557,7 +585,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerA.
-	 * 
+	 *
 	 * @param sumPowerA
 	 *            O novo valor de sumPowerA
 	 */
@@ -567,7 +595,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo sumPowerB.
-	 * 
+	 *
 	 * @return O valor de sumPowerB
 	 */
 	public double getSumPowerB() {
@@ -576,7 +604,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerB.
-	 * 
+	 *
 	 * @param sumPowerB
 	 *            O novo valor de sumPowerB
 	 */
@@ -586,7 +614,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sumPowerC.
-	 * 
+	 *
 	 * @return O valor de sumPowerC
 	 */
 	public double getSumPowerC() {
@@ -595,7 +623,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerC.
-	 * 
+	 *
 	 * @param sumPowerC
 	 *            O novo valor de sumPowerC
 	 */
@@ -605,7 +633,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sumPowerD.
-	 * 
+	 *
 	 * @return O valor de sumPowerD
 	 */
 	public double getSumPowerD() {
@@ -614,7 +642,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerD.
-	 * 
+	 *
 	 * @param sumPowerD
 	 *            O novo valor de sumPowerD
 	 */
@@ -624,7 +652,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sumPowerE.
-	 * 
+	 *
 	 * @return O valor de sumPowerE
 	 */
 	public double getSumPowerE() {
@@ -633,7 +661,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerE.
-	 * 
+	 *
 	 * @param sumPowerE
 	 *            O novo valor de sumPowerE
 	 */
@@ -643,7 +671,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo sumPowerF.
-	 * 
+	 *
 	 * @return O valor de sumPowerF
 	 */
 	public double getSumPowerF() {
@@ -652,7 +680,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo sumPowerF.
-	 * 
+	 *
 	 * @param sumPowerF
 	 *            O novo valor de sumPowerF
 	 */
@@ -662,7 +690,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo powerA.
-	 * 
+	 *
 	 * @return O valor de powerA
 	 */
 	public Vector<Double> getPowerA() {
@@ -671,7 +699,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerA.
-	 * 
+	 *
 	 * @param powerA
 	 *            O novo valor de powerA
 	 */
@@ -681,7 +709,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo powerB.
-	 * 
+	 *
 	 * @return O valor de powerB
 	 */
 	public Vector<Double> getPowerB() {
@@ -690,7 +718,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerB.
-	 * 
+	 *
 	 * @param powerB
 	 *            O novo valor de powerB
 	 */
@@ -700,7 +728,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo powerC.
-	 * 
+	 *
 	 * @return O valor de powerC
 	 */
 	public Vector<Double> getPowerC() {
@@ -709,7 +737,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerC.
-	 * 
+	 *
 	 * @param powerC
 	 *            O novo valor de powerC
 	 */
@@ -719,7 +747,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo powerD.
-	 * 
+	 *
 	 * @return O valor de powerD
 	 */
 	public Vector<Double> getPowerD() {
@@ -728,7 +756,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerD.
-	 * 
+	 *
 	 * @param powerD
 	 *            O novo valor de powerD
 	 */
@@ -738,7 +766,7 @@ public class Fiber {
 
 	/**
 	 * M�todo acessor para obter o valor do atributo powerE.
-	 * 
+	 *
 	 * @return O valor de powerE
 	 */
 	public Vector<Double> getPowerE() {
@@ -747,7 +775,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerE.
-	 * 
+	 *
 	 * @param powerE
 	 *            O novo valor de powerE
 	 */
@@ -757,7 +785,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo powerF.
-	 * 
+	 *
 	 * @return O valor de powerF
 	 */
 	public Vector<Double> getPowerF() {
@@ -766,7 +794,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo powerF.
-	 * 
+	 *
 	 * @param powerF
 	 *            O novo valor de powerF
 	 */
@@ -776,7 +804,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo fwmNoise.
-	 * 
+	 *
 	 * @return O valor de fwmNoise
 	 */
 	public Vector<Double> getFwmNoise() {
@@ -785,7 +813,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo fwmNoise.
-	 * 
+	 *
 	 * @param fwmNoise
 	 *            O novo valor de fwmNoise
 	 */
@@ -795,7 +823,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo frequencies.
-	 * 
+	 *
 	 * @return O valor de frequencies
 	 */
 	public Vector<Double> getFrequencies() {
@@ -804,7 +832,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo frequencies.
-	 * 
+	 *
 	 * @param frequencies
 	 *            O novo valor de frequencies
 	 */
@@ -814,7 +842,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo booster.
-	 * 
+	 *
 	 * @return O valor de booster
 	 */
 	public OpticalAmplifier getBooster() {
@@ -823,7 +851,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo booster.
-	 * 
+	 *
 	 * @param booster
 	 *            O novo valor de booster
 	 */
@@ -833,7 +861,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo preAmplifier.
-	 * 
+	 *
 	 * @return O valor de preAmplifier
 	 */
 	public OpticalAmplifier getPreAmplifier() {
@@ -842,7 +870,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo preAmplifier.
-	 * 
+	 *
 	 * @param preAmplifier
 	 *            O novo valor de preAmplifier
 	 */
@@ -852,7 +880,7 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para obter o valor do atributo time.
-	 * 
+	 *
 	 * @return O valor de time
 	 */
 	public double getTime() {
@@ -861,12 +889,20 @@ public class Fiber {
 
 	/**
 	 * Metodo acessor para alterar o valor do atributo time.
-	 * 
+	 *
 	 * @param time
 	 *            O novo valor de time
 	 */
 	public void setTime(double time) {
 		this.time = time;
+	}
+
+	public int getTotalLambda(){
+    return lambda;
+  }
+
+	public boolean isBelowMaxLambda(int lambda){
+		return lambda< this.lambda;
 	}
 
 	/* (non-Javadoc)
