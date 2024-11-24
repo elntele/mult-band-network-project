@@ -1,7 +1,18 @@
 package br.mnc;
 
+import static br.bm.core.OpticalNetworkProblem.MAX_NUMBER_OF_WAVELENGHTS;
+import static br.bm.core.SimonUtil.LAMBDA_FIRSTFIT;
+import static br.bm.core.SimonUtil.UTILIZAR_DIJ;
+import static java.lang.Math.sqrt;
+
 import br.bm.core.DataToReloadProblem;
+import br.bm.core.MultiBandNetWorkProfile;
+import br.bm.core.Node;
 import br.bm.core.OpticalNetworkMultiBandProblem;
+import br.bm.model.robustness.AlgebraicConnectivityEvaluator;
+import br.cns24.TMetric;
+import br.cns24.experiments.ComplexNetwork;
+import br.cns24.models.TModel;
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Bands;
 import br.cns24.model.EdgeSet;
@@ -14,13 +25,10 @@ import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
-import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -45,9 +53,9 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     //call an initializer here
     //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-  //  System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
-   // System.out.println("variables na criação: ");
-    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none", "none",
+    //  System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
+    // System.out.println("variables na criação: ");
+    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none",
         ((DefaultIntegerSolution) integerSolution).file);
     //   System.out.println("oh eu aqui de novo");
     return integerSolution;
@@ -215,15 +223,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (solution.constraints()[0] > 0) {
+    if (solution.constraints()[0] == 1) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE;
     } else if (solution.constraints()[1] > 0) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = Double.MAX_VALUE / 2;
-    } else if (solution.constraints()[2] > 0) {
-      solution.objectives()[0] = 1.0;
-      solution.objectives()[1] = Double.MAX_VALUE / 5;
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
@@ -274,9 +279,26 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * @param solution
    */
   public void evaluateConstraints(DefaultIntegerSolution solution) {
-    solution.constraints()[0] = isolatedNodes(solution);
+    //solution.constraints()[0] = isolatedNodes(solution);
+    var net = getMockNet();
+    net.setCn(getLocalComplexNetWork(solution));
+    var algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
+    var algebraicConnectivity = algebraicConnectivityEvaluator.evaluate(net).getValue();
+    var inverseAlgebraicConnectivity = 1 / (algebraicConnectivity + 1);
+    solution.constraints()[0] = inverseAlgebraicConnectivity;
     solution.constraints()[1] = inadequateEquipment(solution);
-    solution.constraints()[2] = additionalBandBeforeBandC(solution);
+  }
+
+  /**
+   * this method mock a nMultiBandNetWorkProfile for
+   * be used in calculation of algebraic connectivity
+   */
+  private MultiBandNetWorkProfile getMockNet() {
+    var nodes = new Vector<Node>();
+    return new MultiBandNetWorkProfile(null, nodes, 1000, 0.01, 100000, 17.0, true, true, true, true, false,
+        true,
+        10e9, 0.013e-9, 1.0, 0.04e-12 / sqrt(1000), 0.0, 10.0, LAMBDA_FIRSTFIT, UTILIZAR_DIJ, false,
+        MAX_NUMBER_OF_WAVELENGHTS);
   }
 
   /**
@@ -300,7 +322,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   /**
    * this method calculate the rate over
-   * node who not address the fiber technology,
+   * node which not address the fiber technology,
    * and it represents the constraint g2(x):
    * sun of nodes that do not address each link
    * divided by node degree sun.
@@ -465,7 +487,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void gmlBuild() {
-  //  String path = "./selectedCityInPernabucoState.gml";
+    //  String path = "./selectedCityInPernabucoState.gml";
     String path = "./teste2.gml";
     try {
       this.gml = new GmlDao().loadGmlData(path);
@@ -508,12 +530,59 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     );
   }
 
+
+  /**
+   * Method copied from OpticalNetworkMultiBandProblem.
+   * Since only the algebraic connectivity will be calculated,
+   * distances is being passed as an empty matrix to ComplexNetwork.
+   * In the original function createMultibandComplexNetworkDistance in
+   * OpticalNetworkMultiBandProblem, it is not empty.
+   *
+   * @param s
+   */
+  public ComplexNetwork getLocalComplexNetWork(DefaultIntegerSolution s) {
+    var numNodes = gml.getNodes().size();
+    var connections = s.variables().subList(0, s.variables().size() - (numNodes + 1));
+    Integer[] solution = connections.toArray(new Integer[0]);
+    List<TMetric> metrics = new ArrayList<TMetric>();
+    metrics.add(TMetric.ALGEBRAIC_CONNECTIVITY);
+
+    Integer[][] matrix = new Integer[numNodes][numNodes];
+    var distances = new Double[numNodes][numNodes];
+
+    Double[][] customDistances = new Double[numNodes][numNodes];
+    for (int i = 0; i < matrix.length; i++) {
+      matrix[i][i] = 0;
+      customDistances[i][i] = 0.0;
+      for (int j = i + 1; j < matrix.length; j++) {
+        //TODO, jorge, daqui ateo o primeiro if é onde estou fazendo um parse para
+        // interpretar o cromossomo como 'tem conexão ou não'
+        var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
+        var sum = 0;
+        for (int w = 0; w < setSize; w++) {
+          sum += solution[index + w];
+        }
+        if (sum != 0) {
+          matrix[i][j] = 1;
+          matrix[j][i] = 1;
+        } else {
+          matrix[i][j] = 0;
+          matrix[j][i] = 0;
+          customDistances[i][j] = 0.0;
+          customDistances[j][i] = 0.0;
+        }
+      }
+    }
+    return new ComplexNetwork(0, matrix, new double[numNodes][numNodes], distances, customDistances, TModel.CUSTOM,
+        metrics);
+  }
+
   public ExternalNetworkEvaluatorSettings(Integer setSize) {
     super();
     this.setSize = setSize;
     gmlBuild();
     this.numberOfObjectives(2);
-    this.numberOfConstraints(3);
+    this.numberOfConstraints(2);
     var numberOfNodes = gml.getNodes()
         .size();
     var numberOfVariables = (setSize * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1);

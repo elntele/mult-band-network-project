@@ -12,7 +12,7 @@ public class AllowedConnectionTable {
     private static final String[] cl = {"3", "011"};
     private static final String[] cs = {"5", "101"};
     private static final String[] cls = {"7", "111"};
-    private static final Integer[] possibleConnection ={0,1,3,5,7};
+    private static final Integer[] possibleConnection ={0,1,3,7};
 
     public static String[][] getMatrixConverterPossibleConnection(){
 

@@ -1,5 +1,7 @@
 package br.cns24.services;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -129,8 +131,9 @@ public enum Bands {
         int clsFloor = (int) Math.floor(value);
         return Equipments.cBandChannels + Equipments.lBandChannels + clsFloor;
       }
-      default -> throw new RuntimeException("illegal band in getTotalChannels method");
+      default -> throw new RuntimeException("illegal band in getTotalChannels method:" +bands);
     }
   }
+
 }
 

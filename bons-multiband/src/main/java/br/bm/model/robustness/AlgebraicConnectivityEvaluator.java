@@ -1,6 +1,7 @@
 package br.bm.model.robustness;
 
 import br.bm.core.INetwork;
+import br.bm.core.MultiBandNetWorkProfile;
 import br.bm.core.NetworkProfile;
 import br.bm.model.INetworkEvaluator;
 import br.bm.model.NumericalResult;
@@ -12,7 +13,7 @@ public class AlgebraicConnectivityEvaluator implements INetworkEvaluator<INetwor
 	@Override
 	public NumericalResult evaluate(INetwork network) {
 		return new NumericalResult(TNetworkIndicator.ALGEBRAIC_CONNECTIVITY,
-				((NetworkProfile) network).getCn().getMetricValues().get(TMetric.ALGEBRAIC_CONNECTIVITY));
+				((MultiBandNetWorkProfile) network).getCn().getMetricValues().get(TMetric.ALGEBRAIC_CONNECTIVITY));
 	}
 
 }

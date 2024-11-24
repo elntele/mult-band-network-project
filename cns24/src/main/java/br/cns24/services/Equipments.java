@@ -3,6 +3,8 @@ package br.cns24.services;
 import static java.util.Map.entry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -261,5 +263,27 @@ public class Equipments {
     return (LevelNode.getLevel(typeNode) != LevelNode.BANDCLS);
   }
 
+  public static int getMatchWss(int link){
+    List wssList= Arrays.asList(1,2,3,4,5,6,7,8,9,10,11,12);
+    List wssClList= Arrays.asList(5,6,7,8,9,10,11,12);
+    List wssClsList= Arrays.asList(9,10,11,12);
+    switch (link){
+      case 0, 1->{
+        Collections.shuffle(wssList);
+        return (int) wssList.getFirst();
+
+      }
+      case 3->{
+        Collections.shuffle(wssClList);
+        return (int) wssClList.getFirst();
+
+      }
+      case 7->{
+        Collections.shuffle(wssClsList);
+        return (int) wssClsList.getFirst();
+      }
+    }
+    return 1;
+  }
 
 }

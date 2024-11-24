@@ -50,14 +50,14 @@ public class Main {
         double mutationProbability = 1.0 / problem.numberOfVariables();
         double mutationDistributionIndex = 20.0;
        // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-        mutation = new IntegerTCNEMutation(100,new Random() , 10, 3);
+        mutation = new IntegerTCNEMutation(16,new Random() , 10, 3);
 
         // new: create a comparator of constraint violation
         OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
         // new the constraint comparator now is passed as a parameter
         selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 10).setSelectionOperator(selection).setMaxEvaluations(110).build();
+        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(30000).build();
         AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
         List<IntegerSolution> population;
         population = algorithm.result();
