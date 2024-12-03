@@ -65,70 +65,8 @@ public class Main {
     int w = 1;
     var metrics = new MetricsHolder(problem, algorithmRunner);
     ResultsMetricsDao.saveMetrics(population, metrics);
-    String path = "src/result/print.txt";
-    new File("src/result/").mkdir();
-    new File("src/result/gml").mkdirs();
-    String gmlpath = "src/result/gml";
-    FileWriter arq = null;
-    PrintWriter gravarArq = null;
-
-    try {
-      arq = new FileWriter(path);
-      gravarArq = new PrintWriter(arq);
-      for (IntegerSolution solution : population) {
-        String patch = gmlpath + "/ResultadoGML/" + w + ".gml";
-        save(patch, solution);
-        w += 1;
-      }
-
-      System.out
-          .println("fitness evaluation number" + problem.contEvaluate);
-      gravarArq.printf(
-          "fitness evaluation number" + problem.contEvaluate + '\n');
-      System.out.println("database saved in GML format");
-
-      long computingTime = algorithmRunner.getComputingTime();
-      JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
-      gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
-      printFinalSolutionSet(population);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
-
-      try {
-        if (gravarArq != null) {
-          gravarArq.close();
-        }
-        if (arq != null) {
-          arq.close();
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
 
   }
 
-  public static void save(String patch, IntegerSolution solution) {
 
-           /* Pattern[] arrayPatterns = solution.getLineColumn();
-            Integer[] vars = new Integer[solution.getNumberOfVariables()];
-            for (int i = 0; i < vars.length; i++) {
-                vars[i] = solution.getVariableValue(i);
-            }
-            Map<String, String> informations = new HashMap();
-            informations.put("Country", "Brazil");
-            informations.put("PB", Double.toString(solution.objectives()[0]));
-            informations.put("Capex", Double.toString(solution.objectives()[1]));
-            GmlDao gmlDao = new GmlDao();
-            GmlData gmlData = new GmlData();
-            gmlData.setNodes(patternGml(arrayPatterns));
-            BooleanAndEdge B = makelink(arrayPatterns, vars);
-            gmlData.setEdges(B.getEdges());
-            gmlData.setInformations(informations);
-            gmlData.createComplexNetwork();
-            gmlDao.save(gmlData, patch);*/
-
-
-  }
 }

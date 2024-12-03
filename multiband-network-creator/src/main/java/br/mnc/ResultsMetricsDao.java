@@ -6,19 +6,24 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
-import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.JMetalLogger;
+
+import br.cns24.model.GmlData;
+import br.cns24.persistence.GmlDao;
 
 public class ResultsMetricsDao {
 
   public static void saveMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder) {
     String path = "src/result/print.txt";
-    new File("src/result/").mkdir();
-    new File("src/result/gml").mkdirs();
-    String gmlpath = "src/result/gml";
+    String gmlPath = "src/result/gml/ResultadoGML/";
+    new File(gmlPath).mkdirs();
+
+
     FileWriter arq = null;
     PrintWriter gravarArq = null;
     var problem = metricsHolder.externalNetworkEvaluatorSettings();
@@ -28,8 +33,8 @@ public class ResultsMetricsDao {
       arq = new FileWriter(path);
       gravarArq = new PrintWriter(arq);
       for (IntegerSolution solution : population) {
-        String patch = gmlpath + "/ResultadoGML/" + w + ".gml";
-       // save(patch, solution);
+        String patch = gmlPath  + w + ".gml";
+        save(patch, solution, problem);
         w += 1;
       }
 
@@ -58,5 +63,28 @@ public class ResultsMetricsDao {
         e.printStackTrace();
       }
     }
+  }
+
+  private static void save(String patch, IntegerSolution solution, ExternalNetworkEvaluatorSettings problem ) {
+
+
+            Integer[] vars = new Integer[solution.variables().size()];
+            for (int i = 0; i < vars.length; i++) {
+                vars[i] = solution.variables().get(i);
+            }
+            Map<String, String> informations = new HashMap();
+            informations.put("Country", "Brazil");
+            informations.put("PB", Double.toString(solution.objectives()[0]));
+            informations.put("Capex", Double.toString(solution.objectives()[1]));
+            GmlDao gmlDao = new GmlDao();
+            GmlData gmlData = new GmlData();
+            var nodes = problem.getGml().getNodes();
+            gmlData.setNodes(nodes);
+            gmlData.setEdgesLosingLinkInformation(vars, nodes);
+            gmlData.setInformations(informations);
+            gmlData.createComplexNetwork();
+            gmlDao.save(gmlData, patch);
+
+
   }
 }

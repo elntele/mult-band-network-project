@@ -26,6 +26,7 @@ import br.cns24.TMetric;
 import br.cns24.experiments.ComplexNetwork;
 import br.cns24.experiments.nodePositions.CircularNetwork;
 import br.cns24.models.TModel;
+import br.cns24.services.Equipments;
 
 /**
  * @author Danilo
@@ -624,5 +625,41 @@ public class GmlData implements Cloneable {
 
   public void setEdgeSets(List<EdgeSet> edgeSets) {
     this.edgeSets = edgeSets;
+  }
+
+  /**
+   * owner Jorge Candeias
+   * beware
+   * This method fulfill the list of edges,
+   * with the nodes and array which is the matrix connection.
+   * but, it's losing information about connection because it don't
+   * considere the all fiber and band on one set of
+   * connection.
+   *
+   * @param links
+   * @param nodes
+   */
+  public void setEdgesLosingLinkInformation(Integer[] links, List<GmlNode> nodes ){
+   var setSize=3;
+   List<GmlEdge> edges= new ArrayList<>();
+   var nodeSize=nodes.size();
+    for(int i=0; i<nodeSize; i++){
+      for (int j=i+1; j<nodeSize; j++){
+        var index=Equipments.getLinkPosition(i,j,nodeSize,setSize);
+        var sum=0;
+        for (int w=0;w<setSize; w++){
+          if(links[index+w]!=0){
+            sum+=1;
+          }
+        }
+        if (sum>0){
+          GmlEdge edge = new GmlEdge();
+          edge.setSource(nodes.get(i));
+          edge.setTarget(nodes.get(j));
+          edges.add(edge);
+        }
+      }
+    }
+    this.edges=edges;
   }
 }
