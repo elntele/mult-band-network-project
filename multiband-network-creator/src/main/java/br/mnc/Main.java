@@ -32,73 +32,84 @@ import static org.uma.jmetal.util.AbstractAlgorithmRunner.printFinalSolutionSet;
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
-    public static void main(String[] args) {
+  public static void main(String[] args) {
 
-        Problem<IntegerSolution> problem; // do Jmetal
-        Algorithm<List<IntegerSolution>> algorithm; // do Jmetal
-        CrossoverOperator<IntegerSolution> crossover; // do Jmetal
-        MutationOperator<IntegerSolution> mutation; // do Jmetal
-        SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
-        problem = new ExternalNetworkEvaluatorSettings(3);
+    ExternalNetworkEvaluatorSettings problem; // do Jmetal
+    Algorithm<List<IntegerSolution>> algorithm; // do Jmetal
+    CrossoverOperator<IntegerSolution> crossover; // do Jmetal
+    MutationOperator<IntegerSolution> mutation; // do Jmetal
+    SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
+    problem = new ExternalNetworkEvaluatorSettings(3);
 
 
-        // ****************************
-        double crossoverProbability = 0.3;
-        double crossoverDistributionIndex = 20.0;
-        //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-        crossover = new IntegerTCNECrossover(crossoverProbability,new Random(),10, 3);
-        double mutationProbability = 1.0 / problem.numberOfVariables();
-        double mutationDistributionIndex = 20.0;
-       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-        mutation = new IntegerTCNEMutation(16,new Random() , 10, 3);
+    // ****************************
+    double crossoverProbability = 0.3;
+    double crossoverDistributionIndex = 20.0;
+    //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 10, 3);
+    double mutationProbability = 1.0 / problem.numberOfVariables();
+    double mutationDistributionIndex = 20.0;
+    // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
+    mutation = new IntegerTCNEMutation(16, new Random(), 10, 3);
 
-        // new: create a comparator of constraint violation
-        OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
-        // new the constraint comparator now is passed as a parameter
-        selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
+    // new: create a comparator of constraint violation
+    OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
+    // new the constraint comparator now is passed as a parameter
+    selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
 
-        algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(selection).setMaxEvaluations(30000).build();
-        AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
-        List<IntegerSolution> population;
-        population = algorithm.result();
-        int w = 1;
+    algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(
+        selection).setMaxEvaluations(120).build();
+    AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
+    List<IntegerSolution> population;
+    population = algorithm.result();
+    int w = 1;
+    var metrics = new MetricsHolder(problem, algorithmRunner);
+    ResultsMetricsDao.saveMetrics(population, metrics);
+    String path = "src/result/print.txt";
+    new File("src/result/").mkdir();
+    new File("src/result/gml").mkdirs();
+    String gmlpath = "src/result/gml";
+    FileWriter arq = null;
+    PrintWriter gravarArq = null;
 
-        String path = "src/result/print.txt";
-        new File( "src/result/").mkdir();
-        new File( "src/result/gml").mkdirs();
-        String gmlpath = "src/result/gml";
+    try {
+      arq = new FileWriter(path);
+      gravarArq = new PrintWriter(arq);
+      for (IntegerSolution solution : population) {
+        String patch = gmlpath + "/ResultadoGML/" + w + ".gml";
+        save(patch, solution);
+        w += 1;
+      }
 
-        FileWriter arq = null;
-        try {
-            arq = new FileWriter(path);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+      System.out
+          .println("fitness evaluation number" + problem.contEvaluate);
+      gravarArq.printf(
+          "fitness evaluation number" + problem.contEvaluate + '\n');
+      System.out.println("database saved in GML format");
+
+      long computingTime = algorithmRunner.getComputingTime();
+      JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
+      gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
+      printFinalSolutionSet(population);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+
+      try {
+        if (gravarArq != null) {
+          gravarArq.close();
         }
-        PrintWriter gravarArq = new PrintWriter(arq);
-
-
-
-        for (IntegerSolution solution : population) {
-            String patch = gmlpath + "/ResultadoGML/" + w + ".gml";
-            save(patch, solution);
-            w += 1;
+        if (arq != null) {
+          arq.close();
         }
-
-
-        System.out
-                .println("fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate);
-        gravarArq.printf(
-                "fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate + '\n');
-        System.out.println("database saved in GML format");
-
-        long computingTime = algorithmRunner.getComputingTime();
-        JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
-        gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
-        printFinalSolutionSet(population);
-
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
-    public static void save(String patch, IntegerSolution solution){
+  }
+
+  public static void save(String patch, IntegerSolution solution) {
 
            /* Pattern[] arrayPatterns = solution.getLineColumn();
             Integer[] vars = new Integer[solution.getNumberOfVariables()];
@@ -119,5 +130,5 @@ public class Main {
             gmlDao.save(gmlData, patch);*/
 
 
-    }
+  }
 }
