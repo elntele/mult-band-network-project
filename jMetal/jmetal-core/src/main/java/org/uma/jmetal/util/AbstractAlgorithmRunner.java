@@ -22,16 +22,36 @@ public abstract class AbstractAlgorithmRunner {
    *
    * @param population
    */
-  public static void printFinalSolutionSet(List<? extends Solution<?>> population) {
+  public static void printFinalSolutionSet(
+      List<? extends Solution<?>> population) {
+    // Chama o método novo com os valores padrão
+    printFinalSolutionSet(population, "VAR.csv", "FUN.csv");
+  }
+
+  /**
+   * owner, jorge candeias:
+   * write population int two files giving names to files
+   *
+   * @param population
+   * @param nameVar
+   * @param nameFun
+   */
+
+  public static void printFinalSolutionSet(
+      List<? extends Solution<?>> population,
+      String nameVar,
+      String nameFun) {
+
     new SolutionListOutput(population)
-        .setVarFileOutputContext(new DefaultFileOutputContext("VAR.csv", ","))
-        .setFunFileOutputContext(new DefaultFileOutputContext("FUN.csv", ","))
+        .setVarFileOutputContext(new DefaultFileOutputContext(nameVar, ","))
+        .setFunFileOutputContext(new DefaultFileOutputContext(nameFun, ","))
         .print();
 
     JMetalLogger.logger.info("Random seed: " + JMetalRandom.getInstance().getSeed());
-    JMetalLogger.logger.info("Objectives values have been written to file FUN.tsv");
-    JMetalLogger.logger.info("Variables values have been written to file VAR.tsv");
+    JMetalLogger.logger.info("Objectives values have been written to file " + nameFun);
+    JMetalLogger.logger.info("Variables values have been written to file " + nameVar);
   }
+
 
   /**
    * Print all the available quality indicators

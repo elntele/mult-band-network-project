@@ -4,6 +4,7 @@ import static br.bm.core.OpticalNetworkProblem.MAX_NUMBER_OF_WAVELENGHTS;
 import static br.bm.core.SimonUtil.LAMBDA_FIRSTFIT;
 import static br.bm.core.SimonUtil.UTILIZAR_DIJ;
 import static java.lang.Math.sqrt;
+import static org.uma.jmetal.util.AbstractAlgorithmRunner.printFinalSolutionSet;
 
 import br.bm.core.DataToReloadProblem;
 import br.bm.core.MultiBandNetWorkProfile;
@@ -28,6 +29,7 @@ import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 
+import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -45,6 +47,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Integer tailRoadmPlusW;
   private Integer setSize;
   private Integer conteCreate = 0;
+  private int populationSize = 0;
+  private List<DefaultIntegerSolution> localPopulation = new ArrayList<>();
+  private String path;
+  private String varAndFunPath;
+  private int iterationsToPrint;
+  private int execution;
 
   @Override
   public IntegerSolution createSolution() {
@@ -239,7 +247,19 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.objectives()[0] = objectives[0]/*random.nextDouble()*/;// para testes
       solution.objectives()[1] = objectives[1];
     }
+    localPopulation.add((DefaultIntegerSolution) solution);
+    if (populationSize != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+      printPopulation();
+    }
     return solution;
+  }
+
+  private void printPopulation() {
+    var iteration = contEvaluate / populationSize;
+    var varName = this.varAndFunPath+execution+ "/VAR" + iteration + ".csv";
+    var funName = this.varAndFunPath +execution+ "/FUN" + iteration + ".csv";
+    printFinalSolutionSet(localPopulation, varName, funName);
+    localPopulation.clear();
   }
 
  /* @Override
@@ -487,8 +507,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void gmlBuild() {
-    //  String path = "./selectedCityInPernabucoState.gml";
-    String path = "./teste2.gml";
+
     try {
       this.gml = new GmlDao().loadGmlData(path);
     } catch (Exception e) {
@@ -577,9 +596,14 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         metrics);
   }
 
-  public ExternalNetworkEvaluatorSettings(Integer setSize) {
+  public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
+      int execution) {
     super();
+    this.populationSize = populationSize;
     this.setSize = setSize;
+    this.path = path;
+    this.iterationsToPrint = iterationsToPrint;
+    this.execution = execution;
     gmlBuild();
     this.numberOfObjectives(2);
     this.numberOfConstraints(2);
@@ -620,5 +644,11 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     }
     this.variableBounds(ll, ul);
     /** end problem configuration*/
+
+
+    String varAndFunPath = "src/result/VARSandFUNS/execution";
+    this.varAndFunPath = varAndFunPath;
+    new File(varAndFunPath+execution).mkdirs();
+
   }
 }

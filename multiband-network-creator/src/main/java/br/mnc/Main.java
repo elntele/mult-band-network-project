@@ -39,26 +39,33 @@ public class Main {
     CrossoverOperator<IntegerSolution> crossover; // do Jmetal
     MutationOperator<IntegerSolution> mutation; // do Jmetal
     SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
-    problem = new ExternalNetworkEvaluatorSettings(3);
+    //  String path = "./selectedCityInPernabucoState.gml";
+    var path = "./teste2.gml";
+    var populationSize= 100;
+    var maxEvaluations= 1000;
+    var  iterationsToPrint = 2;
+    var execution=1;
+    var setSize=3;
+    problem = new ExternalNetworkEvaluatorSettings(setSize,populationSize,path, iterationsToPrint, execution);
 
 
     // ****************************
     double crossoverProbability = 0.3;
     double crossoverDistributionIndex = 20.0;
     //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 10, 3);
+    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 10, setSize);
     double mutationProbability = 1.0 / problem.numberOfVariables();
     double mutationDistributionIndex = 20.0;
     // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-    mutation = new IntegerTCNEMutation(16, new Random(), 10, 3);
+    mutation = new IntegerTCNEMutation(16, new Random(), 10, setSize);
 
     // new: create a comparator of constraint violation
     OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
     // new the constraint comparator now is passed as a parameter
     selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
 
-    algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, 100).setSelectionOperator(
-        selection).setMaxEvaluations(120).build();
+    algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, populationSize).setSelectionOperator(
+        selection).setMaxEvaluations(maxEvaluations).build();
     AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
     List<IntegerSolution> population;
     population = algorithm.result();
