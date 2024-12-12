@@ -88,14 +88,13 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
 
-    if (evaluations==10||evaluations == 100) {
+    if (evaluations==10||evaluations % 500==0) {
       population.stream().forEach(s -> {
         var constraint1 = ((Solution) s).constraints()[0];
         var constraint2 = ((Solution) s).constraints()[1];
-        var constraint3 = ((Solution) s).constraints()[2];
 
         PrintPopulation.printMatrix(((Solution) s).variables(), 10, Double.toString(constraint1),
-            Double.toString(constraint2), Double.toString(constraint3), ((DefaultIntegerSolution)s).file);
+            Double.toString(constraint2), ((DefaultIntegerSolution)s).file);
       });
     }
 

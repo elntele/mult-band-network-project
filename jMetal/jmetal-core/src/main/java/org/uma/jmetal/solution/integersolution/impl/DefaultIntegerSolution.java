@@ -14,7 +14,6 @@ import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.util.bounds.Bounds;
 import org.uma.jmetal.util.pseudorandom.JMetalRandom;
 
-import br.cns24.models.FileMap;
 
 /**
  * Defines an implementation of the {@link IntegerSolution} interface

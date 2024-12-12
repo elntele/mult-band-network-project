@@ -49,8 +49,8 @@ public class PrintPopulation {
   }
 
   public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
-      String constraintTree, Map<Integer, Set<Integer>> file) {
-    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo + ", " + constraintTree);
+      Map<Integer, Set<Integer>> file) {
+    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo );
     int index = 0;
     var beginNodePart = solution.size() - (numNodes + 1);
     System.out.println("comutadores");

@@ -62,6 +62,19 @@ public class AlgebraicConnectivity implements Metric<Integer> {
 		return autovalores[1];
 	}
 
+	//TODO, conectividade algébrica, jorge: alterar o método para que atenda multi-grafos.
+	// dicas para quando for fazer: Array2DRowRealMatrix é uma classe apache que pega
+	// uma matrix array bi-dimensional, array[][], e retorna um objeto que tem esse
+	// array internamente e mais um monte de funcionalidades de cálculo.
+	// Aqui Array2DRowRealMatrix esta sendo instanciado porque um outro objeto apache
+	// chamado EigenDecomposition usa ele Array2DRowRealMatrix como atributo.
+	// EigenDecomposition calcula conectividade algébrica.
+	/**
+	 * method which calculate algebraic connectivity.
+	 *
+	 * @param matrix
+	 * @return
+	 */
 	public double calculate(Integer[][] matrix) {
 		Integer[][] laplacian = Laplacian.getInstance().transform(matrix);
 		double[][] realValues = new double[matrix.length][matrix.length];

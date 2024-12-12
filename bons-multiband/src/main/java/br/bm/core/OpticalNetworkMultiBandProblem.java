@@ -498,7 +498,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
    */
   @Override
   public Double[] evaluate(Integer[] variables) {
-    Double[] objectives = new Double[numberOfObjectives];
+    Double[] objectives = new Double[numberOfObjectives+1];// Todo, jorge, gambiarra pra poder pegar a probabilidade algebrica
     //TODO: jorge, after all, investigate if these conversions are really
     // necessary, for this, begin the investigation on evaluate method in
     // ExternalNetworkEvaluateSettings class.
@@ -599,13 +599,13 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     net.setLinks(links);
     net.cleanBp();
     net.setCompleteDistances(distances);
-    net.setCn(createComplexNetworkDistance(variables));
+    net.setCn(createMultibandComplexNetworkDistance(variables));
     net.setRawData(variables);
 
     objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
     //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
-    //  objectives[3] = algebraicConnectivityEvaluator.evaluate(net).getValue();
+      objectives[2] = algebraicConnectivityEvaluator.evaluate(net).getValue();
     // objectives[4] =
     // naturalConnectivityEvaluator.evaluate(net).getValue();
 
@@ -621,6 +621,18 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
 
     return objectives;
   }
+
+ /* *//**
+   * o que esse méthodo basicamente cria aqui é
+   *  um objeto ComplexNetwork. Para fazer isso
+   * ele cria 3 coisas:
+   * 1 - uma lista de Enuns, tipo TMetrics, chamada de metrics
+   * onde vai todas as metricas como conectividade algébrica.
+   * 2 - uma matrix de adjacências com valores de 0 ou 1 e
+   * completa, em que a_ij tem o mesmo valor de a_ji.
+   * 3- uma matrix de distâncias também completa onde d_ij
+   * o mesmo valor de d_ji
+   *//*
 
   public ComplexNetwork createComplexNetworkDistance(Integer[] solution) {
     List<TMetric> metrics = new ArrayList<TMetric>();
@@ -661,6 +673,72 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
           customDistances[j][i] = 0.0;
         }
         counter++;
+      }
+    }
+    return new ComplexNetwork(0, matrix, new double[numNodes][numNodes], distances, customDistances, TModel.CUSTOM,
+        metrics);
+  }*/
+
+  /**
+   * o que esse méthodo basicamente cria aqui é
+   *  um objeto ComplexNetwork. Para fazer isso
+   * ele cria 3 coisas:
+   * 1 - uma lista de Enuns, tipo TMetrics, chamada de metrics
+   * onde vai todas as metricas como conectividade algébrica.
+   * 2 - uma matrix de adjacências com valores de 0 ou 1 e
+   * completa, em que a_ij tem o mesmo valor de a_ji.
+   * 3- uma matrix de distâncias também completa onde d_ij
+   * o mesmo valor de d_ji
+   */
+
+  public ComplexNetwork createMultibandComplexNetworkDistance(Integer[] solution) {
+    List<TMetric> metrics = new ArrayList<TMetric>();
+    metrics.add(TMetric.NATURAL_CONNECTIVITY);
+    metrics.add(TMetric.ALGEBRAIC_CONNECTIVITY);
+    metrics.add(TMetric.DENSITY);
+    metrics.add(TMetric.AVERAGE_DEGREE);
+    metrics.add(TMetric.AVERAGE_PATH_LENGTH);
+    metrics.add(TMetric.PHYSICAL_AVERAGE_PATH_LENGTH);
+    metrics.add(TMetric.CLUSTERING_COEFFICIENT);
+    metrics.add(TMetric.DIAMETER);
+    metrics.add(TMetric.PHYSICAL_DIAMETER);
+    metrics.add(TMetric.ENTROPY);
+    metrics.add(TMetric.DFT_LAPLACIAN_ENTROPY);
+    metrics.add(TMetric.PHYSICAL_DFT_LAPLACIAN_ENTROPY);
+    metrics.add(TMetric.SPECTRAL_RADIUS);
+    metrics.add(TMetric.MAXIMUM_CLOSENESS);
+    metrics.add(TMetric.PHYSICAL_DENSITY);
+
+    Integer[][] matrix = new Integer[numNodes][numNodes];
+
+    Double[][] customDistances = new Double[numNodes][numNodes];
+    for (int i = 0; i < matrix.length; i++) {
+      matrix[i][i] = 0;
+      customDistances[i][i] = 0.0;
+      for (int j = i + 1; j < matrix.length; j++) {
+        //TODO, jorge, aqui é onde estou fazendo um parse para interpretar
+        // o cromossomo como 'tem conexão ou não', exatamente como era
+        // no problema passado, veja que eu não mudo o cromossomo, apenas
+        // manipulo a matrix de conexão lendo o cromossomo de 3 em 3 posições.
+        // o méthodo antigo esta comentado acima, olhe como era esse trecho.
+        // quando for alterar a conectividade algébrica é provável que tenha
+        // que alterar aqui de novo.
+        var index = Equipments.getLinkPosition(i,j,numNodes,setSize);
+        var sum =0;
+        for (int w=0;w<setSize;w++){
+          sum+= solution[index+w];
+        }
+        if (sum != 0) {
+          matrix[i][j] = 1;
+          matrix[j][i] = 1;
+          customDistances[i][j] = distances[i][j];
+          customDistances[j][i] = distances[j][i];
+        } else {
+          matrix[i][j] = 0;
+          matrix[j][i] = 0;
+          customDistances[i][j] = 0.0;
+          customDistances[j][i] = 0.0;
+        }
       }
     }
     return new ComplexNetwork(0, matrix, new double[numNodes][numNodes], distances, customDistances, TModel.CUSTOM,
