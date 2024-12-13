@@ -53,6 +53,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private String varAndFunPath;
   private int iterationsToPrint;
   private int execution;
+  private Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
 
   @Override
   public IntegerSolution createSolution() {
@@ -249,15 +250,24 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     }
     localPopulation.add((DefaultIntegerSolution) solution);
     if (populationSize != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+      countSolutionWithRestriction();
       printPopulation();
     }
     return solution;
   }
 
+  private void countSolutionWithRestriction() {
+    var iteration = contEvaluate / populationSize;
+    var constrainsMetrics = StatisticsConstraints.getMetrics(localPopulation, iteration);
+    constraintsStatistics.put(iteration, constrainsMetrics);
+
+  }
+
+
   private void printPopulation() {
     var iteration = contEvaluate / populationSize;
-    var varName = this.varAndFunPath+execution+ "/VAR" + iteration + ".csv";
-    var funName = this.varAndFunPath +execution+ "/FUN" + iteration + ".csv";
+    var varName = this.varAndFunPath + execution + "/VAR" + iteration + ".csv";
+    var funName = this.varAndFunPath + execution + "/FUN" + iteration + ".csv";
     printFinalSolutionSet(localPopulation, varName, funName);
     localPopulation.clear();
   }
@@ -596,6 +606,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         metrics);
   }
 
+  public Map getConstraintsStatistics() {
+    return constraintsStatistics;
+  }
+
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
       int execution) {
     super();
@@ -628,7 +642,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       this.upperBounds[i] = 7;
     }
 
-
     for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {
         ll.add(1);
@@ -648,7 +661,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
     String varAndFunPath = "src/result/VARSandFUNS/execution";
     this.varAndFunPath = varAndFunPath;
-    new File(varAndFunPath+execution).mkdirs();
+    new File(varAndFunPath + execution).mkdirs();
 
   }
 }

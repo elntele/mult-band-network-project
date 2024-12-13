@@ -43,12 +43,15 @@ public class ResultsMetricsDao {
       gravarArq.printf(
           "fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate + '\n');
       System.out.println("database saved in GML format");
+      saveConstraintsMetrics( population,  metricsHolder, gravarArq);
 
       long computingTime = algorithmRunner.getComputingTime();
       JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
       gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
       printFinalSolutionSet(population);
     } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (Exception e) {
       throw new RuntimeException(e);
     } finally {
 
@@ -84,6 +87,39 @@ public class ResultsMetricsDao {
             gmlData.setInformations(informations);
             gmlData.createComplexNetwork();
             gmlDao.save(gmlData, patch);
+
+
+  }
+
+  private static void saveConstraintsMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder, PrintWriter gravarArq) throws Exception{
+    var problem= metricsHolder.externalNetworkEvaluatorSettings();
+    Map<Integer, ConstrainsMetrics> mapConstraints = metricsHolder.externalNetworkEvaluatorSettings().getConstraintsStatistics();
+
+
+    mapConstraints.entrySet().stream()
+        .forEach(entry -> {
+          ConstrainsMetrics value = entry.getValue();
+          ConstrainsMetrics metrics =  value;
+          // Escrevendo no arquivo no formato linha separada por ponto e vírgula
+          gravarArq.printf(
+              "iteration: %d; numberOfSolutionWithCAInZero: %d; " +
+                  "numberOfSolutionWithInadequateEquipment: %d; " +
+                  "meanRateInadequateEquipment: %.2f; " +
+                  "standardDeviationInadequateEquipment: %.2f%n",
+              metrics.iteration(),
+              metrics.numberOfSolutionWithCAInZero(),
+              metrics.numberOfSolutionWithInadequateEquipment(),
+              metrics.meanRateInadequateEquipment(),
+              metrics.standardDeviationInadequateEquipment()
+          );
+
+
+
+        });
+
+
+    System.out
+        .println("fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate);
 
 
   }
