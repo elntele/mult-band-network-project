@@ -252,7 +252,14 @@ public class Link implements Cloneable {
     this.fibers = fibers;
   }
 
-  public boolean lambdaIsAvaliable(int lambda) {
+  /**
+   * owner jorge candeias
+   * method verify is  lambda is below the max lambida
+   * of a fiber an if it is available.
+   * @param lambda
+   * @return
+   */
+  public boolean lambdaIsAvailable(int lambda) {
     boolean isFree = false;
     for (int i = 0; i < numFibers; i++) {
       if (fibers.get(i).isBelowMaxLambda(lambda) &&
