@@ -1,6 +1,7 @@
 package org.uma.jmetal.algorithm.multiobjective.nsgaii;
 
 import java.util.List;
+
 import org.uma.jmetal.algorithm.AlgorithmBuilder;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -29,15 +30,18 @@ public class NSGAIIBuilder<S extends Solution<?>> implements AlgorithmBuilder<NS
   private int maxEvaluations;
   private int populationSize;
   protected int matingPoolSize;
-  protected int offspringPopulationSize ;
+  protected int offspringPopulationSize;
 
   private CrossoverOperator<S> crossoverOperator;
   private MutationOperator<S> mutationOperator;
   private SelectionOperator<List<S>, S> selectionOperator;
   private SolutionListEvaluator<S> evaluator;
-  private DominanceComparator<S> dominanceComparator ;
+  private DominanceComparator<S> dominanceComparator;
 
   private NSGAIIVariant variant;
+
+  private int iterationToPrint;
+  private int numNodes;
 
   /**
    * NSGAIIBuilder constructor
@@ -48,14 +52,36 @@ public class NSGAIIBuilder<S extends Solution<?>> implements AlgorithmBuilder<NS
     maxEvaluations = 25000;
     this.populationSize = populationSize;
     matingPoolSize = populationSize;
-    offspringPopulationSize = populationSize ;
-    this.crossoverOperator = crossoverOperator ;
-    this.mutationOperator = mutationOperator ;
-    selectionOperator = new BinaryTournamentSelection<S>(new RankingAndCrowdingDistanceComparator<S>()) ;
+    offspringPopulationSize = populationSize;
+    this.crossoverOperator = crossoverOperator;
+    this.mutationOperator = mutationOperator;
+    selectionOperator = new BinaryTournamentSelection<S>(new RankingAndCrowdingDistanceComparator<S>());
     evaluator = new SequentialSolutionListEvaluator<S>();
-    dominanceComparator = new DefaultDominanceComparator<>()  ;
+    dominanceComparator = new DefaultDominanceComparator<>();
 
-    this.variant = NSGAIIVariant.NSGAII ;
+    this.variant = NSGAIIVariant.NSGAII;
+  }
+
+  /**
+   * owner jorge candeias
+   * second constructor to pass more parameters
+   * NSGAIIBuilder constructor
+   */
+  public NSGAIIBuilder(Problem<S> problem, CrossoverOperator<S> crossoverOperator,
+      MutationOperator<S> mutationOperator, int populationSize, int iterationToPrint, int numNodes) {
+    this.problem = problem;
+    maxEvaluations = 25000;
+    this.populationSize = populationSize;
+    matingPoolSize = populationSize;
+    offspringPopulationSize = populationSize;
+    this.crossoverOperator = crossoverOperator;
+    this.mutationOperator = mutationOperator;
+    selectionOperator = new BinaryTournamentSelection<S>(new RankingAndCrowdingDistanceComparator<S>());
+    evaluator = new SequentialSolutionListEvaluator<S>();
+    dominanceComparator = new DefaultDominanceComparator<>();
+    this.iterationToPrint = iterationToPrint;
+    this.numNodes = numNodes;
+    this.variant = NSGAIIVariant.NSGAII;
   }
 
   public NSGAIIBuilder<S> setMaxEvaluations(int maxEvaluations) {
@@ -76,6 +102,7 @@ public class NSGAIIBuilder<S extends Solution<?>> implements AlgorithmBuilder<NS
 
     return this;
   }
+
   public NSGAIIBuilder<S> setOffspringPopulationSize(int offspringPopulationSize) {
     if (offspringPopulationSize < 0) {
       throw new JMetalException("Offspring population size is negative: " + populationSize);
@@ -106,7 +133,7 @@ public class NSGAIIBuilder<S extends Solution<?>> implements AlgorithmBuilder<NS
 
   public NSGAIIBuilder<S> setDominanceComparator(DominanceComparator<S> dominanceComparator) {
     Check.notNull(dominanceComparator);
-    this.dominanceComparator = dominanceComparator ;
+    this.dominanceComparator = dominanceComparator;
 
     return this;
   }
@@ -119,24 +146,26 @@ public class NSGAIIBuilder<S extends Solution<?>> implements AlgorithmBuilder<NS
   }
 
   public NSGAII<S> build() {
-    NSGAII<S> algorithm = null ;
+    NSGAII<S> algorithm = null;
     if (variant.equals(NSGAIIVariant.NSGAII)) {
       algorithm = new NSGAII<S>(problem, maxEvaluations, populationSize, matingPoolSize, offspringPopulationSize,
-              crossoverOperator,
-          mutationOperator, selectionOperator, dominanceComparator, evaluator);
+          crossoverOperator,
+          mutationOperator, selectionOperator, dominanceComparator, evaluator, iterationToPrint, numNodes);
     } else if (variant.equals(NSGAIIVariant.SteadyStateNSGAII)) {
       algorithm = new SteadyStateNSGAII<S>(problem, maxEvaluations, populationSize, crossoverOperator,
           mutationOperator, selectionOperator, dominanceComparator, evaluator);
     } else if (variant.equals(NSGAIIVariant.Measures)) {
-      algorithm = new NSGAIIMeasures<S>(problem, maxEvaluations, populationSize, matingPoolSize, offspringPopulationSize,
-              crossoverOperator, mutationOperator, selectionOperator, dominanceComparator, evaluator);
-    }else if(variant.equals(NSGAIIVariant.DNSGAII)){
+      algorithm = new NSGAIIMeasures<S>(problem, maxEvaluations, populationSize, matingPoolSize,
+          offspringPopulationSize,
+          crossoverOperator, mutationOperator, selectionOperator, dominanceComparator, evaluator);
+    } else if (variant.equals(NSGAIIVariant.DNSGAII)) {
       algorithm = new DNSGAII<>(problem, maxEvaluations, populationSize, matingPoolSize, offspringPopulationSize,
-              crossoverOperator, mutationOperator, selectionOperator, dominanceComparator, evaluator) ;
+          crossoverOperator, mutationOperator, selectionOperator, dominanceComparator, evaluator);
     }
 
-    return algorithm ;
+    return algorithm;
   }
+
 
   /* Getters */
   public Problem<S> getProblem() {

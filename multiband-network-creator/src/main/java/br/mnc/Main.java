@@ -42,41 +42,47 @@ public class Main {
     SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
-    var populationSize= 100;
-    var maxEvaluations= 100000;
-    var  iterationsToPrint = 40;
-    var execution=1;
-    var setSize=3;
-    problem = new ExternalNetworkEvaluatorSettings(setSize,populationSize,path, iterationsToPrint, execution);
+    var populationSize = 100;
+    var maxEvaluations = 100000;
+    var iterationsToPrint = 10;
+    var setSize = 3;
+    var load = 5000;
+    var numNodes = 26;
+    var numberOfExecutions = 11;
+    var printGML=false;
+    for (int i = 1; i <= numberOfExecutions; i++) {
+      problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
+      // ****************************
+      // it compares with a Random chosen between 0 and 1
+      double crossoverProbability = 0.3;
+      double crossoverDistributionIndex = 20.0;
+      //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
+      crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), numNodes, setSize);
+      double mutationProbability = 1.0 / problem.numberOfVariables();
+      double mutationDistributionIndex = 20.0;
+      // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
+      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize);
+
+      // new: create a comparator of constraint violation
+      OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
+      // new the constraint comparator now is passed as a parameter
+      selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
+
+      algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, populationSize, iterationsToPrint,
+          numNodes).setSelectionOperator(
+          selection).setMaxEvaluations(maxEvaluations).build();
 
 
-    // ****************************
-    // it compares with a Random chosen between 0 and 1
-    double crossoverProbability = 0.3;
-    double crossoverDistributionIndex = 20.0;
-    //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 26, setSize);
-    double mutationProbability = 1.0 / problem.numberOfVariables();
-    double mutationDistributionIndex = 20.0;
-    // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-    mutation = new IntegerTCNEMutation(50, new Random(), 26, setSize);
+      AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
+      List<IntegerSolution> population;
+      population = algorithm.result();
 
-    // new: create a comparator of constraint violation
-    OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
-    // new the constraint comparator now is passed as a parameter
-    selection = new BinaryTournamentSelection<IntegerSolution>(constraintComparator);
+      NSGAII<IntegerSolution> nsgaiiAlgorithm = (NSGAII<IntegerSolution>) algorithm;
+      Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts = nsgaiiAlgorithm.getMapFronts();
 
-    algorithm = new NSGAIIBuilder<>(problem, crossover, mutation, populationSize).setSelectionOperator(
-        selection).setMaxEvaluations(maxEvaluations).build();
-    AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
-    List<IntegerSolution> population;
-    population = algorithm.result();
-
-    NSGAII<IntegerSolution> nsgaiiAlgorithm = (NSGAII<IntegerSolution>) algorithm;
-    Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts = nsgaiiAlgorithm.getMapFronts();
-
-    var metrics = new MetricsHolder(problem, algorithmRunner, mapFronts);
-    ResultsMetricsDao.saveMetrics(population, metrics);
+      var metrics = new MetricsHolder(problem, algorithmRunner, mapFronts);
+      ResultsMetricsDao.saveMetrics(population, metrics, i, printGML);
+    }
 
   }
 

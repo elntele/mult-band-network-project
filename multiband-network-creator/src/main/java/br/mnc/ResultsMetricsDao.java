@@ -19,37 +19,49 @@ import br.cns24.persistence.GmlDao;
 
 public class ResultsMetricsDao {
 
-  public static void saveMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder) {
-    String path = "src/result/print.txt";
-    String gmlPath = "src/result/gml/ResultadoGML/";
-    new File(gmlPath).mkdirs();
+  public static void saveMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder, int execution,
+      boolean printGML) {
+    String path = String.format("src/result/execution%d/printExecution%d.txt", execution, execution);
+    String gmlPath = String.format("src/result/execution%d/gml/ResultadoGML/", execution);
+    if (printGML){
+      new File(gmlPath).mkdirs();
+    }else{
+       gmlPath = String.format("src/result/execution%d/", execution);
+      new File(gmlPath).mkdirs();
+
+    }
 
 
     FileWriter arq = null;
     PrintWriter gravarArq = null;
     var problem = metricsHolder.externalNetworkEvaluatorSettings();
     var algorithmRunner = metricsHolder.algorithmRunner();
-    var w=1;
+    var w = 1;
     try {
       arq = new FileWriter(path);
       gravarArq = new PrintWriter(arq);
       for (IntegerSolution solution : population) {
-        String patch = gmlPath  + w + ".gml";
-        save(patch, solution, problem);
+        String patch = gmlPath + w + ".gml";
+        if (printGML) {
+
+          save(patch, solution, problem);
+        } else {
+          System.out.println("attention: .GML is not being saved, to save it set printGML as true in Main Class." );
+        }
         w += 1;
       }
 
-      System.out
-          .println("fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate);
-      gravarArq.printf(
-          "fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate + '\n');
+      System.out.println("fitness evaluation number" + (problem).contEvaluate);
+      gravarArq.printf("fitness evaluation number" + (problem).contEvaluate + '\n');
       System.out.println("database saved in GML format");
-      saveConstraintsMetrics( population,  metricsHolder, gravarArq);
-      saveParetoMetrics(metricsHolder.mapFronts(),gravarArq);
       long computingTime = algorithmRunner.getComputingTime();
       JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
       gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
+
+      saveConstraintsMetrics(metricsHolder, gravarArq);
+      saveParetoMetrics(metricsHolder.mapFronts(), gravarArq);
       printFinalSolutionSet(population);
+
     } catch (IOException e) {
       throw new RuntimeException(e);
     } catch (Exception e) {
@@ -69,38 +81,39 @@ public class ResultsMetricsDao {
     }
   }
 
-  private static void save(String patch, IntegerSolution solution, ExternalNetworkEvaluatorSettings problem ) {
+  private static void save(String patch, IntegerSolution solution, ExternalNetworkEvaluatorSettings problem) {
 
 
-            Integer[] vars = new Integer[solution.variables().size()];
-            for (int i = 0; i < vars.length; i++) {
-                vars[i] = solution.variables().get(i);
-            }
-            Map<String, String> informations = new HashMap();
-            informations.put("Country", "Brazil");
-            informations.put("PB", Double.toString(solution.objectives()[0]));
-            informations.put("Capex", Double.toString(solution.objectives()[1]));
-            GmlDao gmlDao = new GmlDao();
-            GmlData gmlData = new GmlData();
-            var nodes = problem.getGml().getNodes();
-            gmlData.setNodes(nodes);
-            gmlData.setEdgesLosingLinkInformation(vars, nodes);
-            gmlData.setInformations(informations);
-            gmlData.createComplexNetwork();
-            gmlDao.save(gmlData, patch);
+    Integer[] vars = new Integer[solution.variables().size()];
+    for (int i = 0; i < vars.length; i++) {
+      vars[i] = solution.variables().get(i);
+    }
+    Map<String, String> informations = new HashMap();
+    informations.put("Country", "Brazil");
+    informations.put("PB", Double.toString(solution.objectives()[0]));
+    informations.put("Capex", Double.toString(solution.objectives()[1]));
+    GmlDao gmlDao = new GmlDao();
+    GmlData gmlData = new GmlData();
+    var nodes = problem.getGml().getNodes();
+    gmlData.setNodes(nodes);
+    gmlData.setEdgesLosingLinkInformation(vars, nodes);
+    gmlData.setInformations(informations);
+    gmlData.createComplexNetwork();
+    gmlDao.save(gmlData, patch);
 
 
   }
 
-  private static void saveConstraintsMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder, PrintWriter gravarArq) throws Exception{
-    var problem= metricsHolder.externalNetworkEvaluatorSettings();
+  private static void saveConstraintsMetrics(MetricsHolder metricsHolder,
+      PrintWriter gravarArq) throws Exception {
+    var problem = metricsHolder.externalNetworkEvaluatorSettings();
     Map<Integer, ConstrainsMetrics> mapConstraints = metricsHolder.externalNetworkEvaluatorSettings().getConstraintsStatistics();
 
 
     mapConstraints.entrySet().stream()
         .forEach(entry -> {
           ConstrainsMetrics value = entry.getValue();
-          ConstrainsMetrics metrics =  value;
+          ConstrainsMetrics metrics = value;
           // Escrevendo no arquivo no formato linha separada por ponto e vírgula
           gravarArq.printf(
               "iteration: %d; numberOfSolutionWithCAInZero: %d; " +
@@ -115,7 +128,6 @@ public class ResultsMetricsDao {
           );
 
 
-
         });
 
 
@@ -125,7 +137,8 @@ public class ResultsMetricsDao {
 
   }
 
-  private static void saveParetoMetrics(Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts, PrintWriter gravarArq) throws Exception {
+  private static void saveParetoMetrics(Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts,
+      PrintWriter gravarArq) throws Exception {
     mapFronts.entrySet().stream()
         .forEach(entry -> {
           Integer iteration = entry.getKey();
@@ -142,7 +155,6 @@ public class ResultsMetricsDao {
 
     System.out.println("Pareto metrics saved.");
   }
-
 
 
 }
