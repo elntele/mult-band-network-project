@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,12 +44,15 @@ public class ResultsMetricsDao {
       gravarArq.printf(
           "fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate + '\n');
       System.out.println("database saved in GML format");
-
+      saveConstraintsMetrics( population,  metricsHolder, gravarArq);
+      saveParetoMetrics(metricsHolder.mapFronts(),gravarArq);
       long computingTime = algorithmRunner.getComputingTime();
       JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
       gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
       printFinalSolutionSet(population);
     } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (Exception e) {
       throw new RuntimeException(e);
     } finally {
 
@@ -87,4 +91,58 @@ public class ResultsMetricsDao {
 
 
   }
+
+  private static void saveConstraintsMetrics(List<IntegerSolution> population, MetricsHolder metricsHolder, PrintWriter gravarArq) throws Exception{
+    var problem= metricsHolder.externalNetworkEvaluatorSettings();
+    Map<Integer, ConstrainsMetrics> mapConstraints = metricsHolder.externalNetworkEvaluatorSettings().getConstraintsStatistics();
+
+
+    mapConstraints.entrySet().stream()
+        .forEach(entry -> {
+          ConstrainsMetrics value = entry.getValue();
+          ConstrainsMetrics metrics =  value;
+          // Escrevendo no arquivo no formato linha separada por ponto e vírgula
+          gravarArq.printf(
+              "iteration: %d; numberOfSolutionWithCAInZero: %d; " +
+                  "numberOfSolutionWithInadequateEquipment: %d; " +
+                  "meanRateInadequateEquipment: %.2f; " +
+                  "standardDeviationInadequateEquipment: %.2f%n",
+              metrics.iteration(),
+              metrics.numberOfSolutionWithCAInZero(),
+              metrics.numberOfSolutionWithInadequateEquipment(),
+              metrics.meanRateInadequateEquipment(),
+              metrics.standardDeviationInadequateEquipment()
+          );
+
+
+
+        });
+
+
+    System.out
+        .println("fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate);
+
+
+  }
+
+  private static void saveParetoMetrics(Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts, PrintWriter gravarArq) throws Exception {
+    mapFronts.entrySet().stream()
+        .forEach(entry -> {
+          Integer iteration = entry.getKey();
+          List<ArrayList<IntegerSolution>> paretos = entry.getValue();
+          int numberOfSolutionsInFirstPareto = (paretos.isEmpty()) ? 0 : paretos.get(0).size();
+          int numberOfParetoSets = paretos.size();
+          gravarArq.printf(
+              "interação: %d; numero de soluções no primeiro pareto: %d; numero de paretos: %d%n",
+              iteration,
+              numberOfSolutionsInFirstPareto,
+              numberOfParetoSets
+          );
+        });
+
+    System.out.println("Pareto metrics saved.");
+  }
+
+
+
 }

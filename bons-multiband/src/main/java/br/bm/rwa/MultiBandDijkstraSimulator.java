@@ -364,8 +364,8 @@ public class MultiBandDijkstraSimulator extends OpticalNetworkSimulatorAbstract 
         var fibersDown = linkDown.getFibers();
         boolean fibersUpIsNotEmpty = !fibersUp.isEmpty();
         boolean fibersDownIsNotEmpty = !fibersDown.isEmpty();
-        boolean lambdaUpIsNotAvailable = !linkUp.lambdaIsAvaliable(nLambda_loc);
-        boolean lambdaDownIsNotAvailable = !linkDown.lambdaIsAvaliable(nLambda_loc);
+        boolean lambdaUpIsNotAvailable = !linkUp.lambdaIsAvailable(nLambda_loc);
+        boolean lambdaDownIsNotAvailable = !linkDown.lambdaIsAvailable(nLambda_loc);
         boolean isNotFreeToGo = fibersUpIsNotEmpty && lambdaUpIsNotAvailable;
         boolean isNotFreeToBack = fibersDownIsNotEmpty && lambdaDownIsNotAvailable;
         if (isNotFreeToGo || isNotFreeToBack) {

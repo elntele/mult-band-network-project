@@ -150,6 +150,10 @@ public class FastNonDominatedSortRanking<S extends Solution<?>> implements Ranki
     return result;
   }
 
+  public List<ArrayList<S>> getRankedSubPopulations() {
+    return rankedSubPopulations;
+  }
+
   @Override
   public Object getAttributedId() {
     return attributeId;

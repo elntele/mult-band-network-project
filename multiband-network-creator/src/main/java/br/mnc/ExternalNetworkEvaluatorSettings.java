@@ -26,8 +26,13 @@ import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
+import org.uma.jmetal.util.comparator.dominanceComparator.impl.DefaultDominanceComparator;
+import org.uma.jmetal.util.densityestimator.impl.CrowdingDistanceDensityEstimator;
+import org.uma.jmetal.util.ranking.Ranking;
+import org.uma.jmetal.util.ranking.impl.FastNonDominatedSortRanking;
 
 import java.io.File;
 import java.util.*;
@@ -53,6 +58,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private String varAndFunPath;
   private int iterationsToPrint;
   private int execution;
+  private Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
 
   @Override
   public IntegerSolution createSolution() {
@@ -220,7 +226,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
     evaluateConstraints((DefaultIntegerSolution) solution);
-    int load = 100;
+    int load =300;
     Integer[] vars = new Integer[solution.variables()
         .size()];
     for (int i = 0; i < vars.length; i++) {
@@ -248,48 +254,31 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.objectives()[1] = objectives[1];
     }
     localPopulation.add((DefaultIntegerSolution) solution);
-    if (populationSize != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+    if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+      countSolutionWithRestriction();
       printPopulation();
+    }
+    if (localPopulation.size()==populationSize){
+      localPopulation.clear();
     }
     return solution;
   }
+
+  private void countSolutionWithRestriction() {
+    var iteration = contEvaluate / populationSize;
+    var constrainsMetrics = StatisticsConstraints.getMetrics(localPopulation, iteration);
+    constraintsStatistics.put(iteration, constrainsMetrics);
+
+  }
+
 
   private void printPopulation() {
     var iteration = contEvaluate / populationSize;
-    var varName = this.varAndFunPath+execution+ "/VAR" + iteration + ".csv";
-    var funName = this.varAndFunPath +execution+ "/FUN" + iteration + ".csv";
+    var varName = this.varAndFunPath + execution + "/VAR" + iteration + ".csv";
+    var funName = this.varAndFunPath + execution + "/FUN" + iteration + ".csv";
     printFinalSolutionSet(localPopulation, varName, funName);
-    localPopulation.clear();
   }
 
- /* @Override
-  public IntegerSolution evaluate(IntegerSolution solution) {
-    evaluateConstraints((DefaultIntegerSolution) solution);
-    int load = 100;
-    Integer[] vars = new Integer[solution.variables()
-        .size()];
-    for (int i = 0; i < vars.length; i++) {
-      vars[i] = (Integer) solution.variables()
-          .get(i);
-    }
-
-    System.out.println("conte Evaluate: " + this.contEvaluate);
-    this.contEvaluate += 1;
-    GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (gmlData.containsIsolatedNodesInMultiBandModel()) {
-      solution.objectives()[0] = 1.0;
-      solution.objectives()[1] = Double.MAX_VALUE;
-    } else {
-      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
-      var dataToReloadProblem = setProblemCharacteristic(solution);
-      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
-      Double[] objectives = P.evaluate(vars);
-      //    solution.objectives()[0] = objectives[0];
-      solution.objectives()[0] = 1.0;// para testes
-      solution.objectives()[1] = objectives[1];
-    }
-    return solution;
-  }*/
 
 
   /**
@@ -596,6 +585,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         metrics);
   }
 
+  public Map getConstraintsStatistics() {
+    return constraintsStatistics;
+  }
+
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
       int execution) {
     super();
@@ -628,7 +621,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       this.upperBounds[i] = 7;
     }
 
-
     for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {
       if (i < numberOfVariables - 1) {
         ll.add(1);
@@ -648,7 +640,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
     String varAndFunPath = "src/result/VARSandFUNS/execution";
     this.varAndFunPath = varAndFunPath;
-    new File(varAndFunPath+execution).mkdirs();
+    new File(varAndFunPath + execution).mkdirs();
 
   }
 }

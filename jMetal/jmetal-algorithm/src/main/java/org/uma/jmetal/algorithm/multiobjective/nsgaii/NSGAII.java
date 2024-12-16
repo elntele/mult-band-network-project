@@ -2,7 +2,9 @@ package org.uma.jmetal.algorithm.multiobjective.nsgaii;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.uma.jmetal.algorithm.impl.AbstractGeneticAlgorithm;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
@@ -33,6 +35,8 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
 
   protected int matingPoolSize;
   protected int offspringPopulationSize;
+
+  private final Map<Integer, List<ArrayList<S>>> mapFronts = new HashMap<>();
 
   /**
    * Constructor
@@ -88,13 +92,13 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
 
-    if (evaluations==10||evaluations % 500==0) {
+    if (evaluations == 10 || evaluations % 500 == 0) {
       population.stream().forEach(s -> {
         var constraint1 = ((Solution) s).constraints()[0];
         var constraint2 = ((Solution) s).constraints()[1];
 
         PrintPopulation.printMatrix(((Solution) s).variables(), 10, Double.toString(constraint1),
-            Double.toString(constraint2), ((DefaultIntegerSolution)s).file);
+            Double.toString(constraint2), ((DefaultIntegerSolution) s).file);
       });
     }
 
@@ -166,8 +170,14 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
     RankingAndCrowdingSelection<S> rankingAndCrowdingSelection;
     rankingAndCrowdingSelection = new RankingAndCrowdingSelection<S>(getMaxPopulationSize(),
         dominanceComparator);
-
-    return rankingAndCrowdingSelection.execute(jointPopulation);
+    final List<S> result = rankingAndCrowdingSelection.execute(jointPopulation);
+    var iteration = evaluations / 100;
+    if (iteration % 40 == 0) {
+      rankingAndCrowdingSelection.execute(result);
+      var pareto = rankingAndCrowdingSelection.getRankedSubPopulations();
+      mapFronts.put(iteration, pareto);
+    }
+    return result;
   }
 
   @Override
@@ -183,5 +193,9 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   @Override
   public String description() {
     return "Nondominated Sorting Genetic Algorithm version II";
+  }
+
+  public Map<Integer, List<ArrayList<S>>> getMapFronts() {
+    return mapFronts;
   }
 }
