@@ -26,8 +26,13 @@ import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
 
 import org.uma.jmetal.problem.integerproblem.impl.AbstractIntegerProblem;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
+import org.uma.jmetal.util.comparator.dominanceComparator.impl.DefaultDominanceComparator;
+import org.uma.jmetal.util.densityestimator.impl.CrowdingDistanceDensityEstimator;
+import org.uma.jmetal.util.ranking.Ranking;
+import org.uma.jmetal.util.ranking.impl.FastNonDominatedSortRanking;
 
 import java.io.File;
 import java.util.*;
@@ -249,9 +254,13 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       solution.objectives()[1] = objectives[1];
     }
     localPopulation.add((DefaultIntegerSolution) solution);
-    if (populationSize != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+    if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
       countSolutionWithRestriction();
       printPopulation();
+  //    teste();
+    }
+    if (localPopulation.size()==populationSize){
+      localPopulation.clear();
     }
     return solution;
   }
@@ -269,8 +278,70 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var varName = this.varAndFunPath + execution + "/VAR" + iteration + ".csv";
     var funName = this.varAndFunPath + execution + "/FUN" + iteration + ".csv";
     printFinalSolutionSet(localPopulation, varName, funName);
-    localPopulation.clear();
   }
+
+  private void teste() {
+    var dominanceComparator = new DefaultDominanceComparator<DefaultIntegerSolution>();
+    FastNonDominatedSortRanking<DefaultIntegerSolution> ranking = new FastNonDominatedSortRanking<>(dominanceComparator);
+    CrowdingDistanceDensityEstimator<DefaultIntegerSolution> crowdingDistance = new CrowdingDistanceDensityEstimator<>();
+    List<DefaultIntegerSolution> population = new ArrayList<>(populationSize);
+
+    // Usar diretamente o tipo retornado
+    List<ArrayList<DefaultIntegerSolution>> rankedSubPopulations = ranking.getRankedSubPopulations();
+
+    // Verifica se há frentes disponíveis
+    if (rankedSubPopulations.isEmpty()) {
+      throw new IllegalStateException("Nenhuma frente de Pareto disponível para processar.");
+    }
+
+    int rankingIndex = 0;
+    while (population.size() < populationSize) {
+      if (rankingIndex >= rankedSubPopulations.size()) {
+        throw new IllegalStateException("Rank inválido: " + rankingIndex + ". Não há mais frentes disponíveis.");
+      }
+
+      if (subfrontFillsIntoThePopulation(ranking, rankingIndex, population)) {
+        crowdingDistance.compute(rankedSubPopulations.get(rankingIndex));
+        addRankedSolutionsToPopulation(ranking, rankingIndex, population);
+        rankingIndex++;
+      } else {
+        crowdingDistance.compute(rankedSubPopulations.get(rankingIndex));
+        addLastRankedSolutionsToPopulation(ranking, rankingIndex, population);
+      }
+    }
+
+    // Exemplo de uso do resultado
+    for (int i = 0; i < rankedSubPopulations.size(); i++) {
+      System.out.println("Front " + i + ": " + rankedSubPopulations.get(i));
+    }
+  }
+
+
+
+
+
+  private boolean subfrontFillsIntoThePopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
+    return ranking.getSubFront(rank).size() < (populationSize - population.size());
+  }
+
+  protected void addRankedSolutionsToPopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
+    List<DefaultIntegerSolution> front = ranking.getSubFront(rank);
+    population.addAll(front);
+  }
+
+  protected void addLastRankedSolutionsToPopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
+    List<DefaultIntegerSolution> currentRankedFront = ranking.getSubFront(rank);
+
+    currentRankedFront.sort(new CrowdingDistanceDensityEstimator<>().comparator());
+
+    int i = 0;
+    while (population.size() < populationSize && i < currentRankedFront.size()) {
+      population.add(currentRankedFront.get(i));
+      i++;
+    }
+  }
+
+
 
  /* @Override
   public IntegerSolution evaluate(IntegerSolution solution) {

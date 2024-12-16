@@ -165,12 +165,12 @@ public class Fiber {
 
 	public void initialize(int lambda) {
 
+		//TODO, jorge, aqui foi alterado porque lambida agora não é mais o numero
+		// que chega e sim um valor que é em função do numero que chega e das bandas
+		// que a fibra opera
 		this.lambda = Bands.getTotalChannels(bands, (double) lambda);
 
 		for (int i = 1; i <= this.lambda; i++) {
-    //TODO, jorge, mostrar a danilo: aqui foi alretado
-    // esse loop interava até lambda e eu coloquei para
-    // lambdaTotal que é a soma dos 3 lambidas
 			powerA.add(0.0);
 			powerB.add(0.0);
 			powerC.add(0.0);

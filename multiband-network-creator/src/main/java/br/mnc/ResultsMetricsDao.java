@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class ResultsMetricsDao {
           "fitness evaluation number" + ((ExternalNetworkEvaluatorSettings) problem).contEvaluate + '\n');
       System.out.println("database saved in GML format");
       saveConstraintsMetrics( population,  metricsHolder, gravarArq);
-
+      saveParetoMetrics(metricsHolder.mapFronts(),gravarArq);
       long computingTime = algorithmRunner.getComputingTime();
       JMetalLogger.logger.info("Total execution time: " + computingTime + "ms");
       gravarArq.printf("Total execution time: " + computingTime + "ms" + '\n');
@@ -123,4 +124,25 @@ public class ResultsMetricsDao {
 
 
   }
+
+  private static void saveParetoMetrics(Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts, PrintWriter gravarArq) throws Exception {
+    mapFronts.entrySet().stream()
+        .forEach(entry -> {
+          Integer iteration = entry.getKey();
+          List<ArrayList<IntegerSolution>> paretos = entry.getValue();
+          int numberOfSolutionsInFirstPareto = (paretos.isEmpty()) ? 0 : paretos.get(0).size();
+          int numberOfParetoSets = paretos.size();
+          gravarArq.printf(
+              "interação: %d; numero de soluções no primeiro pareto: %d; numero de paretos: %d%n",
+              iteration,
+              numberOfSolutionsInFirstPareto,
+              numberOfParetoSets
+          );
+        });
+
+    System.out.println("Pareto metrics saved.");
+  }
+
+
+
 }

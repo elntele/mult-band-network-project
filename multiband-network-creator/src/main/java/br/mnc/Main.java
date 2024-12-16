@@ -2,6 +2,7 @@ package br.mnc;
 
 import org.uma.jmetal.algorithm.Algorithm;
 import org.uma.jmetal.algorithm.examples.AlgorithmRunner;
+import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAII;
 import org.uma.jmetal.algorithm.multiobjective.nsgaii.NSGAIIBuilder;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.operator.crossover.impl.IntegerSBXCrossover;
@@ -42,8 +43,8 @@ public class Main {
     //  String path = "./selectedCityInPernabucoState.gml";
     var path = "./teste2.gml";
     var populationSize= 100;
-    var maxEvaluations= 1000;
-    var  iterationsToPrint = 2;
+    var maxEvaluations= 30000;
+    var  iterationsToPrint = 20;
     var execution=1;
     var setSize=3;
     problem = new ExternalNetworkEvaluatorSettings(setSize,populationSize,path, iterationsToPrint, execution);
@@ -69,8 +70,11 @@ public class Main {
     AlgorithmRunner algorithmRunner = new AlgorithmRunner.Executor(algorithm).execute();
     List<IntegerSolution> population;
     population = algorithm.result();
-    int w = 1;
-    var metrics = new MetricsHolder(problem, algorithmRunner);
+
+    NSGAII<IntegerSolution> nsgaiiAlgorithm = (NSGAII<IntegerSolution>) algorithm;
+    Map<Integer, List<ArrayList<IntegerSolution>>> mapFronts = nsgaiiAlgorithm.getMapFronts();
+
+    var metrics = new MetricsHolder(problem, algorithmRunner, mapFronts);
     ResultsMetricsDao.saveMetrics(population, metrics);
 
   }

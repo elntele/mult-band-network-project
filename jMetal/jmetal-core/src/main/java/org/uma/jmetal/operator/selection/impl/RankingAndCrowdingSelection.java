@@ -24,7 +24,7 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
     implements SelectionOperator<List<S>,List<S>> {
   private final int solutionsToSelect ;
   private Comparator<S> dominanceComparator ;
-
+  private List<ArrayList<S>> rankedSubPopulations;
 
   /** Constructor */
   public RankingAndCrowdingSelection(int solutionsToSelect, Comparator<S> dominanceComparator) {
@@ -46,7 +46,7 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
   public List<S> execute(List<S> solutionList) throws JMetalException {
     Check.notNull(solutionList);
     Check.collectionIsNotEmpty(solutionList);
-    Check.that(solutionList.size() > solutionsToSelect, "The population size ("+solutionList.size()+") is smaller than" +
+    Check.that(solutionList.size() >= solutionsToSelect, "The population size ("+solutionList.size()+") is smaller than" +
         "the solutions to selected ("+solutionsToSelect+")");
 
     Ranking<S> ranking = new FastNonDominatedSortRanking<>(dominanceComparator);
@@ -69,6 +69,15 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
         addLastRankedSolutionsToPopulation(ranking, rankingIndex, population);
       }
     }
+
+    if (ranking instanceof FastNonDominatedSortRanking) {
+      FastNonDominatedSortRanking<S> fastRanking = (FastNonDominatedSortRanking<S>) ranking;
+      this.rankedSubPopulations = fastRanking.getRankedSubPopulations();
+    } else {
+      System.err.println(" in RankingAndCrowdingSelection class, crowdingDistanceSelectionm ethod" +
+          " Ranking isn't a FastNonDominatedSortRanking instance");
+    }
+
 
     return population ;
   }
@@ -95,5 +104,9 @@ public class RankingAndCrowdingSelection<S extends Solution<?>>
       population.add(currentRankedFront.get(i)) ;
       i++ ;
     }
+  }
+
+  public List<ArrayList<S>> getRankedSubPopulations() {
+    return rankedSubPopulations;
   }
 }
