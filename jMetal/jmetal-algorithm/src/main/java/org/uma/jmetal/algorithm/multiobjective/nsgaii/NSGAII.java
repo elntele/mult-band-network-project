@@ -172,7 +172,7 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
         dominanceComparator);
     final List<S> result = rankingAndCrowdingSelection.execute(jointPopulation);
     var iteration = evaluations / 100;
-    if (iteration % 20 == 0) {
+    if (iteration % 40 == 0) {
       rankingAndCrowdingSelection.execute(result);
       var pareto = rankingAndCrowdingSelection.getRankedSubPopulations();
       mapFronts.put(iteration, pareto);

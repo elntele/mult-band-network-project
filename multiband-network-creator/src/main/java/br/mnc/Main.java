@@ -40,25 +40,26 @@ public class Main {
     CrossoverOperator<IntegerSolution> crossover; // do Jmetal
     MutationOperator<IntegerSolution> mutation; // do Jmetal
     SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
-    //  String path = "./selectedCityInPernabucoState.gml";
-    var path = "./teste2.gml";
+    String path = "./selectedCityInPernabucoState.gml";
+    //var path = "./teste2.gml";
     var populationSize= 100;
-    var maxEvaluations= 30000;
-    var  iterationsToPrint = 20;
+    var maxEvaluations= 100000;
+    var  iterationsToPrint = 40;
     var execution=1;
     var setSize=3;
     problem = new ExternalNetworkEvaluatorSettings(setSize,populationSize,path, iterationsToPrint, execution);
 
 
     // ****************************
+    // it compares with a Random chosen between 0 and 1
     double crossoverProbability = 0.3;
     double crossoverDistributionIndex = 20.0;
     //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
-    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 10, setSize);
+    crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), 26, setSize);
     double mutationProbability = 1.0 / problem.numberOfVariables();
     double mutationDistributionIndex = 20.0;
     // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-    mutation = new IntegerTCNEMutation(16, new Random(), 10, setSize);
+    mutation = new IntegerTCNEMutation(50, new Random(), 26, setSize);
 
     // new: create a comparator of constraint violation
     OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();

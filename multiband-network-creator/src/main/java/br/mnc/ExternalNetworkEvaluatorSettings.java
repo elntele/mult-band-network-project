@@ -226,7 +226,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
     evaluateConstraints((DefaultIntegerSolution) solution);
-    int load = 100;
+    int load =300;
     Integer[] vars = new Integer[solution.variables()
         .size()];
     for (int i = 0; i < vars.length; i++) {
@@ -257,7 +257,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
       countSolutionWithRestriction();
       printPopulation();
-  //    teste();
     }
     if (localPopulation.size()==populationSize){
       localPopulation.clear();
@@ -280,97 +279,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     printFinalSolutionSet(localPopulation, varName, funName);
   }
 
-  private void teste() {
-    var dominanceComparator = new DefaultDominanceComparator<DefaultIntegerSolution>();
-    FastNonDominatedSortRanking<DefaultIntegerSolution> ranking = new FastNonDominatedSortRanking<>(dominanceComparator);
-    CrowdingDistanceDensityEstimator<DefaultIntegerSolution> crowdingDistance = new CrowdingDistanceDensityEstimator<>();
-    List<DefaultIntegerSolution> population = new ArrayList<>(populationSize);
-
-    // Usar diretamente o tipo retornado
-    List<ArrayList<DefaultIntegerSolution>> rankedSubPopulations = ranking.getRankedSubPopulations();
-
-    // Verifica se há frentes disponíveis
-    if (rankedSubPopulations.isEmpty()) {
-      throw new IllegalStateException("Nenhuma frente de Pareto disponível para processar.");
-    }
-
-    int rankingIndex = 0;
-    while (population.size() < populationSize) {
-      if (rankingIndex >= rankedSubPopulations.size()) {
-        throw new IllegalStateException("Rank inválido: " + rankingIndex + ". Não há mais frentes disponíveis.");
-      }
-
-      if (subfrontFillsIntoThePopulation(ranking, rankingIndex, population)) {
-        crowdingDistance.compute(rankedSubPopulations.get(rankingIndex));
-        addRankedSolutionsToPopulation(ranking, rankingIndex, population);
-        rankingIndex++;
-      } else {
-        crowdingDistance.compute(rankedSubPopulations.get(rankingIndex));
-        addLastRankedSolutionsToPopulation(ranking, rankingIndex, population);
-      }
-    }
-
-    // Exemplo de uso do resultado
-    for (int i = 0; i < rankedSubPopulations.size(); i++) {
-      System.out.println("Front " + i + ": " + rankedSubPopulations.get(i));
-    }
-  }
-
-
-
-
-
-  private boolean subfrontFillsIntoThePopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
-    return ranking.getSubFront(rank).size() < (populationSize - population.size());
-  }
-
-  protected void addRankedSolutionsToPopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
-    List<DefaultIntegerSolution> front = ranking.getSubFront(rank);
-    population.addAll(front);
-  }
-
-  protected void addLastRankedSolutionsToPopulation(Ranking<DefaultIntegerSolution> ranking, int rank, List<DefaultIntegerSolution> population) {
-    List<DefaultIntegerSolution> currentRankedFront = ranking.getSubFront(rank);
-
-    currentRankedFront.sort(new CrowdingDistanceDensityEstimator<>().comparator());
-
-    int i = 0;
-    while (population.size() < populationSize && i < currentRankedFront.size()) {
-      population.add(currentRankedFront.get(i));
-      i++;
-    }
-  }
-
-
-
- /* @Override
-  public IntegerSolution evaluate(IntegerSolution solution) {
-    evaluateConstraints((DefaultIntegerSolution) solution);
-    int load = 100;
-    Integer[] vars = new Integer[solution.variables()
-        .size()];
-    for (int i = 0; i < vars.length; i++) {
-      vars[i] = (Integer) solution.variables()
-          .get(i);
-    }
-
-    System.out.println("conte Evaluate: " + this.contEvaluate);
-    this.contEvaluate += 1;
-    GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (gmlData.containsIsolatedNodesInMultiBandModel()) {
-      solution.objectives()[0] = 1.0;
-      solution.objectives()[1] = Double.MAX_VALUE;
-    } else {
-      OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
-      var dataToReloadProblem = setProblemCharacteristic(solution);
-      P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
-      Double[] objectives = P.evaluate(vars);
-      //    solution.objectives()[0] = objectives[0];
-      solution.objectives()[0] = 1.0;// para testes
-      solution.objectives()[1] = objectives[1];
-    }
-    return solution;
-  }*/
 
 
   /**
