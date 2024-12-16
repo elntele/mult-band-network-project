@@ -59,98 +59,16 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private int iterationsToPrint;
   private int execution;
   private Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
+  private int load;
 
   @Override
   public IntegerSolution createSolution() {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
         numberOfConstraints());
-    //call an initializer here
-    //CreateRandomNetWork(((DefaultIntegerSolution) integerSolution));
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-    //  System.out.println("file na criação: " + ((DefaultIntegerSolution) integerSolution).file);
-    // System.out.println("variables na criação: ");
     PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none",
         ((DefaultIntegerSolution) integerSolution).file);
-    //   System.out.println("oh eu aqui de novo");
     return integerSolution;
-  }
-
-  /**
-   * this method create a random solution
-   * considering, in variables, the part of
-   * connections  and the part of ROADM
-   * separated but considering a relationship
-   * between the two parts.
-   * //chromosome sample to 4 nodes: being (123) a 3-fiber set
-   * // (123) (123) (123) (123) (123) (123) Node Node Node Node w
-   * the below matrix represents the connection part
-   * // connection matrix
-   * //   1   2     3     4
-   * // 1 x (123) (123) (123)
-   * // 2     x   (123) (123)
-   * // 3           x   (123)
-   * // 4                 x
-   * The way to running through the variables using the
-   * nodes number in a 'chain for': for(i=...i++){for(j=...j++){}},
-   * is introduced here.
-   * as the column have 3 times more position them line,
-   * the 'chained for' will need an external observer counter
-   * to hold the final index position of the 'internal for'
-   * in each iteration. It's because the 'internal for' next
-   * iteration will begin in the last stopped position +1.
-   *
-   * @param solution
-   */
-
-  private void CreateRandomNetWork(IntegerSolution solution) {
-    Random random = new Random();
-    var connections = AllowedConnectionTable.getPossibleConnection();
-    var connectionPartLimit = numberOfVariables() - tailRoadmPlusW; //the size of connection part
-    IntStream.iterate(0, stepByIndexes -> stepByIndexes + setSize)
-        .limit(connectionPartLimit / setSize)
-        .forEach(index -> {
-          // in 50% of times don't create connection between nodes
-          if (random.nextBoolean()) {
-            solution.variables()
-                .set(index, 0);
-            solution.variables()
-                .set(index + 1, 0);
-            solution.variables()
-                .set(index + 2, 0);
-          } else {
-            // in 50% of times randomly chosen the one type of connection: 0,1,3,5,7.
-            // remembering that 0 means no connection and consequently no edge/fiber
-            boolean neighbor = false;
-            solution.variables()
-                .set(index, connections[random.nextInt(connections.length)]);
-            solution.variables()
-                .set(index + 1, connections[random.nextInt(connections.length)]);
-            solution.variables()
-                .set(index + 2, connections[random.nextInt(connections.length)]);
-          }
-        });
-
-    var numNode = gml.getNodes().size();
-    var roadmIndex = numberOfVariables() - (numNode + 1); //+1 cause its difference includes w part
-
-    var externalObserverCount = 0;
-    //here is the 'chained for' described on top of method
-    var offset = 1;
-    for (int i = 0; i < numNode; i++) { //go through matrix column by index i
-      var maxEquipment = 0;
-      var nextLimit = externalObserverCount + (numNode - offset) * setSize;
-      for (int j = externalObserverCount; j < nextLimit; j++) {//go through matrix line by index j
-        if (solution.variables().get(j) > maxEquipment) {
-          maxEquipment = solution.variables().get(j);
-        }
-        externalObserverCount = j;
-      }
-      externalObserverCount++;
-      offset += 1;
-
-      solution.variables().set(roadmIndex, randomlySelectSwitch(maxEquipment));
-      roadmIndex++;
-    }
   }
 
 
@@ -198,24 +116,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
 
-  private Integer randomlySelectSwitch(Integer equipment) {
-    Random random = new Random();
-    switch (equipment) {
-      case 0 -> {
-        return 0;
-      }
-      case 1 -> {
-        return random.nextInt(1, 4);
-      }
-      case 3 -> {
-        return random.nextInt(5, 8);
-      }
-      case 5, 7 -> {
-        return random.nextInt(9, 12);
-      }
-      default -> throw new IllegalStateException("Unexpected value: " + equipment);
-    }
-  }
+
 
   /**
    * method used for jMetal algorithm to evaluate
@@ -226,7 +127,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
     evaluateConstraints((DefaultIntegerSolution) solution);
-    int load =300;
+
     Integer[] vars = new Integer[solution.variables()
         .size()];
     for (int i = 0; i < vars.length; i++) {
@@ -258,7 +159,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       countSolutionWithRestriction();
       printPopulation();
     }
-    if (localPopulation.size()==populationSize){
+    if (localPopulation.size() == populationSize) {
       localPopulation.clear();
     }
     return solution;
@@ -280,7 +181,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
 
-
   /**
    * this method calculate the  constraint
    * g1(x), g2(x), g3(x).
@@ -288,7 +188,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * @param solution
    */
   public void evaluateConstraints(DefaultIntegerSolution solution) {
-    //solution.constraints()[0] = isolatedNodes(solution);
     var net = getMockNet();
     net.setCn(getLocalComplexNetWork(solution));
     var algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
@@ -310,23 +209,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         MAX_NUMBER_OF_WAVELENGHTS);
   }
 
-  /**
-   * this method calculate the rate over
-   * node isolated, and it represents
-   * the constraint g1(x).
-   *
-   * @param solution
-   */
-  private Double isolatedNodes(DefaultIntegerSolution solution) {
-    double isolatedNodeCount = 0.0;
-    for (var entry : solution.file.entrySet()) {
-      Set<Integer> set = (Set<Integer>) entry.getValue();
-      if (set.isEmpty()) {
-        isolatedNodeCount++;
-      }
-    }
-    return isolatedNodeCount / gml.getNodes().size();
-  }
+
 
 
   /**
@@ -370,31 +253,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     return (nodeNoteAttend / sumOfNodeDegrees);
   }
 
-  /**
-   * this method calculate the rate over
-   * links with additional band being used
-   * without use of c band, and it represents
-   * the constraint g3(x).
-   *
-   * @param solution
-   */
-  private Double additionalBandBeforeBandC(DefaultIntegerSolution solution) {
-    var numNode = gml.getNodes().size();
-    var setViolateRoles = 0.0;
-    for (int i = 0; i < numNode; i++) {
-      for (int j = i + 1; j < numNode; j++) {
-        var beginLinkPosition = Equipments.getLinkPosition(i, j, numNode, setSize);
-        for (int w = 0; w < setSize; w++) {
-          var link = solution.variables().get(beginLinkPosition + w);
-          switch (link) {
-            case 2, 4, 6 -> setViolateRoles += 1;
-          }
-        }
-      }
-    }
-    var totalFiber = 3 * ((numNode * numNode) - numNode) / 2;
-    return (setViolateRoles / totalFiber);
-  }
 
   /**
    * method called for evaluate method
@@ -405,51 +263,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    */
 
   public GmlData getGmlData(List<GmlNode> nodes, Integer[] vars) {
-    GmlDao gmlDao = new GmlDao();
     GmlData gmlData = new GmlData();
     gmlData.setNodes(nodes);
-    //var links = buildEdges(nodes, vars);
     gmlData.setEdgeSets(buildSet(nodes, vars));
-    //gmlData.setEdges(links);
-    //gmlData.createComplexNetwork();
-    // gmlData = gmlDao.loadGmlDataFromContent(gmlDao.createFileContent(gmlData));
     return gmlData;
   }
 
-  /**
-   * This method is called in getGmlData
-   * but is to help evaluate.
-   *
-   * @param nodesList
-   * @param vars
-   */
-  public List<GmlEdge> buildEdges(List<GmlNode> nodesList, Integer[] vars) {
-    //it is used to allows modification inside lambda
-    int[] varIndex = { 0 };
-    List<GmlEdge> edges = new ArrayList<>();
-    List<Integer> varList = Arrays.asList(vars);
-
-    return IntStream.range(0, nodesList.size())
-        .boxed()
-        .flatMap(i -> IntStream.range(i, nodesList.size())
-            .filter(j -> i != j)
-            .mapToObj(j -> {
-              GmlEdge edge = null;
-              if (varList.get(varIndex[0]) == 1) {
-                edge = new GmlEdge();
-                edge.setSource((GmlNode) this.mapNode.get(nodesList.get(i)
-                    .getId()));
-                edge.setTarget((GmlNode) this.mapNode.get(nodesList.get(j)
-                    .getId()));
-                edges.add(edge);
-              }
-              varIndex[0] += 3;
-              return edge;
-            }))
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
-
-  }
 
   /**
    * This method is called in getGmlData
@@ -590,13 +409,14 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
-      int execution) {
+      int execution, int load) {
     super();
     this.populationSize = populationSize;
     this.setSize = setSize;
     this.path = path;
     this.iterationsToPrint = iterationsToPrint;
     this.execution = execution;
+    this.load = load;
     gmlBuild();
     this.numberOfObjectives(2);
     this.numberOfConstraints(2);

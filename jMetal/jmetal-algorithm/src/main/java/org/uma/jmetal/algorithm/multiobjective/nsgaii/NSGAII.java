@@ -36,6 +36,9 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected int matingPoolSize;
   protected int offspringPopulationSize;
 
+  protected int iterationToPrint;
+  protected  int numNodes;
+
   private final Map<Integer, List<ArrayList<S>>> mapFronts = new HashMap<>();
 
   /**
@@ -73,6 +76,34 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
     this.offspringPopulationSize = offspringPopulationSize;
   }
 
+  /**
+   * owner jorge candeias
+   * a new builder to include int iterationToPrint, int numNodes
+   * Constructor
+   */
+  public NSGAII(Problem<S> problem, int maxEvaluations, int populationSize,
+      int matingPoolSize, int offspringPopulationSize,
+      CrossoverOperator<S> crossoverOperator, MutationOperator<S> mutationOperator,
+      SelectionOperator<List<S>, S> selectionOperator, Comparator<S> dominanceComparator,
+      SolutionListEvaluator<S> evaluator, int iterationToPrint, int numNodes) {
+    super(problem);
+    this.maxEvaluations = maxEvaluations;
+    setMaxPopulationSize(populationSize);
+
+    this.crossoverOperator = crossoverOperator;
+    this.mutationOperator = mutationOperator;
+    this.selectionOperator = selectionOperator;
+
+    this.evaluator = evaluator;
+    this.dominanceComparator = dominanceComparator;
+
+    this.matingPoolSize = matingPoolSize;
+    this.offspringPopulationSize = offspringPopulationSize;
+    this.iterationToPrint=iterationToPrint;
+    this.numNodes=numNodes;
+  }
+
+
   @Override
   protected void initProgress() {
     evaluations = getMaxPopulationSize();
@@ -92,12 +123,12 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
 
-    if (evaluations == 10 || evaluations % 500 == 0) {
+    if (evaluations == getMaxPopulationSize() || evaluations % 500 == 0) {
       population.stream().forEach(s -> {
         var constraint1 = ((Solution) s).constraints()[0];
         var constraint2 = ((Solution) s).constraints()[1];
 
-        PrintPopulation.printMatrix(((Solution) s).variables(), 10, Double.toString(constraint1),
+        PrintPopulation.printMatrix(((Solution) s).variables(), numNodes, Double.toString(constraint1),
             Double.toString(constraint2), ((DefaultIntegerSolution) s).file);
       });
     }
@@ -171,8 +202,9 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
     rankingAndCrowdingSelection = new RankingAndCrowdingSelection<S>(getMaxPopulationSize(),
         dominanceComparator);
     final List<S> result = rankingAndCrowdingSelection.execute(jointPopulation);
-    var iteration = evaluations / 100;
-    if (iteration % 40 == 0) {
+
+    var iteration = evaluations / this.getMaxPopulationSize();
+    if (iteration % iterationToPrint == 0) {
       rankingAndCrowdingSelection.execute(result);
       var pareto = rankingAndCrowdingSelection.getRankedSubPopulations();
       mapFronts.put(iteration, pareto);
