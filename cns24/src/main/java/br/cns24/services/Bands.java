@@ -10,12 +10,8 @@ import java.util.Random;
 public enum Bands {
   NOBAND(0),
   CBAND(1),
-  LBAND(2),
-  CLBAND(3),
-  SBAND(4),
-  CSBAND(5),
-  LSBAND(6),
-  CLSBAND(7);
+  CLBAND(2),
+  CLSBAND(3);
 
   Bands(Integer band) {
   }
@@ -36,21 +32,9 @@ public enum Bands {
         return Bands.CBAND;
       }
       case 2 -> {
-        return Bands.LBAND;
-      }
-      case 3 -> {
         return Bands.CLBAND;
       }
-      case 4 -> {
-        return Bands.SBAND;
-      }
-      case 5 -> {
-        return Bands.CSBAND;
-      }
-      case 6 -> {
-        return Bands.LSBAND;
-      }
-      case 7 -> {
+      case 3 -> {
         return Bands.CLSBAND;
       }
       default -> throw new IllegalStateException("Unexpected value: " + edge);
@@ -58,48 +42,31 @@ public enum Bands {
 
   }
 
+  /**
+   * this method receives a band and
+   * return it value accord this
+   * enum
+   * @param band
+   * @return
+   */
   public static int getValue(Bands band) {
     switch (band) {
+      case NOBAND -> {
+        return 0;
+      }
       case CBAND -> {
         return 1;
       }
       case CLBAND -> {
-        return 3;
+        return 2;
       }
       case CLSBAND -> {
-        return 7;
+        return 3;
       }
       default -> throw new IllegalStateException("Unexpected value: " + band);
     }
   }
 
-  public static int getBandForThisNode(int node) {
-    Random random = new Random();
-    var percent = random.nextDouble();
-    switch (node) {
-      case 1, 2, 3, 4 -> {
-        return 1;
-      }
-      case 5, 6, 7, 8 -> {
-        if (percent <= 0.8) {
-          return 3;
-        } else {
-          return 1;
-        }
-      }
-      case 9, 10, 11, 12 -> {
-        if (percent <= 0.8) {
-          return 7;
-        } else if (percent < 0.9) {
-          return 3;
-        } else {
-          return 1;
-        }
-      }
-      default -> throw new IllegalStateException("Unexpected value: " + node);
-    }
-
-  }
 
   /**
    * The number w of wavelength path will be a number from

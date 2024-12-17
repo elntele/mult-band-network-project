@@ -89,7 +89,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
       for (int j = i+1; j < numNodes; j++) {
         var random = (randomGenerator.nextInt(100));
-        //var random=0.95;
         if (random <= mutationProbability) {
           mutation(((DefaultIntegerSolution) solution), i, j);
         }

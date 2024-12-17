@@ -44,7 +44,7 @@ public class Main {
     //var path = "./teste2.gml";
     var populationSize = 100;
     var maxEvaluations = 100000;
-    var iterationsToPrint = 10;
+    var iterationsToPrint = 40;
     var setSize = 3;
     var load = 5000;
     var numNodes = 26;

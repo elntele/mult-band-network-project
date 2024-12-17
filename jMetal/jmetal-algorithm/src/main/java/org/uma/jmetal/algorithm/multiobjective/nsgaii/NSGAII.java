@@ -123,7 +123,7 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
   protected List<S> evaluatePopulation(List<S> population) {
     population = evaluator.evaluate(population, getProblem());
 
-    if (evaluations == getMaxPopulationSize() || evaluations % 500 == 0) {
+    if (evaluations == getMaxPopulationSize() || ( evaluations>499 && evaluations % 500 == 0)) {
       population.stream().forEach(s -> {
         var constraint1 = ((Solution) s).constraints()[0];
         var constraint2 = ((Solution) s).constraints()[1];

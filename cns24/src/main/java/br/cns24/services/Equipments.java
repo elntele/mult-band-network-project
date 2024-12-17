@@ -236,13 +236,13 @@ public class Equipments {
 
   public static double getWssSolutionCost(Integer typeForTheIndex) {
     switch (typeForTheIndex) {
-      case 1, 2, 3, 4 -> {
+      case 1 -> {
         return SWITCHES_COSTS_AND_LABELS[0][2];
       }
-      case 5, 6, 7, 8 -> {
+      case 2 -> {
         return SWITCHES_COSTS_AND_LABELS[0][2] + SWITCHES_COSTS_AND_LABELS[0][6];
       }
-      case 9, 10, 11, 12 -> {
+      case 3 -> {
         return SWITCHES_COSTS_AND_LABELS[0][2] + SWITCHES_COSTS_AND_LABELS[0][6] + SWITCHES_COSTS_AND_LABELS[0][10];
       }
       default-> throw new RuntimeException("illegal switch in equipments getSwitchCost method");
@@ -279,35 +279,33 @@ public class Equipments {
 
   }
 
-  public static boolean compareNodeLevels(int typeNode1, int typeNode2) {
-    return LevelNode.getLevel(typeNode1).equals(LevelNode.getLevel(typeNode2));
-  }
-
-  public static boolean acceptedUpdate(int typeNode) {
-    return (LevelNode.getLevel(typeNode) != LevelNode.BANDCLS);
-  }
+  /**
+   * this method receive int which
+   * represents a link and returns a
+   * wss which attend this link
+   * @param link
+   * @return
+   */
 
   public static int getMatchWss(int link) {
-    List wssList = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-    List wssClList = Arrays.asList(5, 6, 7, 8, 9, 10, 11, 12);
-    List wssClsList = Arrays.asList(9, 10, 11, 12);
+    List wssList = Arrays.asList(1, 2, 3);
+    int wssCl = 2;
+    int wssCls = 3;
     switch (link) {
       case 0, 1 -> {
         Collections.shuffle(wssList);
         return (int) wssList.getFirst();
-
+      }
+      case 2 -> {
+        return  wssCl;
       }
       case 3 -> {
-        Collections.shuffle(wssClList);
-        return (int) wssClList.getFirst();
-
+        return wssCls;
       }
-      case 7 -> {
-        Collections.shuffle(wssClsList);
-        return (int) wssClsList.getFirst();
+      default -> {
+        return 3;
       }
     }
-    return 1;
   }
 
   /**
@@ -335,7 +333,7 @@ public class Equipments {
    * this method return the cost of a solution to amplifies
    * a fiber working with a cls band Link, which is a cost
    * for the EDFA base for c band plus an EDFA base to l band
-   * plus an TDFA base to s band.
+   * plus two TDFA base to s band.
    */
   public static Double getAmplifierSolutionCostToCLSBand() {
     return AMPLIFIERS_COSTS_AND_LABELS_BAND_C[0][4] +

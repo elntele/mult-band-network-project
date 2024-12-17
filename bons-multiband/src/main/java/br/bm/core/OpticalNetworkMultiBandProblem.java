@@ -605,7 +605,7 @@ public class OpticalNetworkMultiBandProblem implements IProblem<Integer, Double>
     objectives[0] = bpEstimator.evaluate(net).getValue();
     objectives[1] = capexEvaluator.evaluate(net).getValue();
     //   objectives[2] = energyConsumptionEvaluator.evaluate(net).getValue();
-      objectives[2] = algebraicConnectivityEvaluator.evaluate(net).getValue();
+      //objectives[2] = algebraicConnectivityEvaluator.evaluate(net).getValue();
     // objectives[4] =
     // naturalConnectivityEvaluator.evaluate(net).getValue();
 
