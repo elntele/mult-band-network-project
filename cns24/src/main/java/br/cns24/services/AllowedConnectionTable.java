@@ -1,5 +1,7 @@
 package br.cns24.services;
 
+import java.util.Random;
+
 /**
  * class represents the possible connections accords to
  * restriction to avoid plus band work without c band.
@@ -21,5 +23,17 @@ public class AllowedConnectionTable {
     public static Integer[] getPossibleConnection(){
 
         return possibleConnection;
+    }
+
+
+    public static Integer[] getUniformConnectionSet() {
+        Random random = new Random();
+        int index = random.nextInt(4);
+        // Retorna o array correspondente ao índice aleatório
+        Integer[] result = new Integer[3];
+        result[0] = possibleConnection[index];
+        result[1] = possibleConnection[index];
+        result[2] = possibleConnection[index];
+        return result;
     }
 }

@@ -3,23 +3,17 @@ package org.uma.jmetal.operator.mutation.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
-import org.bouncycastle.jce.provider.JCEBlockCipher;
 import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 
-import br.cns24.model.MutationAttributes;
 import br.cns24.services.AllowedConnectionTable;
-import br.cns24.services.Bands;
 import br.cns24.services.Equipments;
-import br.cns24.services.LevelNode;
 
 
 /**
@@ -34,12 +28,14 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private Random randomGenerator;
   private int numNodes;
   private int setSize;
+  private int mixedDistribution;
 
   public IntegerTCNEMutation(
       double mutationProbability,
       Random randomGenerator,
       int numNodes,
-      int setSize
+      int setSize,
+      int mixedDistribution
   ) {
     if (mutationProbability < 0) {
       throw new JMetalException("Mutation probability is negative: " + mutationProbability);
@@ -48,6 +44,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.randomGenerator = randomGenerator;
     this.numNodes = numNodes;
     this.setSize = setSize;
+    this.mixedDistribution=mixedDistribution;
   }
 
 
@@ -101,7 +98,13 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var solutionSize=solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
     var linkIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
-    var possibleLink = Arrays.asList(AllowedConnectionTable.getPossibleConnection());
+    List<Integer> possibleLink =null;
+    var random = randomGenerator.nextInt(101);
+    if (random<=mixedDistribution){
+      possibleLink = Arrays.asList(AllowedConnectionTable.getUniformConnectionSet());
+    }else{
+      possibleLink = Arrays.asList(AllowedConnectionTable.getPossibleConnection());
+    }
     List<Integer> choicedList = new ArrayList<>();
     for (int w = 0; w < setSize; w++) {
       Collections.shuffle(possibleLink);

@@ -134,7 +134,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       solution.objectives()[0] = objectives[0];
-      solution.objectives()[1] = maxCapex + objectives[1];
+      solution.objectives()[1] = maxCapex + maxCapex * solution.constraints()[1];
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
