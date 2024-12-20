@@ -56,10 +56,8 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
           if (connections.get(index + w) != 0) {
             switch (Bands.getBand(connections.get(index + w))) {
               case Bands.CBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifierSolutionCostToCBand());
-              case Bands.CLBAND, Bands.LBAND ->
-                  amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifierSolutionCostToCLBand());
-              case Bands.CSBAND, Bands.LSBAND, Bands.SBAND, Bands.CLSBAND ->
-                  amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifierSolutionCostToCLSBand());
+              case Bands.CLBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifierSolutionCostToCLBand());
+              case Bands.CLSBAND -> amplifierCost_loc += 2 * (3.84 * Equipments.getAmplifierSolutionCostToCLSBand());
               default -> throw new RuntimeException(
                   String.format("invalid band %1$s,  connection position %2$s, connections %3$s", Bands.getBand(
                       connections.get(j)), j, connections));
@@ -103,52 +101,52 @@ public class MultiBandCapexEvaluator implements INetworkEvaluator<INetwork, Nume
             nodeDegrees[j] += 1;
             var band = Bands.getBand(connections.get(index + w));
             var cost = Equipments.getOltCostInBandFunction(band, wNumber);
-            var totalW=Bands.getTotalChannels(band, (double) wNumber);
+            var totalW = Bands.getTotalChannels(band, (double) wNumber);
             sumOLTCost[i] += cost;
             sumOLTCost[j] += cost;
             wInEachNode[i] += totalW;
             wInEachNode[j] += totalW;
+          }
         }
-      }
         // it is inside loop for, so, 'i' is dynamic and known
         // the two next equations comes from cost model but was adopted.
         wavelengthCost += 2 * sumOLTCost[i];
         switchCost += ((0.05225 * wInEachNode[i]) + (6.24 * nodeDegrees[i]) + 2.5) * Equipments.getWssSolutionCost(
             nodeEquipmentTypes.get(i));
       }
-  }
-    return new Pair<>(wavelengthCost,switchCost);
-}
-
-/**
- * this method returns the total length of fiber
- * in network
- *
- * @param network
- */
-private Double getTotalFiberLength(INetwork network) {
-  MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
-  var totalNetworkLength = 0.0;
-  var externalCount = 0;
-  var offset = 1;
-  for (int i = 0; i < numNodes; i++) {
-    var nextLimit = externalCount + (numNodes - offset) * 3;
-    var indexJ = i + 1;
-    var stepTree = 0;
-    for (int j = externalCount; j < nextLimit; j++) {
-      stepTree++;
-      if (connections.get(j) != 0) {
-        totalNetworkLength += net.getCompleteDistances()[i][indexJ];
-      }
-      if (stepTree % 3 == 0) {
-        indexJ++;
-      }
-      externalCount = j;
     }
-    offset++;
-    externalCount++;
+    return new Pair<>(wavelengthCost, switchCost);
   }
-  return totalNetworkLength;
-}
+
+  /**
+   * this method returns the total length of fiber
+   * in network
+   *
+   * @param network
+   */
+  private Double getTotalFiberLength(INetwork network) {
+    MultiBandNetWorkProfile net = (MultiBandNetWorkProfile) network;
+    var totalNetworkLength = 0.0;
+    var externalCount = 0;
+    var offset = 1;
+    for (int i = 0; i < numNodes; i++) {
+      var nextLimit = externalCount + (numNodes - offset) * 3;
+      var indexJ = i + 1;
+      var stepTree = 0;
+      for (int j = externalCount; j < nextLimit; j++) {
+        stepTree++;
+        if (connections.get(j) != 0) {
+          totalNetworkLength += net.getCompleteDistances()[i][indexJ];
+        }
+        if (stepTree % 3 == 0) {
+          indexJ++;
+        }
+        externalCount = j;
+      }
+      offset++;
+      externalCount++;
+    }
+    return totalNetworkLength;
+  }
 
 }

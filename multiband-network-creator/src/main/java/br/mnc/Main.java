@@ -44,12 +44,13 @@ public class Main {
     //var path = "./teste2.gml";
     var populationSize = 100;
     var maxEvaluations = 100000;
-    var iterationsToPrint = 10;
+    var iterationsToPrint = 40;
     var setSize = 3;
     var load = 5000;
     var numNodes = 26;
     var numberOfExecutions = 11;
     var printGML=false;
+    var mixedDistribution=50;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
@@ -61,7 +62,7 @@ public class Main {
       double mutationProbability = 1.0 / problem.numberOfVariables();
       double mutationDistributionIndex = 20.0;
       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize);
+      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize, mixedDistribution);
 
       // new: create a comparator of constraint violation
       OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
