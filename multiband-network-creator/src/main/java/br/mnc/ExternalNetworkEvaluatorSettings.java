@@ -52,6 +52,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
   private int load;
   private Double maxCapex;
+  private boolean buildMaxCapex;
 
   @Override
   public IntegerSolution createSolution() {
@@ -127,21 +128,26 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
     if (solution.constraints()[0] == 1) {
       solution.objectives()[0] = 1.0;
-      solution.objectives()[1] = 2 * maxCapex;
+      solution.objectives()[1] = 3;
     } else if (solution.constraints()[1] > 0) {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       solution.objectives()[0] = objectives[0];
-      solution.objectives()[1] = maxCapex + maxCapex * solution.constraints()[1];
+      solution.objectives()[1] = objectives[1] / maxCapex + 1 + solution.constraints()[1];
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       solution.objectives()[0] = objectives[0];
-      solution.objectives()[1] = objectives[1];
+      if (buildMaxCapex){
+        solution.objectives()[1] = objectives[1];
+        buildMaxCapex=false;
+      }else{
+        solution.objectives()[1] = objectives[1] / maxCapex;
+      }
     }
     localPopulation.add((DefaultIntegerSolution) solution);
     if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
@@ -395,6 +401,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void calculatePenaltyFactor() {
+    buildMaxCapex=true;
     var boundSize = this.upperBounds.length;
     var majorLink = this.upperBounds[0];
     var majorWss = this.upperBounds[boundSize - 2];
