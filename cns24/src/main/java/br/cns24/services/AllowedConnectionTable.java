@@ -26,7 +26,7 @@ public class AllowedConnectionTable {
     }
 
 
-    public static Integer[] getUniformConnectionSet() {
+    public static Integer[] getHomogeneousSetConnections() {
         Random random = new Random();
         int index = random.nextInt(4);
         // Retorna o array correspondente ao índice aleatório

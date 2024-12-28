@@ -3,10 +3,13 @@ package org.uma.jmetal.operator.mutation.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import org.uma.jmetal.operator.mutation.MutationOperator;
+import org.uma.jmetal.operator.mutation.impl.util.NodeUpperEdge;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
@@ -29,13 +32,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private int numNodes;
   private int setSize;
   private int mixedDistribution;
+  private int maxDeep;
 
   public IntegerTCNEMutation(
       double mutationProbability,
       Random randomGenerator,
       int numNodes,
       int setSize,
-      int mixedDistribution
+      int mixedDistribution,
+      int maxDeep
   ) {
     if (mutationProbability < 0) {
       throw new JMetalException("Mutation probability is negative: " + mutationProbability);
@@ -44,7 +49,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.randomGenerator = randomGenerator;
     this.numNodes = numNodes;
     this.setSize = setSize;
-    this.mixedDistribution=mixedDistribution;
+    this.mixedDistribution = mixedDistribution;
+
   }
 
 
@@ -84,7 +90,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void doMutation(IntegerSolution solution) {
     for (int i = 0; i < numNodes; i++) {
 
-      for (int j = i+1; j < numNodes; j++) {
+      for (int j = i + 1; j < numNodes; j++) {
         var random = (randomGenerator.nextInt(100));
         if (random <= mutationProbability) {
           mutation(((DefaultIntegerSolution) solution), i, j);
@@ -95,14 +101,14 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
   private void mutation(DefaultIntegerSolution solution, int i, int j) {
-    var solutionSize=solution.variables().size();
+    var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
     var linkIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
-    List<Integer> possibleLink =null;
+    List<Integer> possibleLink = null;
     var random = randomGenerator.nextInt(101);
-    if (random<=mixedDistribution){
-      possibleLink = Arrays.asList(AllowedConnectionTable.getUniformConnectionSet());
-    }else{
+    if (random <= mixedDistribution) {
+      possibleLink = Arrays.asList(AllowedConnectionTable.getHomogeneousSetConnections());
+    } else {
       possibleLink = Arrays.asList(AllowedConnectionTable.getPossibleConnection());
     }
     List<Integer> choicedList = new ArrayList<>();
@@ -112,14 +118,42 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     }
     Collections.sort(choicedList);
     var wssIndicator = choicedList.getLast();
-    var newI= Equipments.getMatchWss(wssIndicator);
-    var newJ= Equipments.getMatchWss(wssIndicator);
-    for (int y=0; y<choicedList.size(); y++ ){
-      solution.variables().set(linkIndex+y, choicedList.get(y));
+    var newI = Equipments.getMatchWss(wssIndicator);
+    var newJ = Equipments.getMatchWss(wssIndicator);
+    for (int y = 0; y < choicedList.size(); y++) {
+      solution.variables().set(linkIndex + y, choicedList.get(y));
     }
-    solution.variables().set(nodePartBegin+i, newI);
-    solution.variables().set(nodePartBegin+j, newJ);
+    solution.variables().set(nodePartBegin + i, newI);
+    solution.variables().set(nodePartBegin + j, newJ);
 
+  }
+
+  private NodeUpperEdge neighborhoodDiscovery(
+      DefaultIntegerSolution solution,
+      int no, Set<NodeUpperEdge> set,
+      HashMap<Integer, NodeUpperEdge> nodeMap) {
+    var connectionsSize = ((setSize * numNodes * (numNodes - 1)) / 2) - 1;
+    var connections = solution.variables().subList(0, connectionsSize);
+    var upper = 1;
+    for (int i = 0; i < numNodes; i++) {
+      var limit = 0;
+      if (i != 0) {
+        var index = Equipments.getLinkPosition(no, i, numNodes, setSize);
+        try {
+          for (int y = 0; y < setSize; y++) {
+            var edge = connections.get(index + y);
+            if (edge != 0) {
+              nodeMap.get(i).visited()=true;
+            }
+          }
+        } catch (Exception e) {
+          limit += 1;
+        }
+
+      }
+    }
+
+    return new NodeUpperEdge(1, 1);
   }
 
 
