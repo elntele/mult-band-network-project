@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
+import org.apache.commons.collections4.map.HashedMap;
+import org.apache.commons.math3.geometry.spherical.twod.Edge;
 import org.uma.jmetal.operator.mutation.MutationOperator;
 import org.uma.jmetal.operator.mutation.impl.util.NodeUpperEdge;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
@@ -50,6 +52,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.numNodes = numNodes;
     this.setSize = setSize;
     this.mixedDistribution = mixedDistribution;
+    this.maxDeep = maxDeep;
 
   }
 
@@ -126,34 +129,68 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     solution.variables().set(nodePartBegin + i, newI);
     solution.variables().set(nodePartBegin + j, newJ);
 
+    var nodes = getNodeList();
+    var levels = getInitialLevel(i, j, wssIndicator, nodes);
+    neighborhoodDiscovery(solution, i, levels, nodes);
+    neighborhoodDiscovery(solution, j, levels, nodes);
+    System.out.println("teste teste");
+
   }
 
-  private NodeUpperEdge neighborhoodDiscovery(
+  private void neighborhoodDiscovery(
       DefaultIntegerSolution solution,
-      int no, Set<NodeUpperEdge> set,
-      HashMap<Integer, NodeUpperEdge> nodeMap) {
-    var connectionsSize = ((setSize * numNodes * (numNodes - 1)) / 2) - 1;
+      int no,
+      HashMap<Integer, HashSet<NodeUpperEdge>> levels,
+      List<NodeUpperEdge> nodes
+  ) {
+    var connectionsSize = ((setSize * numNodes * (numNodes - 1)) / 2);
     var connections = solution.variables().subList(0, connectionsSize);
-    var upper = 1;
-    for (int i = 0; i < numNodes; i++) {
-      var limit = 0;
-      if (i != 0) {
-        var index = Equipments.getLinkPosition(no, i, numNodes, setSize);
-        try {
-          for (int y = 0; y < setSize; y++) {
-            var edge = connections.get(index + y);
+    for (int level = 1; level <= maxDeep; level++) {
+      for (int i = 0; i < numNodes; i++) {
+        var upper = 0;
+        if (no != i) {
+          var index = Equipments.getLinkPosition(no, i, numNodes, setSize);
+          for (int w = 0; w < setSize; w++) {
+            var edge = connections.get(index + w);
             if (edge != 0) {
-              nodeMap.get(i).visited()=true;
+              var nodeUpperEdge = nodes.get(no);
+              if (!nodeUpperEdge.isVisited() && level > 1) {
+                nodeUpperEdge.setVisited(true);
+                levels.get(level).add(nodeUpperEdge);
+              }
+              if (edge > upper) {
+                upper = edge;
+                nodeUpperEdge.setUpperEdge(upper);
+              }
             }
           }
-        } catch (Exception e) {
-          limit += 1;
         }
-
       }
     }
+  }
 
-    return new NodeUpperEdge(1, 1);
+  private List<NodeUpperEdge> getNodeList() {
+    List<NodeUpperEdge> list = new ArrayList<>();
+    for (int i = 0; i < numNodes; i++) {
+      var node = new NodeUpperEdge(i);
+      list.add(node);
+    }
+    return list;
+  }
+
+  public HashMap<Integer, HashSet<NodeUpperEdge>> getInitialLevel(int i, int j, int edge, List<NodeUpperEdge> nodes) {
+    HashMap<Integer, HashSet<NodeUpperEdge>> hashMap = new HashMap<>();
+    HashSet<NodeUpperEdge> hashSet = new HashSet<>();
+    var noI = nodes.get(i);
+    noI.setUpperEdge(edge);
+    noI.setVisited(true);
+    var noJ = nodes.get(j);
+    noJ.setUpperEdge(edge);
+    noJ.setVisited(true);
+    hashSet.add(noI);
+    hashSet.add(noJ);
+    hashMap.put(1, hashSet);
+    return hashMap;
   }
 
 
