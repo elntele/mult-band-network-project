@@ -43,10 +43,10 @@ public class Main {
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 100000;
+    var maxEvaluations = 30000;
     var iterationsToPrint = 40;
     var setSize = 3;
-    var load = 5000;
+    var load = 1000;
     var numNodes = 26;
     var numberOfExecutions = 11;
     var printGML=false;

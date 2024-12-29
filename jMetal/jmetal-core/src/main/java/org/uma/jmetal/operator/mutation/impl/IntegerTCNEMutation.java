@@ -120,51 +120,84 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       choicedList.add(possibleLink.getFirst());
     }
     Collections.sort(choicedList);
-    var wssIndicator = choicedList.getLast();
-    var newI = Equipments.getMatchWss(wssIndicator);
-    var newJ = Equipments.getMatchWss(wssIndicator);
+    var link = choicedList.getLast();
+    var newI = Equipments.getMatchWss(link);
+    var newJ = Equipments.getMatchWss(link);
     for (int y = 0; y < choicedList.size(); y++) {
       solution.variables().set(linkIndex + y, choicedList.get(y));
     }
-    solution.variables().set(nodePartBegin + i, newI);
-    solution.variables().set(nodePartBegin + j, newJ);
 
     var nodes = getNodeList();
-    var levels = getInitialLevel(i, j, wssIndicator, nodes);
-    neighborhoodDiscovery(solution, i, levels, nodes);
-    neighborhoodDiscovery(solution, j, levels, nodes);
-    System.out.println("teste teste");
-
+    var levels = getInitialLevel(i, j, link, nodes);
+    neighborhoodDiscovery(solution, levels, nodes);
+    if (maxDeep == 0) {
+      solution.variables().set(nodePartBegin + i, newI);
+      solution.variables().set(nodePartBegin + j, newJ);
+    } else if (maxDeep == 1) {
+      var currentLevel = levels.get(1);
+      var upperEdgeI = currentLevel.stream()
+          .filter(node -> node.getNode() == i)
+          .mapToInt(NodeUpperEdge::getUpperEdge)
+          .findFirst()
+          .orElse(link);
+      var upperEdgeJ = currentLevel.stream()
+          .filter(node -> node.getNode() == j)
+          .mapToInt(NodeUpperEdge::getUpperEdge)
+          .findFirst()
+          .orElse(link);
+      newI = Equipments.getMatchWss(upperEdgeI);
+      newJ = Equipments.getMatchWss(upperEdgeJ);
+      solution.variables().set(nodePartBegin + i, newI);
+      solution.variables().set(nodePartBegin + j, newJ);
+    }
   }
 
   private void neighborhoodDiscovery(
       DefaultIntegerSolution solution,
-      int no,
       HashMap<Integer, HashSet<NodeUpperEdge>> levels,
       List<NodeUpperEdge> nodes
   ) {
     var connectionsSize = ((setSize * numNodes * (numNodes - 1)) / 2);
     var connections = solution.variables().subList(0, connectionsSize);
+    var countNodesObserved = 2;
     for (int level = 1; level <= maxDeep; level++) {
-      for (int i = 0; i < numNodes; i++) {
+      // att: ternary operator
+      List<NodeUpperEdge> currentLevel = levels.get(level).stream().toList();
+
+      for (NodeUpperEdge node : currentLevel) {
+        countNodesObserved += 1;
         var upper = 0;
-        if (no != i) {
-          var index = Equipments.getLinkPosition(no, i, numNodes, setSize);
-          for (int w = 0; w < setSize; w++) {
-            var edge = connections.get(index + w);
-            if (edge != 0) {
-              var nodeUpperEdge = nodes.get(no);
-              if (!nodeUpperEdge.isVisited() && level > 1) {
-                nodeUpperEdge.setVisited(true);
-                levels.get(level).add(nodeUpperEdge);
-              }
-              if (edge > upper) {
-                upper = edge;
-                nodeUpperEdge.setUpperEdge(upper);
+        var i = node.getNode();
+        for (int j = 0; j < numNodes; j++) {
+          if (i != j) {
+            var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
+            for (int w = 0; w < setSize; w++) {
+              var controle = false;
+              var edge = connections.get(index + w);
+              if (edge != 0) {
+                var nodeI = nodes.get(i);
+                var nodeJ = nodes.get(j);
+
+                if (!nodeJ.isVisited()) {
+                  nodeJ.setVisited(true);
+                  levels.computeIfAbsent(level + 1, k -> new HashSet<>()).add(nodeJ);
+                }
+                if (edge > upper) {
+                  upper = edge;
+                  nodeI.setUpperEdge(upper);
+                }
+
               }
             }
           }
         }
+      }
+    }
+    if (countNodesObserved < nodes.size()) {
+      try {
+        levels.remove(maxDeep + 1);
+      } catch (Exception e) {
+
       }
     }
   }
