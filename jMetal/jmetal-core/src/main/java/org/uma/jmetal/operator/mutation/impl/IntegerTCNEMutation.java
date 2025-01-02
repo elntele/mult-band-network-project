@@ -149,6 +149,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       newJ = Equipments.getMatchWss(upperEdgeJ);
       solution.variables().set(nodePartBegin + i, newI);
       solution.variables().set(nodePartBegin + j, newJ);
+    } else {
+      for (int level = 1; level <= maxDeep; level++) {
+        levels.get(level).stream().forEach(n -> {
+              var localLink= n.getUpperEdge();
+              var localNode= Equipments.getMatchWss(localLink);
+              solution.variables().set(nodePartBegin + n.getNode(), localNode);
+            }
+        );
+      }
     }
   }
 
