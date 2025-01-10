@@ -60,6 +60,7 @@ public class ResultsMetricsDao {
 
       saveConstraintsMetrics(metricsHolder, gravarArq);
       saveParetoMetrics(metricsHolder.mapFronts(), gravarArq);
+      saveCountConstraintXNode(metricsHolder.externalNetworkEvaluatorSettings().getSolutionsXNodeConstraint(), gravarArq);
       printFinalSolutionSet(population);
 
     } catch (IOException e) {
@@ -154,6 +155,23 @@ public class ResultsMetricsDao {
         });
 
     System.out.println("Pareto metrics saved.");
+  }
+
+
+  private static void saveCountConstraintXNode(Map<Integer, ArrayList<Integer>> mapNode,
+      PrintWriter gravarArq) throws Exception {
+    mapNode.entrySet().stream()
+        .forEach(entry -> {
+          Integer iteration = entry.getKey();
+         List<Integer> node = entry.getValue();
+          gravarArq.printf(
+              "interação: %d; Nós versus qtd de soluções com restrição: %s%n",
+              iteration,
+              node.toString()
+          );
+        });
+
+    System.out.println("histogram nodes x constraints saved.");
   }
 
 
