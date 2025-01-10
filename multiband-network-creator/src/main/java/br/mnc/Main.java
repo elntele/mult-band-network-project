@@ -43,14 +43,14 @@ public class Main {
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 100000;
-    var iterationsToPrint = 40;
+    var maxEvaluations = 15000;
+    var iterationsToPrint = 20;
     var setSize = 3;
-    var load = 5000;
+    var load = 900;
     var numNodes = 26;
-    var numberOfExecutions = 11;
+    var numberOfExecutions = 1;
     var printGML=false;
-    var mixedDistribution=50;
+    var mixedDistribution=0;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************

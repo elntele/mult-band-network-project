@@ -49,10 +49,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   private String varAndFunPath;
   private int iterationsToPrint;
   private int execution;
-  private Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
+  private final Map<Integer, ConstrainsMetrics> constraintsStatistics = new HashMap();
   private int load;
   private Double maxCapex;
   private boolean buildMaxCapex;
+  private ArrayList<Integer> nodesWithRestriction;
+  private final Map<Integer, ArrayList<Integer>> solutionsXNodeConstraint = new HashMap();
 
   @Override
   public IntegerSolution createSolution() {
@@ -142,43 +144,60 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
       solution.objectives()[0] = objectives[0];
-      if (buildMaxCapex){
+      if (buildMaxCapex) {
         solution.objectives()[1] = objectives[1];
-        buildMaxCapex=false;
-      }else{
+        buildMaxCapex = false;
+      } else {
         solution.objectives()[1] = objectives[1] / maxCapex;
       }
     }
     localPopulation.add((DefaultIntegerSolution) solution);
     if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
       countSolutionWithRestriction();
+      countNodeXConstraint();
       printPopulation();
     }
+
     if (localPopulation.size() == populationSize) {
+      if(getIteration()<100){
+        countNodeXConstraint();
+      }
       localPopulation.clear();
+      nodesWithRestriction.replaceAll(i->0);
     }
     return solution;
   }
 
   private void countSolutionWithRestriction() {
-    var iteration = contEvaluate / populationSize;
+    var iteration = getIteration();
     var constrainsMetrics = StatisticsConstraints.getMetrics(localPopulation, iteration);
     constraintsStatistics.put(iteration, constrainsMetrics);
+  }
 
+
+  private void countNodeXConstraint() {
+    var iteration = getIteration();
+    ArrayList<Integer> list= new ArrayList<>();
+    list.addAll(this.nodesWithRestriction);
+    solutionsXNodeConstraint.put(iteration, list);
   }
 
 
   private void printPopulation() {
-    var iteration = contEvaluate / populationSize;
+    var iteration = getIteration();
     var varName = this.varAndFunPath + execution + "/VAR" + iteration + ".csv";
     var funName = this.varAndFunPath + execution + "/FUN" + iteration + ".csv";
     printFinalSolutionSet(localPopulation, varName, funName);
   }
 
+  private int getIteration(){
+    return contEvaluate / populationSize;
+  }
+
 
   /**
    * this method calculate the  constraint
-   * g1(x), g2(x), g3(x).
+   * g1(x), g2(x).
    *
    * @param solution
    */
@@ -215,6 +234,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
    * @param solution
    */
   private Double inadequateEquipment(DefaultIntegerSolution solution) {
+    List<Boolean> nodesVisited = new ArrayList<>(Collections.nCopies(gml.getNodes().size(), false));
     var numNode = gml.getNodes().size();
     var nodeBeginPart = solution.variables().size() - (numNode + 1);
     var wssNodes = solution.variables().subList(nodeBeginPart, solution.variables().size() - 1);
@@ -232,9 +252,21 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
           }
           if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(i), link)) {
             nodeNoteAttend += 1;
+            // the line below is control of metrics, it not make parto off constraint calculation
+            if(!nodesVisited.get(i)){
+              nodesVisited.set(i,true);
+              var value = this.nodesWithRestriction.get(i) + 1;
+              this.nodesWithRestriction.set(i, value);
+            }
           }
           if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(j), link)) {
             nodeNoteAttend += 1;
+            // the line below is control of metrics, it not make parto off constraint calculation
+            if(!nodesVisited.get(j)){
+              nodesVisited.set(j,true);
+              var value = this.nodesWithRestriction.get(j) + 1;
+              this.nodesWithRestriction.set(j, value);
+            }
           }
         }
       }
@@ -401,7 +433,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
   private void calculatePenaltyFactor() {
-    buildMaxCapex=true;
+    buildMaxCapex = true;
     var boundSize = this.upperBounds.length;
     var majorLink = this.upperBounds[0];
     var majorWss = this.upperBounds[boundSize - 2];
@@ -423,6 +455,10 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     evaluate(s);
     this.maxCapex = s.objectives()[1];
 
+  }
+
+  public Map<Integer, ArrayList<Integer>> getSolutionsXNodeConstraint() {
+    return solutionsXNodeConstraint;
   }
 
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
@@ -479,6 +515,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     new File(varAndFunPath + execution).mkdirs();
 
     calculatePenaltyFactor();
+    this.nodesWithRestriction = new ArrayList<>(Collections.nCopies(gml.getNodes().size(), 0));
 
   }
 }
