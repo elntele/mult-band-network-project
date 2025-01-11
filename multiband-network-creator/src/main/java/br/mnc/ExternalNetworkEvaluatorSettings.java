@@ -164,6 +164,9 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       }
       localPopulation.clear();
       nodesWithRestriction.replaceAll(i->0);
+      solutionsXNodeConstraint.entrySet().stream()
+          .sorted(Map.Entry.comparingByKey())
+          .forEach(entry -> System.out.println(entry.getValue()));
     }
     return solution;
   }

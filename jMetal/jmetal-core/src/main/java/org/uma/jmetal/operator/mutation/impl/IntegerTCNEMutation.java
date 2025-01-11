@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.uma.jmetal.operator.mutation.MutationOperator;
+import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
@@ -14,6 +15,7 @@ import org.uma.jmetal.util.errorchecking.JMetalException;
 
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Equipments;
+import br.cns24.services.PrintPopulation;
 
 
 /**
@@ -82,16 +84,33 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
    * nós
    */
   private void doMutation(IntegerSolution solution) {
+    //parte colocada pra fazer o debug
+    System.out.println("Operador de Mutação");
+    System.out.println("solução original");
+    var constraint1 =  solution.constraints()[0];
+    var constraint2 = solution.constraints()[1];
+    PrintPopulation.printMatrixFull(solution.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), List.of(), List.of(), setSize);
+
+    List<Integer> iMuted = new ArrayList<>();
+    List<Integer> jMuted = new ArrayList<>();
     for (int i = 0; i < numNodes; i++) {
 
       for (int j = i+1; j < numNodes; j++) {
         var random = (randomGenerator.nextInt(100));
         if (random <= mutationProbability) {
+          iMuted.add(i);
+          jMuted.add(j);
           mutation(((DefaultIntegerSolution) solution), i, j);
         }
       }
 
     }
+    //parte colocada pra fazer o debug
+    System.out.println("Operador de mutação");
+    System.out.println("solução mudada");
+    PrintPopulation.printMatrixFull(solution.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), iMuted, jMuted, setSize);
   }
 
   private void mutation(DefaultIntegerSolution solution, int i, int j) {
