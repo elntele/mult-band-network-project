@@ -55,7 +55,7 @@ public class Main {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
       // it compares with a Random chosen between 0 and 1
-      double crossoverProbability = 0.3;
+      Integer crossoverProbability = 30;
       double crossoverDistributionIndex = 20.0;
       //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
       crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), numNodes, setSize);

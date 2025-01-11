@@ -1,5 +1,7 @@
 package br.cns24.services;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +52,7 @@ public class PrintPopulation {
 
   public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
       Map<Integer, Set<Integer>> file) {
-    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo );
+    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo);
     int index = 0;
     var beginNodePart = solution.size() - (numNodes + 1);
     System.out.println("comutadores");
@@ -58,7 +60,7 @@ public class PrintPopulation {
       System.out.print(" " + solution.get(i) + " ");
     }
     System.out.println("\n");
-    System.out.println("file: "+file);
+    System.out.println("file: " + file);
     System.out.println("\n");
     // Imprime os cabeçalhos das colunas (nós)
     System.out.print("  "); // Espaço para alinhar com os rótulos das linhas
@@ -86,6 +88,99 @@ public class PrintPopulation {
       System.out.println(); // Quebra de linha após cada linha da matriz
     }
     System.out.println("\n\n");
+  }
+
+
+  public static void printMatrixFull(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
+      List<Integer> lI, List<Integer> lJ, int setSize) {
+    List<Integer> iS = new ArrayList<>(lI);
+    List<Integer> jS = new ArrayList<>(lJ);
+    System.out.println("Constraints: " + constraintOne + ", " + constraintTwo);
+    int index = 0;
+    var beginNodePart = solution.size() - (numNodes + 1);
+    System.out.println(
+        "Branco: não tem restrição e não foi alterado por operador; Verde: foi alterado por operador; Vermelho: tem restrição; Amarelo: tem restrição e foi alterado por operador");
+
+    System.out.println("\n");
+    // Imprime os cabeçalhos das colunas (nós)
+    System.out.print("     "); // Espaço para alinhar com os rótulos das linhas
+    for (int i = 0; i < numNodes; i++) {
+      System.out.printf("  %d   ", solution.get(beginNodePart + i));
+    }
+
+    System.out.println(); // Quebra de linha após os cabeçalhos
+
+    // Percorre a lista e imprime os valores como uma matriz
+    for (int i = 0; i < numNodes; i++) {
+      // Imprime o rótulo da linha
+      System.out.printf("  %d   ", solution.get(beginNodePart + i));
+
+      for (int j = 0; j < numNodes; j++) {
+        if (i == j) {
+          System.out.print(" x  "); // Diagonal principal (sem conexão)
+        } else if (j > i) {
+          // Imprime três valores em sequência da lista
+          List<String> indexes = new ArrayList<>();
+          var set = "";
+          for (int w = 0; w < setSize; w++) {
+            set += solution.get(index + w).toString();
+          }
+          if (iS.contains(i) && jS.contains(j)) {
+            if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set, indexes)) {
+              System.out.printf("\033[0;33m" + "(" + set + ") " + "\033[0m");
+            } else {
+              System.out.printf("\033[0;32m" + "(" + set + ") " + "\033[0m");
+            }
+
+            iS.remove(Integer.valueOf(i));
+            jS.remove(Integer.valueOf(j));
+          } else {
+            if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set, indexes)) {
+              System.out.printf("\033[0;31m" + "(" + set + ") " + "\033[0m");
+            } else {
+              System.out.printf("(" + set + ") ");
+            }
+          }
+          index += 3;
+        } else {
+          System.out.print("      "); // Espaço para elementos abaixo da diagonal
+        }
+
+      }
+
+      System.out.println(); // Quebra de linha após cada linha da matriz
+    }
+    System.out.println("\n\n");
+  }
+
+
+  private static boolean hasConstraint(int i, int j, String s, List<String> nodes) {
+    var result = 0;
+    var hasConstraint = false;
+    var array = s.split("");
+
+    var maxValue = 0;
+    if (array.length > 0) {
+      try {
+        maxValue = Arrays.stream(array)
+            .mapToInt(Integer::parseInt)
+            .max()
+            .orElseThrow();
+      } catch (NumberFormatException e) {
+        System.out.println("O array contém valores não numéricos em hasConstraint PrintPopulation");
+      }
+    } else {
+      return false;
+    }
+    if (maxValue > i) {
+      hasConstraint = true;
+      nodes.add("i");
+    }
+    if (maxValue > j) {
+      hasConstraint = true;
+      nodes.add("j");
+    }
+    return hasConstraint;
   }
 
 }
