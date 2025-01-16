@@ -175,7 +175,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     PrintPopulation.printMatrixFull(((Solution) f1).variables(), numNodes, Double.toString(constraint1),
         Double.toString(constraint2), iCrossed, jCrossed, setSize);
     System.out.println("solução filho 2");
-    constraint1 = ((Solution) f2).constraints()[0];
+    constraint1 = ((Solution) f1).constraints()[0];
     constraint2 = ((Solution) f2).constraints()[1];
     PrintPopulation.printMatrixFull(((Solution) f2).variables(), numNodes, Double.toString(constraint1),
         Double.toString(constraint2), iCrossed,jCrossed, setSize);
