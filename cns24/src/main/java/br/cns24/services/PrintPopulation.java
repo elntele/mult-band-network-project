@@ -99,21 +99,48 @@ public class PrintPopulation {
     int index = 0;
     var beginNodePart = solution.size() - (numNodes + 1);
     System.out.println(
-        "Branco: não tem restrição e não foi alterado por operador; Verde: foi alterado por operador; Vermelho: tem restrição; Amarelo: tem restrição e foi alterado por operador");
+        "Branco: não tem restrição e não foi alterado por operador; Verde: foi alterado por operador; " +
+            "Vermelho: tem restrição; Amarelo: tem restrição e foi alterado por operador");
+    System.out.println("N: Número do nó; R: Tipo de ROADMs");
 
-    System.out.println("\n");
-    // Imprime os cabeçalhos das colunas (nós)
-    System.out.print("     "); // Espaço para alinhar com os rótulos das linhas
+    // Imprime N mais seta pra direita
+    System.out.print("  N  \u27F6");
+    // imprime o número dos nós
     for (int i = 0; i < numNodes; i++) {
-      System.out.printf("  %d   ", solution.get(beginNodePart + i));
+      if(i==0){
+        System.out.printf("   %d  ", i);
+      }else{
+        if (i < 10) {
+          System.out.printf("  %d   ", i);
+        } else {
+          System.out.printf(" %d   ", i);
+        }
+      }
     }
-
-    System.out.println(); // Quebra de linha após os cabeçalhos
-
+    //quebra de linha
+    System.out.print("\n");
+    // imprime seta para baixo
+    System.out.print("  \u2193");
+    // imprime R mais seta para baixo mais seta pra direita
+    System.out.print(" R\u2193 \u2192");
+    // imprime os ROADMs
+    for (int i = 0; i < numNodes; i++) {
+      if (i==0){
+        System.out.printf(" %d    ", solution.get(beginNodePart + i));
+      }else{
+        System.out.printf("%d     ", solution.get(beginNodePart + i));
+      }
+    }
+    // Quebra de linha após os cabeçalhos
+    System.out.println();
     // Percorre a lista e imprime os valores como uma matriz
     for (int i = 0; i < numNodes; i++) {
       // Imprime o rótulo da linha
-      System.out.printf("  %d   ", solution.get(beginNodePart + i));
+      if (i < 10) {
+        System.out.printf("  %d %d   ", i, solution.get(beginNodePart + i));
+      } else {
+        System.out.printf(" %d %d   ", i, solution.get(beginNodePart + i));
+      }
 
       for (int j = 0; j < numNodes; j++) {
         if (i == j) {
