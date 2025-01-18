@@ -7,6 +7,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import br.cns24.som.Neuronio;
+
 public enum LevelNode {
   BANDC,
   BANDCL,
@@ -51,7 +53,5 @@ public enum LevelNode {
       default -> false;
     };
   }
-
-
 
 }

@@ -70,7 +70,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   void createRandomNetworkWithNodeNeighborhoodInformation(IntegerSolution solution) {
     fullFillFile((DefaultIntegerSolution) solution);
     Random random = new Random();
-    var possibleConnection = AllowedConnectionTable.getPossibleConnection();
+    var possibleConnection = AllowedConnectionTable.getPossibleConnection(3, setSize);
     for (int i = 0; i < gml.getNodes().size(); i++) {
       for (int j = i + 1; j < gml.getNodes().size(); j++) {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);

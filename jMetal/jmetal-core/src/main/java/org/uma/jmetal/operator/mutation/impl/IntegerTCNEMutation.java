@@ -15,6 +15,7 @@ import org.uma.jmetal.util.errorchecking.JMetalException;
 
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Equipments;
+import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
 
 
@@ -31,6 +32,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private int numNodes;
   private int setSize;
   private int mixedDistribution;
+  private List<Integer>[][] connectionsMatrix;
 
   public IntegerTCNEMutation(
       double mutationProbability,
@@ -46,7 +48,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.randomGenerator = randomGenerator;
     this.numNodes = numNodes;
     this.setSize = setSize;
-    this.mixedDistribution=mixedDistribution;
+    this.mixedDistribution = mixedDistribution;
+    connectionsMatrix = new List[numNodes][numNodes];
   }
 
 
@@ -86,61 +89,84 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void doMutation(IntegerSolution solution) {
     //parte colocada pra fazer o debug
     System.out.println("Operador de Mutação");
-    System.out.println("solução original");
-    var constraint1 =  solution.constraints()[0];
-    var constraint2 = solution.constraints()[1];
-    PrintPopulation.printMatrixFull(solution.variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), List.of(), List.of(), setSize);
-
+    print(solution, List.of(), List.of(), "original");
+    buildMatrix(solution);
     List<Integer> iMuted = new ArrayList<>();
     List<Integer> jMuted = new ArrayList<>();
-    for (int i = 0; i < numNodes; i++) {
 
-      for (int j = i+1; j < numNodes; j++) {
-        var random = (randomGenerator.nextInt(100));
-        if (random <= mutationProbability) {
-          iMuted.add(i);
-          jMuted.add(j);
-          mutation(((DefaultIntegerSolution) solution), i, j);
-        }
+    for (int j = 0; j < numNodes; j++) {
+      var random = (randomGenerator.nextInt(100));
+      if (random <= mutationProbability) {
+        jMuted.add(j);
+        mutation(((DefaultIntegerSolution) solution), j, iMuted);
       }
-
     }
+
+
     //parte colocada pra fazer o debug
     System.out.println("Operador de mutação");
-    System.out.println("solução mudada");
-    PrintPopulation.printMatrixFull(solution.variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iMuted, jMuted, setSize);
+    print(solution, iMuted, jMuted, "mudada");
   }
 
-  private void mutation(DefaultIntegerSolution solution, int i, int j) {
-    var solutionSize=solution.variables().size();
+  private void mutation(DefaultIntegerSolution solution, int j, List<Integer> iMuted) {
+    var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
-    var linkIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
-    List<Integer> possibleLink =null;
-    var random = randomGenerator.nextInt(101);
-    if (random<=mixedDistribution){
-      possibleLink = Arrays.asList(AllowedConnectionTable.getUniformConnectionSet());
-    }else{
-      possibleLink = Arrays.asList(AllowedConnectionTable.getPossibleConnection());
+    // get new Node
+    var newJ = Equipments.getRandomROADM();
+    //Nodo update
+    solution.variables().set(nodePartBegin + j, newJ);
+    // get new link
+    var newSet = AllowedConnectionTable.randomChooseConnection(mixedDistribution, setSize, newJ);
+    var maxBand = Collections.max(Arrays.asList(newSet));
+    //update link
+    for (int i = 0; i < numNodes; i++) {
+      var linkIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
+      var node = solution.variables().get(nodePartBegin + i);
+      if (i != j) {
+        if (LevelNode.thisNodeAddressThisLink(node, maxBand)) {
+          connectionsMatrix[i][j] = Arrays.asList(newSet);
+          connectionsMatrix[j][i] = Arrays.asList(newSet);
+          for (int y = 0; y < setSize; y++) {
+            solution.variables().set(linkIndex + y, newSet[y]);
+          }
+          iMuted.add(i);
+        }
+      }
     }
-    List<Integer> choicedList = new ArrayList<>();
-    for (int w = 0; w < setSize; w++) {
-      Collections.shuffle(possibleLink);
-      choicedList.add(possibleLink.getFirst());
-    }
-    Collections.sort(choicedList);
-    var wssIndicator = choicedList.getLast();
-    var newI= Equipments.getMatchWss(wssIndicator);
-    var newJ= Equipments.getMatchWss(wssIndicator);
-    for (int y=0; y<choicedList.size(); y++ ){
-      solution.variables().set(linkIndex+y, choicedList.get(y));
-    }
-    solution.variables().set(nodePartBegin+i, newI);
-    solution.variables().set(nodePartBegin+j, newJ);
 
   }
 
+  private void print(Solution s1, List<Integer> iCrossed, List<Integer> jCrossed, String tipo) {
+
+    System.out.println("solução " + tipo);
+    var constraint1 = s1.constraints()[0];
+    var constraint2 = s1.constraints()[1];
+    PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), iCrossed, jCrossed, setSize);
+  }
+
+  private void buildMatrix(Solution s) {
+    var connections = s.variables().subList(0, s.variables().size() - (numNodes + 1));
+    for (int i = 0; i < numNodes; i++) {
+      for (int j = i + 1; j < numNodes; j++) {
+        var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
+        ArrayList setConnection = new ArrayList<>();
+        for (int w = 0; w < setSize; w++) {
+          setConnection.add(connections.get(index + w));
+        }
+        connectionsMatrix[i][j] = setConnection;
+        connectionsMatrix[j][i] = setConnection;
+      }
+    }
+  /*  System.out.println("matrix de conexão smart");
+    for (int i =0; i<numNodes; i++){
+      for (int j=-0;j<numNodes; j++){
+        System.out.print(connectionsMatrix[i][j]+ " ");
+      }
+      System.out.println();
+    }*/
+
+  }
 
 }
 

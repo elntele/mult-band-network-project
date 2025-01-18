@@ -86,16 +86,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     var variableSize= offspring.get(0).variables().size();
 
     //parte colocada pra fazer o debug
-    System.out.println("solução pai 1");
-    var constraint1 = ((Solution) parent1).constraints()[0];
-    var constraint2 = ((Solution) parent1).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) parent1).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), List.of(), List.of(), setSize);
-    System.out.println("solução pai 2");
-    constraint1 = ((Solution) parent2).constraints()[0];
-    constraint2 = ((Solution) parent2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) parent2).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), List.of(), List.of(), setSize);
+    print(parent1, parent2, List.of(), List.of(), "pai");
     List<Integer> iCrossed = new ArrayList<>();
     List<Integer> jCrossed = new ArrayList<>();
 
@@ -119,66 +110,26 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
             var NodeJ_S0 = nodesParent1.get(j);
             var NodeJ_S1 = nodesParent2.get(j);
             var initialIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
-            var connectionSetAsAListS0 = getConnectionSetAsAList(offspring.get(0), initialIndex);
-            var connectionSetAsAListS1 = getConnectionSetAsAList(offspring.get(1), initialIndex);
+            var connectionSetAsAListS0 = getConnectionSetAsAList(parent1, initialIndex);
+            var connectionSetAsAListS1 = getConnectionSetAsAList(parent2, initialIndex);
             // Node's switch crossover
             offspring.get(0).variables().set((i + NodeBeginPart), NodeI_S1);
             offspring.get(1).variables().set((i + NodeBeginPart), NodeI_S0);
             offspring.get(0).variables().set((j + NodeBeginPart), NodeJ_S1);
             offspring.get(1).variables().set((j + NodeBeginPart), NodeJ_S0);
-            var linksInSetS0 = 0;
-            var linksInSetS1 = 0;
             //crossover of set
             for (int l = 0; l < setSize; l++) {
-              // parte do file, comentado porque não esta em uso
-             /* if (connectionSetAsAListS0[l] > 0) linksInSetS0 += 1;
-              if (connectionSetAsAListS1[l] > 0) linksInSetS1 += 1;*/
               offspring.get(0).variables().set(initialIndex + l, connectionSetAsAListS1[l]);
               offspring.get(1).variables().set(initialIndex + l, connectionSetAsAListS0[l]);
             }
 
-
-
-            // parte do file, comentado porque não esta em uso
-           /* // maintenance of files:
-            // if set connections in the other solution is full zero
-            // remove reference in this solution file because it
-            // was crossed.
-            if (linksInSetS0 == 0) {
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(i).remove(j);
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(j).remove(i);
-            } else {
-              // if set connections in the other solution is not zero
-              // add a reference in this solution file because it
-              // was crossed. If it is already exists no problem, because set
-              // don't add duplicate registers.
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(i).add(j);
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(j).add(i);
-            }
-            if (linksInSetS1 == 0) {
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(i).remove(j);
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(j).remove(i);
-            } else {
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(i).add(j);
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(j).add(i);
-            }*/
           }
       }
 
     }
     //parte colocada pra fazer o debug
-    var f1= offspring.get(0);
-    var f2= offspring.get(1);
-    System.out.println("solução filho 1");
-    constraint1 = ((Solution) f1).constraints()[0];
-    constraint2 = ((Solution) f2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) f1).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed, jCrossed, setSize);
-    System.out.println("solução filho 2");
-    constraint1 = ((Solution) f1).constraints()[0];
-    constraint2 = ((Solution) f2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) f2).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed,jCrossed, setSize);
+    print(offspring.get(0), offspring.get(1), iCrossed, jCrossed, "filho");
+
     return offspring;
   }
 
@@ -211,6 +162,20 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
     this.setPosition = initialIndex;
     return set;
+  }
+
+  private void print(Solution s1, Solution s2, List<Integer> iCrossed, List<Integer>jCrossed, String familiar){
+
+    System.out.println("solução "+familiar+" 1");
+    var constraint1 = s1.constraints()[0];
+    var constraint2 = s1.constraints()[1];
+    PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), iCrossed, jCrossed, setSize);
+    System.out.println("solução "+familiar+" 2");
+    constraint1 = s2.constraints()[0];
+    constraint2 = s2.constraints()[1];
+    PrintPopulation.printMatrixFull(s2.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), iCrossed,jCrossed, setSize);
   }
 
 

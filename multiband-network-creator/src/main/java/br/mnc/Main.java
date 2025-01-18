@@ -45,7 +45,7 @@ public class Main {
     var populationSize = 100;
     var maxEvaluations = 15000;
     var iterationsToPrint = 20;
-    var setSize = 3;
+    var setSize = 1;
     var load = 900;
     var numNodes = 26;
     var numberOfExecutions = 1;
