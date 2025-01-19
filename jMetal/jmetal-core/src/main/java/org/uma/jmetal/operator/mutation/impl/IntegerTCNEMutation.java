@@ -32,14 +32,17 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private int numNodes;
   private int setSize;
   private int mixedDistribution;
-  private List<Integer>[][] connectionsMatrix;
+  private Integer[] nodesDegree;
+  private Double meanNodeDegree;
+  private Double graphDensity;
 
   public IntegerTCNEMutation(
       double mutationProbability,
       Random randomGenerator,
       int numNodes,
       int setSize,
-      int mixedDistribution
+      int mixedDistribution,
+      Double graphDensity
   ) {
     if (mutationProbability < 0) {
       throw new JMetalException("Mutation probability is negative: " + mutationProbability);
@@ -49,7 +52,10 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.numNodes = numNodes;
     this.setSize = setSize;
     this.mixedDistribution = mixedDistribution;
-    connectionsMatrix = new List[numNodes][numNodes];
+    nodesDegree = new Integer[numNodes];
+    Arrays.fill(nodesDegree, 0);
+    this.meanNodeDegree = Math.ceil(graphDensity * (numNodes - 1));
+    this.graphDensity=graphDensity;
   }
 
 
@@ -89,26 +95,26 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void doMutation(IntegerSolution solution) {
     //parte colocada pra fazer o debug
     System.out.println("Operador de Mutação");
-    print(solution, List.of(), List.of(), "original");
-    buildMatrix(solution);
+    print((DefaultIntegerSolution) solution, List.of(), List.of(), "original");
+    buildMatrix((DefaultIntegerSolution) solution);
     List<Integer> iMuted = new ArrayList<>();
     List<Integer> jMuted = new ArrayList<>();
 
     for (int j = 0; j < numNodes; j++) {
-      var random = (randomGenerator.nextInt(100));
+      var random = (randomGenerator.nextInt(1001));
       if (random <= mutationProbability) {
-        jMuted.add(j);
-        mutation(((DefaultIntegerSolution) solution), j, iMuted);
+        // jMuted.add(j);
+        mutation(((DefaultIntegerSolution) solution), j, iMuted, jMuted);
       }
     }
 
 
     //parte colocada pra fazer o debug
     System.out.println("Operador de mutação");
-    print(solution, iMuted, jMuted, "mudada");
+    print((DefaultIntegerSolution) solution, iMuted, jMuted, "mudada");
   }
 
-  private void mutation(DefaultIntegerSolution solution, int j, List<Integer> iMuted) {
+  private void mutation(DefaultIntegerSolution solution, int j, List<Integer> iMuted, List<Integer> jMuted) {
     var solutionSize = solution.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
     // get new Node
@@ -120,23 +126,66 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var maxBand = Collections.max(Arrays.asList(newSet));
     //update link
     for (int i = 0; i < numNodes; i++) {
-      var linkIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
+      var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
       var node = solution.variables().get(nodePartBegin + i);
       if (i != j) {
         if (LevelNode.thisNodeAddressThisLink(node, maxBand)) {
-          connectionsMatrix[i][j] = Arrays.asList(newSet);
-          connectionsMatrix[j][i] = Arrays.asList(newSet);
-          for (int y = 0; y < setSize; y++) {
-            solution.variables().set(linkIndex + y, newSet[y]);
+          var highProbability = randomGenerator.nextInt(1001) <= highestProbability();
+          var lowerPobability = randomGenerator.nextInt(1001) <= lowerProbability();
+          if (isNotADisconnection(newSet)) {
+            if (existEdge(solution, index)) {
+              if (highProbability) {
+                for (int y = 0; y < setSize; y++) {
+                  solution.variables().set(index + y, newSet[y]);
+                }
+              }
+            } else {
+              if (nodesDegree[i] < meanNodeDegree) {
+                  if (highProbability){
+                    for (int y = 0; y < setSize; y++) {
+                      solution.variables().set(index + y, newSet[y]);
+                    }
+                    nodesDegree[i] += 1;
+                  }
+              }else{
+                if(lowerPobability){
+                  for (int y = 0; y < setSize; y++) {
+                    solution.variables().set(index + y, newSet[y]);
+                  }
+                  nodesDegree[i] += 1;
+                }
+
+              }
+            }
+          } else {
+            if (existEdge(solution, index)){
+              if(nodesDegree[i]< meanNodeDegree){
+                continue;
+              }else{
+                if (highProbability){
+                  for (int y = 0; y < setSize; y++) {
+                    solution.variables().set(index + y, newSet[y]);
+                  }
+                  nodesDegree[i] -= 1;
+                }
+              }
+            }
           }
-          iMuted.add(i);
+          //print part
+          if (i < j) {
+            iMuted.add(i);
+            jMuted.add(j);
+          } else {
+            iMuted.add(j);
+            jMuted.add(i);
+          }
         }
       }
     }
 
   }
 
-  private void print(Solution s1, List<Integer> iCrossed, List<Integer> jCrossed, String tipo) {
+  private void print(DefaultIntegerSolution s1, List<Integer> iCrossed, List<Integer> jCrossed, String tipo) {
 
     System.out.println("solução " + tipo);
     var constraint1 = s1.constraints()[0];
@@ -145,27 +194,45 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         Double.toString(constraint2), iCrossed, jCrossed, setSize);
   }
 
-  private void buildMatrix(Solution s) {
-    var connections = s.variables().subList(0, s.variables().size() - (numNodes + 1));
+  private void buildMatrix(DefaultIntegerSolution s) {
+    List<Integer> connections = s.variables().subList(0, s.variables().size() - (numNodes + 1));
     for (int i = 0; i < numNodes; i++) {
       for (int j = i + 1; j < numNodes; j++) {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
-        ArrayList setConnection = new ArrayList<>();
+        nodesDegree[i] += 1;
         for (int w = 0; w < setSize; w++) {
-          setConnection.add(connections.get(index + w));
+          if (connections.get(index + w) > 0) {
+            nodesDegree[i] += 1;
+          }
         }
-        connectionsMatrix[i][j] = setConnection;
-        connectionsMatrix[j][i] = setConnection;
       }
     }
-  /*  System.out.println("matrix de conexão smart");
-    for (int i =0; i<numNodes; i++){
-      for (int j=-0;j<numNodes; j++){
-        System.out.print(connectionsMatrix[i][j]+ " ");
-      }
-      System.out.println();
-    }*/
+  }
 
+  private boolean isNotADisconnection(Integer[] newSet) {
+    var sun = Arrays.stream(Arrays.stream(newSet)
+        .mapToInt(Integer::intValue)
+        .toArray()).sum();
+    return sun > 0;
+  }
+
+  private boolean existEdge(DefaultIntegerSolution s, int index) {
+    for (int i = 0; i < setSize; i++) {
+      if (s.variables().get(index + i) > 0) return true;
+    }
+    return false;
+  }
+
+  private int highestProbability() {
+    var probabilityOne= (int) Math.round(1.0-graphDensity *100);
+    var probabilityTwo= (int) Math.round(graphDensity *100);
+    return Math.max(probabilityOne, probabilityTwo);
+  }
+
+  private int lowerProbability(){
+    var probabilityOne= (int) Math.round(1.0-graphDensity *100);
+    var probabilityTwo= (int) Math.round(graphDensity *100);
+    return Math.min(probabilityOne, probabilityTwo);
   }
 
 }

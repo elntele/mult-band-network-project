@@ -62,7 +62,7 @@ public class Main {
       double mutationProbability = 1.0 / problem.numberOfVariables();
       double mutationDistributionIndex = 20.0;
       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize, mixedDistribution);
+      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize, mixedDistribution, 0.15);
 
       // new: create a comparator of constraint violation
       OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
