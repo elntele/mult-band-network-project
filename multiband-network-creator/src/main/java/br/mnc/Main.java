@@ -46,7 +46,7 @@ public class Main {
     var maxEvaluations = 15000;
     var iterationsToPrint = 20;
     var setSize = 1;
-    var load = 900;
+    var load = 1500;
     var numNodes = 26;
     var numberOfExecutions = 1;
     var printGML=false;

@@ -131,12 +131,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     //update link
     for (int i = 0; i < numNodes; i++) {
       var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
-      var nodeDestine = 0;
-      if (i < j) {
-        nodeDestine = solution.variables().get(nodePartBegin + i);
-      }else{
-        nodeDestine = solution.variables().get(nodePartBegin + j);
-      }
+      var nodeDestine = solution.variables().get(nodePartBegin + i);
       if (i != j) {
 
         var highProbability = randomGenerator.nextInt(101) <= highestProbability();
@@ -196,7 +191,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
             }
           } else {
             if (existEdge(solution, index)) {
-              if (nodesDegree[i] < meanNodeDegree) {
+              if (nodesDegree[i] < meanNodeDegree || nodesDegree[j]<meanNodeDegree) {
                 continue;
               } else {
                 if (highProbability) {
