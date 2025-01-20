@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
@@ -14,6 +15,8 @@ import org.uma.jmetal.util.errorchecking.Check;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 import org.uma.jmetal.util.errorchecking.exception.InvalidProbabilityValueException;
 import org.uma.jmetal.util.pseudorandom.RandomGenerator;
+
+import com.sun.xml.bind.v2.runtime.reflect.Lister;
 
 import br.cns24.services.Equipments;
 import br.cns24.services.PrintPopulation;
@@ -74,7 +77,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
    */
   public List<IntegerSolution> doCrossover(
       double probability, IntegerSolution parent1, IntegerSolution parent2) {
-    System.out.println("Operador de cruzamento");
+   // System.out.println("Operador de cruzamento");
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var solutionSize = parent1.variables().size();
     var nodePartBegin = solutionSize - (numNodes + 1);
@@ -86,11 +89,11 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     var variableSize= offspring.get(0).variables().size();
 
     //parte colocada pra fazer o debug
-    print(parent1, parent2, List.of(), List.of(), "pai");
+   // print(parent1, parent2, List.of(), List.of(), "pai");
     List<Integer> iCrossed = new ArrayList<>();
     List<Integer> jCrossed = new ArrayList<>();
 
-    for (int i = 0; i < numNodes-2; i++) {
+    /*for (int i = 0; i < numNodes-2; i++) {
       for (int j = i + 1; j < numNodes; j++) {
           if (randomGenerator.nextInt(100) <= probability) {
             iCrossed.add(i);
@@ -126,9 +129,9 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
           }
       }
 
-    }
+    }*/
     //parte colocada pra fazer o debug
-    print(offspring.get(0), offspring.get(1), iCrossed, jCrossed, "filho");
+   // print(offspring.get(0), offspring.get(1), iCrossed, jCrossed, "filho");
 
     return offspring;
   }
@@ -164,18 +167,18 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     return set;
   }
 
-  private void print(Solution s1, Solution s2, List<Integer> iCrossed, List<Integer>jCrossed, String familiar){
+  private void print(Solution s1, Solution s2, List<Pair<Integer, Integer>> crossed, String familiar){
 
     System.out.println("solução "+familiar+" 1");
     var constraint1 = s1.constraints()[0];
     var constraint2 = s1.constraints()[1];
     PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed, jCrossed, setSize);
+        Double.toString(constraint2), crossed, setSize);
     System.out.println("solução "+familiar+" 2");
     constraint1 = s2.constraints()[0];
     constraint2 = s2.constraints()[1];
     PrintPopulation.printMatrixFull(s2.variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed,jCrossed, setSize);
+        Double.toString(constraint2), crossed, setSize);
   }
 
 
