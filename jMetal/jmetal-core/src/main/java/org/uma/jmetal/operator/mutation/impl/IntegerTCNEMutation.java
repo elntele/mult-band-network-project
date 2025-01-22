@@ -1,6 +1,5 @@
 package org.uma.jmetal.operator.mutation.impl;
 
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -8,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -16,6 +14,7 @@ import org.uma.jmetal.solution.doublesolution.repairsolution.RepairDoubleSolutio
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.JMetalException;
+import org.uma.jmetal.utilities.MutatorParameters;
 
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Equipments;
@@ -39,6 +38,9 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private Integer[] nodesDegree;
   private Double meanNodeDegree;
   private Double graphDensity;
+  private final int upGrade = 1;
+  private final int downGrade = 2;
+  private final int doNothing = 3;
 
   public IntegerTCNEMutation(
       double mutationProbability,
@@ -123,109 +125,105 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     solution.variables().set(nodePartBegin + j, newjType);
     // get new link
     var newSet = AllowedConnectionTable.randomChooseConnection(mixedDistribution, setSize, newjType);
-   /* System.out.println("newSet: " + Arrays.stream(newSet)
-        .map(String::valueOf)
-        .collect(Collectors.joining(", ")));*/
-
     var maxBand = Collections.max(Arrays.asList(newSet));
     //update link
     for (int i = 0; i < numNodes; i++) {
-      var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
-      var nodeDestine = solution.variables().get(nodePartBegin + i);
       if (i != j) {
-
-        var highProbability = randomGenerator.nextInt(101) <= highestProbability();
-        var lowerProbability = randomGenerator.nextInt(101) <= lowerProbability();
-        var isNoteADisconnection = isNotADisconnection(newSet);
-        var notCauseConstraint = LevelNode.thisNodeAddressThisLink(nodeDestine, maxBand);
+        var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
+        var nodeDestine = solution.variables().get(nodePartBegin + i);
+        var parameters = new MutatorParameters(solution, index, newSet, i, j, muted);
+        boolean isNoteADisconnection = isNotADisconnection(newSet);
+        boolean notCauseConstraint = LevelNode.thisNodeAddressThisLink(nodeDestine, maxBand);
+        boolean existeEdge = existEdge(solution, index);
         if (notCauseConstraint) {
           if (isNoteADisconnection) {
-            if (existEdge(solution, index)) {
-              if (highProbability) {
-                for (int y = 0; y < setSize; y++) {
-                  solution.variables().set(index + y, newSet[y]);
-                }
-
-                if (i < j) {
-                  muted.add(new Pair<>(i, j));
-                  //  System.out.println("pares mudados: i=" + i + "; j=" + j);
-
-                } else {
-                  muted.add(new Pair<>(j, i));
-                  //   System.out.println("pares mudados: i=" + j + "; j=" + i);
-                }
-              }
+            if (existeEdge) {
+              specializeExistEdge(parameters);
             } else {
-              if (nodesDegree[i] < meanNodeDegree) {
-                if (highProbability) {
-                  for (int y = 0; y < setSize; y++) {
-                    solution.variables().set(index + y, newSet[y]);
-                  }
-                  nodesDegree[i] += 1;
-                  nodesDegree[j] += 1;
-                  if (i < j) {
-                    muted.add(new Pair<>(i, j));
-                    //  System.out.println("pares mudados: i=" + i + "; j=" + j);
-                  } else {
-                    muted.add(new Pair<>(j, i));
-                    //  System.out.println("pares mudados: i=" + j + "; j=" + i);
-                  }
-                }
-              } else {
-                if (lowerProbability) {
-                  for (int y = 0; y < setSize; y++) {
-                    solution.variables().set(index + y, newSet[y]);
-                  }
-                  nodesDegree[i] += 1;
-                  nodesDegree[j] += 1;
-                  if (i < j) {
-                    muted.add(new Pair<>(i, j));
-                    //   System.out.println("pares mudados: i=" + i + "; j=" + j);
-                  } else {
-                    muted.add(new Pair<>(j, i));
-                    //   System.out.println("pares mudados: i=" + j + "; j=" + i);
-                  }
-                }
-
-              }
+              createEdgeSpecialized(parameters);
             }
           } else {
-            if (existEdge(solution, index)) {
-              if (nodesDegree[i] < meanNodeDegree || nodesDegree[j]<meanNodeDegree) {
-                continue;
-              } else {
-                if (highProbability) {
-                  for (int y = 0; y < setSize; y++) {
-                    solution.variables().set(index + y, newSet[y]);
-                  }
-                  nodesDegree[i] -= 1;
-                  nodesDegree[j] -= 1;
-                  //print part
-                  if (i < j) {
-                    muted.add(new Pair<>(i, j));
-                    //    System.out.println("pares mudados: i=" + i + "; j=" + j);
-                  } else {
-                    muted.add(new Pair<>(j, i));
-                    //    System.out.println("pares mudados: i=" + j + "; j=" + i);
-                  }
-                }
-              }
-            }
+            disconnect(parameters);
           }
-
         }
       }
     }
-
   }
 
-  private void print(DefaultIntegerSolution s1, List<Pair<Integer, Integer>> PairMutated, String tipo) {
+  // se existe edge Atualize
 
-    System.out.println("solução " + tipo);
-    var constraint1 = s1.constraints()[0];
-    var constraint2 = s1.constraints()[1];
-    PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), PairMutated, setSize);
+  private void specializeExistEdge(MutatorParameters parameters) {
+    boolean withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
+    if (withHighProbability) {
+      updateEdge(parameters, doNothing);
+    }
+  }
+
+  public void createEdgeSpecialized(MutatorParameters parameters) {
+    var i = parameters.i();
+    var j = parameters.j();
+    boolean withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
+    boolean withLowerProbability = randomGenerator.nextInt(101) <= minorProbability();
+
+    if (nodesDegree[j] < meanNodeDegree || nodesDegree[i] == 0) {
+      if (withHighProbability) {
+        updateEdge(parameters, upGrade);
+      }
+    } else {
+      if (withLowerProbability) {
+        updateEdge(parameters, upGrade);
+      }
+    }
+  }
+
+  private void disconnect(MutatorParameters parameters) {
+    var solution = parameters.solution();
+    int index = parameters.index();
+    int i = parameters.i();
+    int j = parameters.j();
+    boolean existEdge = existEdge(solution, index);
+    if (existEdge) {
+      var withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
+      if (nodesDegree[j] > meanNodeDegree && nodesDegree[i] > meanNodeDegree) {
+        if (withHighProbability) {
+          updateEdge(parameters, downGrade);
+        }
+      }
+    }
+  }
+
+  private void updateEdge(MutatorParameters parameters, Integer nodeDegreeAction) {
+    var solution = parameters.solution();
+    var index = parameters.index();
+    var newSet = parameters.newSet();
+    var i = parameters.i();
+    var j = parameters.j();
+    var muted = parameters.muted();
+
+    for (int y = 0; y < setSize; y++) {
+      solution.variables().set(index + y, newSet[y]);
+    }
+
+    switch (nodeDegreeAction) {
+      case upGrade -> {
+        nodesDegree[i] += 1;
+        nodesDegree[j] += 1;
+      }
+      case downGrade -> {
+        nodesDegree[i] -= 1;
+        nodesDegree[j] -= 1;
+      }
+      default -> System.out.print("");
+    }
+
+    if (i < j) {
+      muted.add(new Pair<>(i, j));
+      //   System.out.println("pares mudados: i=" + i + "; j=" + j);
+    } else {
+      muted.add(new Pair<>(j, i));
+      //   System.out.println("pares mudados: i=" + j + "; j=" + i);
+    }
+
   }
 
   private void buildNodeDegreeInformation(DefaultIntegerSolution s) {
@@ -257,13 +255,13 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     return false;
   }
 
-  private int highestProbability() {
+  private int majorProbability() {
     var probabilityOne = (int) Math.round((1.0 - graphDensity) * 100);
     var probabilityTwo = (int) Math.round(graphDensity * 100);
     return Math.max(probabilityOne, probabilityTwo);
   }
 
-  private int lowerProbability() {
+  private int minorProbability() {
     var probabilityOne = (int) Math.round((1.0 - graphDensity) * 100);
     var probabilityTwo = (int) Math.round(graphDensity * 100);
     return Math.min(probabilityOne, probabilityTwo);
@@ -279,5 +277,14 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     return nodos.stream().toList();
   }
 
+
+  private void print(DefaultIntegerSolution s1, List<Pair<Integer, Integer>> PairMutated, String tipo) {
+
+    System.out.println("solução " + tipo);
+    var constraint1 = s1.constraints()[0];
+    var constraint2 = s1.constraints()[1];
+    PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), PairMutated, setSize);
+  }
 }
 

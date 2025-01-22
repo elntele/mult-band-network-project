@@ -141,7 +141,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (solution.constraints()[0] == 1) {
+    if (solution.constraints()[0] >= 1.0) {
       solution.objectives()[0] = 1.0;
       solution.objectives()[1] = 3;
     } else if (solution.constraints()[1] > 0) {
