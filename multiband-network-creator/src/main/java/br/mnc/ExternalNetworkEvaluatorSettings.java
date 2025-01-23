@@ -222,7 +222,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     net.setCn(getLocalComplexNetWork(solution));
     var algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     var algebraicConnectivity = algebraicConnectivityEvaluator.evaluate(net).getValue();
-    var inverseAlgebraicConnectivity = 1 / (algebraicConnectivity + 1);
+    var inverseAlgebraicConnectivity = 1.0 / (algebraicConnectivity + 1.0);
     solution.constraints()[0] = inverseAlgebraicConnectivity;
     solution.constraints()[1] = inadequateEquipment(solution);
   }
