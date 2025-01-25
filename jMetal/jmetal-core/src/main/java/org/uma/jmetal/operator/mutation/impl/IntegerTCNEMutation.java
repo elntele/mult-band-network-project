@@ -123,27 +123,21 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var newjType = Equipments.getRandomROADM();
     //Nodo update
     solution.variables().set(nodePartBegin + j, newjType);
-    // get new link
-    var newSet = AllowedConnectionTable.randomChooseConnection(mixedDistribution, setSize, newjType);
-    var maxBand = Collections.max(Arrays.asList(newSet));
     //update link
     for (int i = 0; i < numNodes; i++) {
+      // get new link
+      var newSet = AllowedConnectionTable.probabilisticModelChooseEdge(mixedDistribution, setSize, newjType, numNodes,
+          graphDensity, randomGenerator);
+      var maxBand = Collections.max(Arrays.asList(newSet));
       if (i != j) {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
         var nodeDestine = solution.variables().get(nodePartBegin + i);
         var parameters = new MutatorParameters(solution, index, newSet, i, j, muted);
-        boolean isNoteADisconnection = isNotADisconnection(newSet);
         boolean notCauseConstraint = LevelNode.thisNodeAddressThisLink(nodeDestine, maxBand);
         boolean existeEdge = existEdge(solution, index);
         if (notCauseConstraint) {
-          if (isNoteADisconnection) {
-            if (existeEdge) {
-              specializeExistEdge(parameters);
-            } else {
-              createEdgeSpecialized(parameters);
-            }
-          } else {
-            disconnect(parameters);
+          if (maxBand != 0 || (existeEdge)) {
+            updateEdge(parameters);
           }
         }
       }
@@ -152,7 +146,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   // se existe edge Atualize
 
-  private void specializeExistEdge(MutatorParameters parameters) {
+ /* private void specializeExistEdge(MutatorParameters parameters) {
     boolean withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
     if (withHighProbability) {
       updateEdge(parameters, doNothing);
@@ -190,9 +184,9 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         }
       }
     }
-  }
+  }*/
 
-  private void updateEdge(MutatorParameters parameters, Integer nodeDegreeAction) {
+  private void updateEdge(MutatorParameters parameters) {
     var solution = parameters.solution();
     var index = parameters.index();
     var newSet = parameters.newSet();
@@ -202,18 +196,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
     for (int y = 0; y < setSize; y++) {
       solution.variables().set(index + y, newSet[y]);
-    }
-
-    switch (nodeDegreeAction) {
-      case upGrade -> {
-        nodesDegree[i] += 1;
-        nodesDegree[j] += 1;
-      }
-      case downGrade -> {
-        nodesDegree[i] -= 1;
-        nodesDegree[j] -= 1;
-      }
-      default -> System.out.print("");
     }
 
     if (i < j) {
