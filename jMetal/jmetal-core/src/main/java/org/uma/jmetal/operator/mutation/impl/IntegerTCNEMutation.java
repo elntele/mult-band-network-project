@@ -73,7 +73,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       throw new JMetalException("Null parameter");
     }
 
-    doMutation(solution);
+  //  doMutation(solution);
     return solution;
   }
 
