@@ -1,7 +1,5 @@
 package br.cns24.services;
 
-import java.lang.reflect.AnnotatedArrayType;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -84,17 +82,15 @@ public class AllowedConnectionTable {
    * because in other problemas a link can have more than one
    * alelo
    *
-   * @param mixedDistributionProbability
-   * @param setSize
    * @param nodeType
    * @param numNode
    * @param graphDensity
    * @param randomGenerator
    */
 
-  public static Integer[] probabilisticModelChooseEdge(int mixedDistributionProbability, int setSize, int nodeType,
-      int numNode,
-      Double graphDensity, Random randomGenerator) {
+  public static Integer[] uniformeSelection(int nodeType, int numNode, Double graphDensity,
+      Random randomGenerator) {
+
     var random = randomGenerator.nextDouble();
     if (random < (1.0 - (graphDensity * (numNode - 1) / numNode))) {
       return possibleNoConnection;
@@ -111,6 +107,30 @@ public class AllowedConnectionTable {
         case 3 -> {
           var selected = randomGenerator.nextInt(possibleConnectionCls.length);
           return new Integer[]{ possibleConnectionCls[selected] };
+        }
+      }
+    }
+
+    return possibleNoConnection;
+  }
+
+
+  public static Integer[] mixedSelection(int nodeType, int numNode, Double graphDensity,
+      Random randomGenerator) {
+
+    var random = randomGenerator.nextDouble();
+    if (random < (1.0 - (graphDensity * (numNode - 1) / numNode))) {
+      return possibleNoConnection;
+    } else {
+      switch (nodeType) {
+        case 1 -> {
+          return new Integer[]{ 10 };
+        }
+        case 2 -> {
+          return new Integer[]{ 16 };
+        }
+        case 3 -> {
+          return new Integer[]{ 19 };
         }
       }
     }

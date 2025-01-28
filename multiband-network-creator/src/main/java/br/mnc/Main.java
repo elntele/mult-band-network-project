@@ -50,12 +50,12 @@ public class Main {
     var numNodes = 26;
     var numberOfExecutions = 1;
     var printGML=false;
-    var mixedDistribution=0;
+    Double mixedDistribution=0.5;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
       // it compares with a Random chosen between 0 and 1
-      Double crossoverProbability = 0.90;
+      Double crossoverProbability = 0.30;
       double crossoverDistributionIndex = 20.0;
       //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
       crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), numNodes, setSize);

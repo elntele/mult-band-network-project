@@ -34,7 +34,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private Random randomGenerator;
   private int numNodes;
   private int setSize;
-  private int mixedDistribution;
+  private Double mixedDistribution;
   private Integer[] nodesDegree;
   private Double meanNodeDegree;
   private Double graphDensity;
@@ -47,7 +47,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       Random randomGenerator,
       int numNodes,
       int setSize,
-      int mixedDistribution,
+      Double mixedDistribution,
       Double graphDensity
   ) {
     if (mutationProbability < 0) {
@@ -73,7 +73,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       throw new JMetalException("Null parameter");
     }
 
-  //  doMutation(solution);
+    doMutation(solution);
     return solution;
   }
 
@@ -123,11 +123,20 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var newjType = Equipments.getRandomROADM();
     //Nodo update
     solution.variables().set(nodePartBegin + j, newjType);
+    var mixedSelection= (randomGenerator.nextDouble()<=mixedDistribution);
+
     //update link
     for (int i = 0; i < numNodes; i++) {
       // get new link
-      var newSet = AllowedConnectionTable.probabilisticModelChooseEdge(mixedDistribution, setSize, newjType, numNodes,
-          graphDensity, randomGenerator);
+      var newSet=new Integer[]{0};
+      if(mixedSelection){
+         newSet = AllowedConnectionTable.mixedSelection(newjType, numNodes,
+            graphDensity, randomGenerator);
+      }else {
+         newSet = AllowedConnectionTable.uniformeSelection( newjType, numNodes,
+            graphDensity, randomGenerator);
+      }
+
       var maxBand = Collections.max(Arrays.asList(newSet));
       if (i != j) {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
@@ -144,47 +153,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     }
   }
 
-  // se existe edge Atualize
 
- /* private void specializeExistEdge(MutatorParameters parameters) {
-    boolean withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
-    if (withHighProbability) {
-      updateEdge(parameters, doNothing);
-    }
-  }
-
-  public void createEdgeSpecialized(MutatorParameters parameters) {
-    var i = parameters.i();
-    var j = parameters.j();
-    boolean withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
-    boolean withLowerProbability = randomGenerator.nextInt(101) <= minorProbability();
-
-    if (nodesDegree[j] < meanNodeDegree || nodesDegree[i] == 0) {
-      if (withHighProbability) {
-        updateEdge(parameters, upGrade);
-      }
-    } else {
-      if (withLowerProbability) {
-        updateEdge(parameters, upGrade);
-      }
-    }
-  }
-
-  private void disconnect(MutatorParameters parameters) {
-    var solution = parameters.solution();
-    int index = parameters.index();
-    int i = parameters.i();
-    int j = parameters.j();
-    boolean existEdge = existEdge(solution, index);
-    if (existEdge) {
-      var withHighProbability = randomGenerator.nextInt(101) <= majorProbability();
-      if (nodesDegree[j] > meanNodeDegree && nodesDegree[i] > meanNodeDegree) {
-        if (withHighProbability) {
-          updateEdge(parameters, downGrade);
-        }
-      }
-    }
-  }*/
 
   private void updateEdge(MutatorParameters parameters) {
     var solution = parameters.solution();
@@ -237,17 +206,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     return false;
   }
 
-  private int majorProbability() {
-    var probabilityOne = (int) Math.round((1.0 - graphDensity) * 100);
-    var probabilityTwo = (int) Math.round(graphDensity * 100);
-    return Math.max(probabilityOne, probabilityTwo);
-  }
-
-  private int minorProbability() {
-    var probabilityOne = (int) Math.round((1.0 - graphDensity) * 100);
-    var probabilityTwo = (int) Math.round(graphDensity * 100);
-    return Math.min(probabilityOne, probabilityTwo);
-  }
 
   private List<Integer> selectNodes() {
     Set<Integer> nodos = new HashSet<>();

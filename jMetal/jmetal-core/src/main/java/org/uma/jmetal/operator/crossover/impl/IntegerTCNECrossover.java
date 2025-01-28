@@ -79,10 +79,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     var san1 = parent1.copy();
     var san2 = parent2.copy();
     var temp1 = randomGenerator.nextInt(numNodes);
-    int temp2 = randomGenerator.nextInt(numNodes);
-    while (Math.abs(temp1 - temp2) <= 3) {
-      temp2 = randomGenerator.nextInt(numNodes);
-    }
+    int temp2 = temp1+4;
+    if (temp2>=numNodes-1) temp2=numNodes-1;
 
     var begin = Math.min(temp1, temp2);
     begin+=1;
