@@ -59,7 +59,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution createSolution() {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
-        numberOfConstraints());
+        numberOfConstraints(), gml.getNodes().size());
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
     PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none",
         ((DefaultIntegerSolution) integerSolution).file, setSize);
@@ -67,10 +67,12 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   }
 
 
-  void createRandomNetworkWithNodeNeighborhoodInformation(IntegerSolution solution) {
-    fullFillFile((DefaultIntegerSolution) solution);
+  void createRandomNetworkWithNodeNeighborhoodInformation(DefaultIntegerSolution solution) {
+    fullFillFile(solution);
+    Arrays.fill(solution.degrees, 0);
     Random random = new Random();
     var possibleConnection = AllowedConnectionTable.getPossibleConnection(3, setSize);
+
     for (int i = 0; i < gml.getNodes().size(); i++) {
       for (int j = i + 1; j < gml.getNodes().size(); j++) {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
@@ -90,8 +92,11 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
             var edge = possibleConnection[random.nextInt(possibleConnection.length)];
             solution.variables().set(index + w, edge);
             if (edge != 0) {
-              ((DefaultIntegerSolution) solution).file.get(i).add(j);
-              ((DefaultIntegerSolution) solution).file.get(j).add(i);
+              solution.file.get(i).add(j);
+              solution.file.get(j).add(i);
+              solution.degrees[i]+=1;
+              solution.degrees[j]+=1;
+
             }
           }
         }
@@ -105,6 +110,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var set = new HashSet<Integer>();
       solution.file.put(i, set);
     }
+
   }
 
 
@@ -121,19 +127,19 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     var sizeThreeAlelos = 3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1;
     var connectionsSize = solution.variables().size() - (numberOfNodes + 1);
     Integer[] vars = new Integer[sizeThreeAlelos];
-    var count =0;
+    var count = 0;
     for (int i = 0; i < solution.variables().size(); i++) {
-      if (i< connectionsSize){
-        var aleloList= Bands.getThreeAleloValue((Integer) solution.variables()
+      if (i < connectionsSize) {
+        var aleloList = Bands.getThreeAleloValue((Integer) solution.variables()
             .get(i));
-        for (int w=0;w<aleloList.size(); w++){
-          vars[(i*3)+w]=aleloList.get(w);
+        for (int w = 0; w < aleloList.size(); w++) {
+          vars[(i * 3) + w] = aleloList.get(w);
         }
 
-      }else{
-        vars[(connectionsSize*3)+count] = (Integer) solution.variables()
+      } else {
+        vars[(connectionsSize * 3) + count] = (Integer) solution.variables()
             .get(i);
-        count+=1;
+        count += 1;
       }
     }
 
@@ -149,7 +155,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-      solution.objectives()[0] = objectives[0]+1;
+      solution.objectives()[0] = objectives[0] + 1;
       solution.objectives()[1] = objectives[1] / maxCapex + 1 + solution.constraints()[1];
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();

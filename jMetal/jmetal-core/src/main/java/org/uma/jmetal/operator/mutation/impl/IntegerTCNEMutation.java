@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -15,6 +16,8 @@ import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 import org.uma.jmetal.utilities.MutatorParameters;
+
+import com.sun.xml.bind.v2.runtime.output.MTOMXmlOutput;
 
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Equipments;
@@ -35,7 +38,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private int numNodes;
   private int setSize;
   private Double mixedDistribution;
-  private Integer[] nodesDegree;
   private Double meanNodeDegree;
   private Double graphDensity;
   private final int upGrade = 1;
@@ -58,8 +60,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     this.numNodes = numNodes;
     this.setSize = setSize;
     this.mixedDistribution = mixedDistribution;
-    nodesDegree = new Integer[numNodes];
-    Arrays.fill(nodesDegree, 0);
     this.meanNodeDegree = Math.ceil(graphDensity * (numNodes - 1));
     this.graphDensity = graphDensity;
   }
@@ -104,9 +104,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
     print((DefaultIntegerSolution) solution, muted, "original");
+    System.out.println("degrees originais");
+    for (int w=0;w<numNodes; w++){
+      System.out.print(  String.format("%02d", w) + ";");
 
-    buildNodeDegreeInformation((DefaultIntegerSolution) solution);
-    var selected = selectNodes();
+    }
+    System.out.println();
+    Arrays.stream(((DefaultIntegerSolution) solution).degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+    System.out.println();
+    var selected = selectNodes((DefaultIntegerSolution)solution);
     for (int i = 0; i < selected.size(); i++) {
       mutation(((DefaultIntegerSolution) solution), selected.get(i), muted);
     }
@@ -114,6 +120,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     // inserted to make debug, it isn't part of algorithm
     System.out.println("Operador de mutação");
     print((DefaultIntegerSolution) solution, muted, "mudada");
+    Arrays.stream(((DefaultIntegerSolution) solution).degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+    System.out.println();
   }
 
   private void mutation(DefaultIntegerSolution solution, int j, List<Pair<Integer, Integer>> muted) {
@@ -123,26 +131,26 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var newjType = Equipments.getRandomROADM();
     //Nodo update
     solution.variables().set(nodePartBegin + j, newjType);
-    var mixedSelection= (randomGenerator.nextDouble()<=mixedDistribution);
+    var mixedSelection = (randomGenerator.nextDouble() <= mixedDistribution);
 
     //update link
     for (int i = 0; i < numNodes; i++) {
       // get new link
-      var newSet=new Integer[]{0};
-      if(mixedSelection){
-         newSet = AllowedConnectionTable.mixedSelection(newjType, numNodes,
+      var newSet = new Integer[]{ 0 };
+      if (mixedSelection) {
+        newSet = AllowedConnectionTable.mixedSelection(newjType, numNodes,
             graphDensity, randomGenerator);
-      }else {
-         newSet = AllowedConnectionTable.uniformeSelection( newjType, numNodes,
+      } else {
+        newSet = AllowedConnectionTable.uniformeSelection(newjType, numNodes,
             graphDensity, randomGenerator);
       }
 
       var maxBand = Collections.max(Arrays.asList(newSet));
       if (i != j) {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
-        var nodeDestine = solution.variables().get(nodePartBegin + i);
+        var roadmNodeDestine = solution.variables().get(nodePartBegin + i);
         var parameters = new MutatorParameters(solution, index, newSet, i, j, muted);
-        boolean notCauseConstraint = LevelNode.thisNodeAddressThisLink(nodeDestine, maxBand);
+        boolean notCauseConstraint = LevelNode.thisNodeAddressThisLink(roadmNodeDestine, maxBand);
         boolean existeEdge = existEdge(solution, index);
         if (notCauseConstraint) {
           if (maxBand != 0 || (existeEdge)) {
@@ -154,7 +162,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
 
-
   private void updateEdge(MutatorParameters parameters) {
     var solution = parameters.solution();
     var index = parameters.index();
@@ -162,9 +169,25 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var i = parameters.i();
     var j = parameters.j();
     var muted = parameters.muted();
-
+    var disconnection = Arrays.stream(newSet).mapToInt(Integer::intValue).sum() == 0;
+    if ((solution.degrees[i] == 0 || solution.degrees[j] == 0) && disconnection) {
+      var test = solution.variables().get(index);
+      System.out.print("");
+    }
     for (int y = 0; y < setSize; y++) {
       solution.variables().set(index + y, newSet[y]);
+    }
+
+    if (disconnection) {
+      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+      System.out.println(" Diminuiu" + i+", "+j);
+      solution.degrees[i] -= 1;
+      solution.degrees[j] -= 1;
+      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+      System.out.println();
+    } else {
+      solution.degrees[i] += 1;
+      solution.degrees[j] += 1;
     }
 
     if (i < j) {
@@ -177,20 +200,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   }
 
-  private void buildNodeDegreeInformation(DefaultIntegerSolution s) {
-    List<Integer> connections = s.variables().subList(0, s.variables().size() - (numNodes + 1));
-    for (int i = 0; i < numNodes; i++) {
-      for (int j = i + 1; j < numNodes; j++) {
-        var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
-        nodesDegree[i] += 1;
-        for (int w = 0; w < setSize; w++) {
-          if (connections.get(index + w) > 0) {
-            nodesDegree[i] += 1;
-          }
-        }
-      }
-    }
-  }
 
   private boolean isNotADisconnection(Integer[] newSet) {
     var sun = Arrays.stream(Arrays.stream(newSet)
@@ -207,14 +216,39 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
 
-  private List<Integer> selectNodes() {
-    Set<Integer> nodos = new HashSet<>();
-    while (nodos.size() < 3) {
-      var node = randomGenerator.nextInt(numNodes);
-      nodos.add(node);
+  private List<Integer> selectNodes(DefaultIntegerSolution solution) {
+    List<Integer> weights = new ArrayList<>();
+    int weight = 0;
+    for (int i = 0; i < numNodes; i++) {
+      var reference = (int) Math.ceil(graphDensity * (numNodes - 1));
+      var distance = solution.degrees[i] - reference;
+      if (distance == -1 || distance == 1 || distance==0) {
+        weight = 1;
+      } else if (distance < 0) {
+        weight = Math.abs(distance) * 3;
+      } else {
+        weight = Math.abs(distance) * 2;
+      }
+      weights.add(weight);
     }
-    //System.out.println(nodos);
-    return nodos.stream().toList();
+    List<Integer> ranges = new ArrayList<>();
+    int totalWeights = 0;
+    for (Integer w : weights) {
+      totalWeights += w;
+      ranges.add(totalWeights);
+    }
+
+    Set<Integer> selectedNodes = new HashSet<>();
+    while (selectedNodes.size() < 3) {
+      var randomValue = randomGenerator.nextInt(totalWeights);
+      for (int i = 0; i < ranges.size(); i++) {
+        if (randomValue < ranges.get(i)) {
+          selectedNodes.add(i);
+          break;
+        }
+      }
+    }
+    return selectedNodes.stream().toList();
   }
 
 

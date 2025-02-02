@@ -1,5 +1,7 @@
 package org.uma.jmetal.solution.integersolution.impl;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +27,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
   protected List<Bounds<Integer>> bounds;
   // added by Jorge Candeias for adequate to proposal
   public Map<Integer, Set<Integer>> file = new HashMap<>();
+  public Integer[] degrees;
 
   /**
    * Constructor
@@ -33,6 +36,20 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
     super(boundsList.size(), numberOfObjectives, numberOfConstraints);
 
     this.bounds = boundsList;
+
+    IntStream.range(0, bounds.size()).forEach(i -> variables().set(
+        i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
+  }
+
+  /**
+   * Constructor
+   */
+  public DefaultIntegerSolution(List<Bounds<Integer>> boundsList, int numberOfObjectives, int numberOfConstraints,
+      int nodeNumber) {
+    super(boundsList.size(), numberOfObjectives, numberOfConstraints);
+
+    this.bounds = boundsList;
+    this.degrees = new Integer[nodeNumber];
 
     IntStream.range(0, bounds.size()).forEach(i -> variables().set(
         i, JMetalRandom.getInstance().nextInt(this.bounds.get(i).getLowerBound(), this.bounds.get(i).getUpperBound())));
@@ -56,6 +73,7 @@ public class DefaultIntegerSolution extends AbstractSolution<Integer> implements
             Map.Entry::getKey,
             entry -> new HashSet<>(entry.getValue())
         ));
+    this.degrees=  Arrays.copyOf(solution.degrees, solution.degrees.length);
   }
 
   @Override
