@@ -1,5 +1,8 @@
 package org.uma.jmetal.operator.crossover.impl;
 
+import static br.cns24.services.Bands.isConnection;
+import static br.cns24.services.Bands.isDisconnection;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -297,19 +300,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
   }
 
-  private boolean isDisconnection(int newEdge, int oldEdge) {
-    if (oldEdge != 0 && newEdge == 0) {
-      return true;
-    }
-    return false;
-  }
 
-  private boolean isConnection(int newEdge, int oldEdge) {
-    if (oldEdge == 0 && newEdge != 0) {
-      return true;
-    }
-    return false;
-  }
 
 
 }

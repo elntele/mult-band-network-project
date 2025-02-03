@@ -128,6 +128,20 @@ public enum Bands {
     }
   }
 
+  public static boolean isDisconnection(int newEdge, int oldEdge) {
+    if (oldEdge != 0 && newEdge == 0) {
+      return true;
+    }
+    return false;
+  }
+
+  public static boolean isConnection(int newEdge, int oldEdge) {
+    if (oldEdge == 0 && newEdge != 0) {
+      return true;
+    }
+    return false;
+  }
+
 
 }
 

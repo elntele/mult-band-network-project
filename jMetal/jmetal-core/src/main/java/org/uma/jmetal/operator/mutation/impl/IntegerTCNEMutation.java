@@ -20,6 +20,7 @@ import org.uma.jmetal.utilities.MutatorParameters;
 import com.sun.xml.bind.v2.runtime.output.MTOMXmlOutput;
 
 import br.cns24.services.AllowedConnectionTable;
+import br.cns24.services.Bands;
 import br.cns24.services.Equipments;
 import br.cns24.services.LevelNode;
 import br.cns24.services.PrintPopulation;
@@ -183,18 +184,21 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void updateEdge(MutatorParameters parameters) {
     var solution = parameters.solution();
     var index = parameters.index();
-    var newSet = parameters.newSet();
+    var newLink = parameters.newSet();
     var i = parameters.i();
     var j = parameters.j();
     var muted = parameters.muted();
-    var disconnection = Arrays.stream(newSet).mapToInt(Integer::intValue).sum() == 0;
+    var oldLink =   solution.variables().get(index);
+
+    var disconnection = Bands.isDisconnection(newLink[0], oldLink);
+    var connection= Bands.isConnection(newLink[0], oldLink);
     if ((solution.degrees[i] == 0 || solution.degrees[j] == 0) && disconnection) {
       var test = solution.variables().get(index);
       // se parar aqui ta com bronca na mutação
       System.out.print("");
     }
     for (int y = 0; y < setSize; y++) {
-      solution.variables().set(index + y, newSet[y]);
+      solution.variables().set(index + y, newLink[y]);
     }
 
     if (disconnection) {
@@ -204,9 +208,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       solution.degrees[j] -= 1;
       Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
       System.out.println();
-    } else {
+    }
+
+    if(connection) {
+      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+      System.out.println(" Aumentei" + i+", "+j);
       solution.degrees[i] += 1;
       solution.degrees[j] += 1;
+      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
+      System.out.println();
     }
 
     if (i < j) {
