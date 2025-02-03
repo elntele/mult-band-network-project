@@ -12,7 +12,7 @@ import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.Check;
 import org.uma.jmetal.util.errorchecking.JMetalException;
-import org.uma.jmetal.utilities.CrossOverParameters;
+import org.uma.jmetal.utilities.CrossOverParam;
 
 import br.cns24.services.Equipments;
 import br.cns24.services.PrintPopulation;
@@ -62,17 +62,52 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
    * doCrossover method
    */
   public List<IntegerSolution> doCrossover(
-      double probability, DefaultIntegerSolution parent1, DefaultIntegerSolution parent2) {
+      double probability, DefaultIntegerSolution p1, DefaultIntegerSolution p2) {
     //test(parent1, parent2);
-    var beginNodes = parent1.variables().size() - (numNodes + 1);
+    var beginNodes = p1.variables().size() - (numNodes + 1);
     List<Pair<Integer, Integer>> crossed1 = new ArrayList<>();
     List<Pair<Integer, Integer>> crossed2 = new ArrayList<>();
     System.out.println("Operador de cruzamento");
-    print(parent1, parent2, crossed1, crossed1, "pai", 0, 0);
+    print(p1, p2, crossed1, crossed1, "pai", 0, 0);
 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
-    var san1 = parent1.copy();
-    var san2 = parent2.copy();
+    var san1 = p1.copy();
+    var san2 = p2.copy();
+    Integer[] degree = new Integer[numNodes];
+    Arrays.fill(degree, 0);
+
+    for (int i = 0; i < numNodes; i++) {
+
+      for (int w = i + 1; w < numNodes; w++) {
+        var index = Equipments.getLinkPosition(i, w, numNodes, setSize);
+        if (san1.variables().get(index) > 0) {
+          degree[i] += 1;
+          degree[w] += 1;
+        }
+      }
+      if (degree[i] != san1.degrees[i]) {
+        // se der falha aqui, se for logo depois da avaliação 100 é problema do create.
+        // se for depois da 200 é problema do mutation
+        System.out.println("");
+      }
+    }
+    Arrays.fill(degree, 0);
+    for (int i = 0; i < numNodes; i++) {
+
+      for (int w = i + 1; w < numNodes; w++) {
+        var index = Equipments.getLinkPosition(i, w, numNodes, setSize);
+        if (san2.variables().get(index) > 0) {
+          degree[i] += 1;
+          degree[w] += 1;
+        }
+      }
+      if (degree[i] != san2.degrees[i]) {
+        // se der falha aqui, se for logo depois da avaliação 100 é problema do create.
+        // se for depois da 200 é problema do mutation
+        System.out.println("");
+      }
+    }
+
     var temp1 = randomGenerator.nextInt(numNodes);
     int temp2 = temp1 + 4;
     if (temp2 >= numNodes - 1) temp2 = numNodes - 1;
@@ -94,13 +129,13 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       Arrays.stream(san2.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
       System.out.println("original");
 
-      //node crossOver and node degree
+    /*  //node crossOver and node degree
       for (int i = initialNodeSelected; i <= finalNodeSelected; i++) {
         san1.variables().set(beginNodes + i, parent2.variables().get(beginNodes + i));
         san2.variables().set(beginNodes + i, parent1.variables().get(beginNodes + i));
         san1.degrees[i] = parent2.degrees[i];
         san2.degrees[i] = parent1.degrees[i];
-      }
+      }*/
       Arrays.stream(san1.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
       System.out.println("mudado");
       Arrays.stream(san2.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
@@ -114,22 +149,30 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
           if (i < initialNodeSelected) {
             var matrixIndexOne = Equipments.getLinkPosition(i, initialNodeSelected, numNodes, setSize);
             var matrixIndexTwo = Equipments.getLinkPosition(i, finalNodeSelected, numNodes, setSize);
-            CrossOverParameters parametersOne = new CrossOverParameters(san1, parent2, matrixIndexOne, matrixIndexTwo,
-                crossed1, i, initialNodeSelected, finalNodeSelected);
-            CrossOverParameters parametersTwo = new CrossOverParameters(san2, parent1, matrixIndexOne, matrixIndexTwo,
-                crossed2, i, initialNodeSelected, finalNodeSelected);
-            updateEdge(parametersOne);
-            updateEdge(parametersTwo);
+            CrossOverParam cp1 = new CrossOverParam(san1, p2, matrixIndexOne, matrixIndexTwo,
+                crossed1, i, initialNodeSelected);
+            CrossOverParam cp2 = new CrossOverParam(san2, p1, matrixIndexOne, matrixIndexTwo, crossed2, i,
+                initialNodeSelected);
+            updateEdge(cp1);
+            updateEdge(cp2);
           } else {
-            var matrixIndexOne = Equipments.getLinkPosition(i, initialNodeSelected + offset, numNodes, setSize);
-            var matrixIndexTwo = Equipments.getLinkPosition(initialNodeSelected + offset, numNodes - 1, numNodes,
-                setSize);
-            CrossOverParameters parametersOne = new CrossOverParameters(san1, parent2, matrixIndexOne, matrixIndexTwo,
-                crossed1, i, initialNodeSelected + offset, finalNodeSelected);
-            CrossOverParameters parametersTwo = new CrossOverParameters(san2, parent1, matrixIndexOne, matrixIndexTwo,
-                crossed2, i, initialNodeSelected + offset, finalNodeSelected);
-            updateEdge(parametersOne);
-            updateEdge(parametersTwo);
+            if (i == finalNodeSelected - 1) {
+              System.out.println("");
+            }
+            if (i == finalNodeSelected) {
+              System.out.println("");
+            }
+            if (i == finalNodeSelected + 1) {
+              System.out.println("");
+            }
+            var jMoved = initialNodeSelected + offset;
+            var lastJ = numNodes - 1;
+            var matrixIndex1 = Equipments.getLinkPosition(i, jMoved, numNodes, setSize);
+            var matrixIndex2 = Equipments.getLinkPosition(jMoved, lastJ, numNodes, setSize);
+            CrossOverParam cp1 = new CrossOverParam(san1, p2, matrixIndex1, matrixIndex2, crossed1, i, jMoved);
+            CrossOverParam cp2 = new CrossOverParam(san2, p1, matrixIndex1, matrixIndex2, crossed2, i, jMoved);
+            updateEdge(cp1);
+            updateEdge(cp2);
             offset += 1;
           }
         }
@@ -138,9 +181,9 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
 
     if (randomGenerator.nextDouble() < probability) {
-      var size = parent1.variables().size() - 1;
-      san1.variables().set(size, parent2.variables().get(size));
-      san2.variables().set(size, parent1.variables().get(size));
+      var size = p1.variables().size() - 1;
+      san1.variables().set(size, p2.variables().get(size));
+      san2.variables().set(size, p1.variables().get(size));
 
     }
 
@@ -185,7 +228,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
         Double.toString(constraint2), crossed2, setSize);
   }
 
-  private void updateEdge(CrossOverParameters parameters) {
+  private void updateEdge(CrossOverParam parameters) {
     // san Solution.
     var s = parameters.san();
     // father solution.
@@ -201,29 +244,34 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     var i = parameters.i();
     // the first node selected to be crossed.
     var initialNodeSelected = parameters.initialNodeSelected();
-    // the ultimate node selected to be crossed.
-    var finalNodeSelected = parameters.finalNodeSelected();
 
     var step = 0;
     for (int w = matrixIndexOne; w <= matrixIndexTwo; w++) {
-      var removedEdge = p.variables().get(w);
-      var implantedEdge = p.variables().get(w);
-      s.variables().set(w, implantedEdge);
-      // continuar aqui
-      var disconnection= isDisconnection(implantedEdge, removedEdge);
-      var connection= isConnection(implantedEdge, removedEdge);
+      var oldLink = s.variables().get(w);
+      var newLink = p.variables().get(w);
+      s.variables().set(w, newLink);
+      // it can be a disconnection, a connection a technology exchange or a replacement of 0 for 0.
+      // if it is a connection or a disconnection update de node degree.
+      var disconnection = isDisconnection(newLink, oldLink);
+      var connection = isConnection(newLink, oldLink);
       if (i < initialNodeSelected) {
-        if (implantedEdge > 0) {
+        if (connection) {
           s.degrees[i] += 1;
-        } else {
+          s.degrees[initialNodeSelected + step] += 1;
+        }
+        if (disconnection) {
           s.degrees[i] -= 1;
+          s.degrees[initialNodeSelected + step] -= 1;
         }
         crossed.add(new Pair<>(i, initialNodeSelected + step));
       } else {
-        if (implantedEdge > 0) {
+        if (connection) {
           s.degrees[initialNodeSelected] += 1;
-        } else {
+          s.degrees[i + step] += 1;
+        }
+        if (disconnection) {
           s.degrees[initialNodeSelected] -= 1;
+          s.degrees[i + step] -= 1;
         }
         crossed.add(new Pair<>(initialNodeSelected, i + step));
       }
@@ -249,15 +297,15 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
   }
 
-  private boolean isDisconnection(int newEdge, int oldEdge){
-    if (oldEdge!=0 && newEdge==0){
+  private boolean isDisconnection(int newEdge, int oldEdge) {
+    if (oldEdge != 0 && newEdge == 0) {
       return true;
     }
     return false;
   }
 
-  private boolean isConnection(int newEdge, int oldEdge){
-    if (oldEdge==0 && newEdge!=0){
+  private boolean isConnection(int newEdge, int oldEdge) {
+    if (oldEdge == 0 && newEdge != 0) {
       return true;
     }
     return false;

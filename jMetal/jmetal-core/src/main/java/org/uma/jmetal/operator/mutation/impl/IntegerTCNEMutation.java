@@ -102,6 +102,24 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     // inserted to make debug, it isn't part of algorithm, include iMuted and jMuted
     System.out.println("Operador de Mutação");
 
+    Integer[] degree= new Integer[numNodes];
+    Arrays.fill(degree,0);
+    for (int i=0; i<numNodes; i++){
+      for (int w=i+1; w<numNodes; w++){
+        var index= Equipments.getLinkPosition(i,w,numNodes,setSize);
+        if (solution.variables().get(index)>0){
+          degree[i]+=1;
+          degree[w]+=1;
+        }
+      }
+      if (degree[i]!=((DefaultIntegerSolution)solution).degrees[i]){
+        // se parar aqui ta com bronca no cruzamento
+        System.out.println("");
+      }
+    }
+
+
+
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
     print((DefaultIntegerSolution) solution, muted, "original");
     System.out.println("degrees originais");
@@ -172,6 +190,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var disconnection = Arrays.stream(newSet).mapToInt(Integer::intValue).sum() == 0;
     if ((solution.degrees[i] == 0 || solution.degrees[j] == 0) && disconnection) {
       var test = solution.variables().get(index);
+      // se parar aqui ta com bronca na mutação
       System.out.print("");
     }
     for (int y = 0; y < setSize; y++) {
