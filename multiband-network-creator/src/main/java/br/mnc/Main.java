@@ -43,8 +43,8 @@ public class Main {
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 100000;
-    var iterationsToPrint = 40;
+    var maxEvaluations = 2000;
+    var iterationsToPrint = 5;
     var setSize = 1;
     var load = 1500;
     var numNodes = 26;
@@ -55,7 +55,7 @@ public class Main {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
       // it compares with a Random chosen between 0 and 1
-      Double crossoverProbability = 1.00;
+      Double crossoverProbability = 0.30;
       double crossoverDistributionIndex = 20.0;
       //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
       crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), numNodes, setSize);

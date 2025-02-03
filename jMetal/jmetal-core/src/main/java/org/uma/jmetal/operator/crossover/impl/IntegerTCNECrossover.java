@@ -67,7 +67,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
   public List<IntegerSolution> doCrossover(
       double probability, DefaultIntegerSolution p1, DefaultIntegerSolution p2) {
     //test(parent1, parent2);
-    var beginNodes = p1.variables().size() - (numNodes + 1);
     List<Pair<Integer, Integer>> crossed1 = new ArrayList<>();
     List<Pair<Integer, Integer>> crossed2 = new ArrayList<>();
     System.out.println("Operador de cruzamento");
@@ -76,40 +75,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var san1 = p1.copy();
     var san2 = p2.copy();
-    Integer[] degree = new Integer[numNodes];
-    Arrays.fill(degree, 0);
-
-    for (int i = 0; i < numNodes; i++) {
-
-      for (int w = i + 1; w < numNodes; w++) {
-        var index = Equipments.getLinkPosition(i, w, numNodes, setSize);
-        if (san1.variables().get(index) > 0) {
-          degree[i] += 1;
-          degree[w] += 1;
-        }
-      }
-      if (degree[i] != san1.degrees[i]) {
-        // se der falha aqui, se for logo depois da avaliação 100 é problema do create.
-        // se for depois da 200 é problema do mutation
-        System.out.println("");
-      }
-    }
-    Arrays.fill(degree, 0);
-    for (int i = 0; i < numNodes; i++) {
-
-      for (int w = i + 1; w < numNodes; w++) {
-        var index = Equipments.getLinkPosition(i, w, numNodes, setSize);
-        if (san2.variables().get(index) > 0) {
-          degree[i] += 1;
-          degree[w] += 1;
-        }
-      }
-      if (degree[i] != san2.degrees[i]) {
-        // se der falha aqui, se for logo depois da avaliação 100 é problema do create.
-        // se for depois da 200 é problema do mutation
-        System.out.println("");
-      }
-    }
 
     var temp1 = randomGenerator.nextInt(numNodes);
     int temp2 = temp1 + 4;
@@ -121,32 +86,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     finalNodeSelected -= 1;
     var offset = 0;
     if (randomGenerator.nextDouble() < probability) {
-      System.out.println("degrees originais no cruzamento");
-      System.out.printf(" de %d até %d%n", initialNodeSelected, finalNodeSelected);
-      for (int w = 0; w < numNodes; w++) {
-        System.out.print(String.format("%02d", w) + ";");
-      }
-      System.out.println();
-      Arrays.stream(san1.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println("original");
-      Arrays.stream(san2.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println("original");
-
-    /*  //node crossOver and node degree
-      for (int i = initialNodeSelected; i <= finalNodeSelected; i++) {
-        san1.variables().set(beginNodes + i, parent2.variables().get(beginNodes + i));
-        san2.variables().set(beginNodes + i, parent1.variables().get(beginNodes + i));
-        san1.degrees[i] = parent2.degrees[i];
-        san2.degrees[i] = parent1.degrees[i];
-      }*/
-      Arrays.stream(san1.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println("mudado");
-      Arrays.stream(san2.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println("mudado");
-      System.out.println();
-
-      //parte colocada pra fazer o debug
-
       for (int i = 0; i <= finalNodeSelected + 1; i++) {
         if (i != initialNodeSelected) {
           if (i < initialNodeSelected) {
@@ -159,15 +98,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
             updateEdge(cp1);
             updateEdge(cp2);
           } else {
-            if (i == finalNodeSelected - 1) {
-              System.out.println("");
-            }
-            if (i == finalNodeSelected) {
-              System.out.println("");
-            }
-            if (i == finalNodeSelected + 1) {
-              System.out.println("");
-            }
             var jMoved = initialNodeSelected + offset;
             var lastJ = numNodes - 1;
             var matrixIndex1 = Equipments.getLinkPosition(i, jMoved, numNodes, setSize);
@@ -182,7 +112,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       }
 
     }
-
+    //   w crossover
     if (randomGenerator.nextDouble() < probability) {
       var size = p1.variables().size() - 1;
       san1.variables().set(size, p2.variables().get(size));
@@ -191,8 +121,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
 
     print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);
-    offspring.add((IntegerSolution) san1);
-    offspring.add((IntegerSolution) san2);
+    offspring.add(san1);
+    offspring.add(san2);
     return offspring;
   }
 
@@ -278,7 +208,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
         }
         crossed.add(new Pair<>(initialNodeSelected, i + step));
       }
-
       step += 1;
     }
   }
@@ -299,8 +228,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       }
     }
   }
-
-
 
 
 }

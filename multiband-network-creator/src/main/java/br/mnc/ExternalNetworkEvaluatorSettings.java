@@ -61,8 +61,6 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
         numberOfConstraints(), gml.getNodes().size());
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-   /* PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none",
-        ((DefaultIntegerSolution) integerSolution).file, setSize);*/
     return integerSolution;
   }
 
@@ -78,57 +76,31 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
         var result = random.nextInt(100);
 
-        if (result <= 80) {
+        if (result <= 84) {
           for (int w = 0; w < setSize; w++) {
             solution.variables()
                 .set(index + w, 0);
           }
 
         } else {
-          // in 20% of times randomly chosen the one type of connection: 0,1,3,5,7.
+          // in 20% of times randomly chosen the one type of connection: 1...19.
           // remembering that 0 means no connection and consequently no edge/fiber
-          //feed file attribute of neighborhood
 
-            var edge = possibleConnection[random.nextInt(possibleConnection.length)];
-            solution.variables().set(index, edge);
-            if (edge != 0) {
-              solution.file.get(i).add(j);
-              solution.file.get(j).add(i);
-              solution.degrees[i]+=1;
-              solution.degrees[j]+=1;
+          var edge = possibleConnection[random.nextInt(possibleConnection.length)];
+          solution.variables().set(index, edge);
+          if (edge != 0) {
+            solution.file.get(i).add(j);
+            solution.file.get(j).add(i);
+            solution.degrees[i] += 1;
+            solution.degrees[j] += 1;
 
-            }
-
+          }
         }
       }
     }
 
     PrintPopulation.printMatrix(solution.variables(), gml.getNodes().size(), "none", "none",
         solution.file, setSize);
-var numNodes = gml.getNodes().size();
-Integer[] degree= new Integer[gml.getNodes().size()];
-Arrays.fill(degree,0);
-    for (int i=0; i<numNodes; i++){
-      List<Integer> indexes = new  ArrayList<>();
-      List<Integer> indexesMudado = new  ArrayList<>();
-
-      for (int j=i+1; j<numNodes; j++){
-        var index= Equipments.getLinkPosition(i,j,numNodes,setSize);
-        indexes.add(index);
-        if (solution.variables().get(index)>0){
-          degree[i]+=1;
-          degree[j]+=1;
-          indexesMudado.add(index);
-        }
-      }
-      System.out.println("indexes visitados");
-      System.out.println(indexes);
-      System.out.println("indexes mudados");
-      System.out.println(indexesMudado);
-      if (degree[i]!=solution.degrees[i]){
-        System.out.println("");
-      }
-    }
   }
 
 
@@ -197,14 +169,14 @@ Arrays.fill(degree,0);
         solution.objectives()[1] = objectives[1] / maxCapex;
       }
     }
-    localPopulation.add((DefaultIntegerSolution) solution);
+    //localPopulation.add((DefaultIntegerSolution) solution);
     if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
       countSolutionWithRestriction();
       countNodeXConstraint();
       printPopulation();
     }
 
-    if (localPopulation.size() == populationSize) {
+    if (isIterationLimit()) {
       if (getIteration() < 100) {
         countNodeXConstraint();
       }
@@ -241,6 +213,11 @@ Arrays.fill(degree,0);
 
   private int getIteration() {
     return contEvaluate / populationSize;
+  }
+
+  private boolean isIterationLimit(){
+    if (contEvaluate>99 && contEvaluate%populationSize==0) return true;
+    return false;
   }
 
 
@@ -508,6 +485,17 @@ Arrays.fill(degree,0);
 
   public Map<Integer, ArrayList<Integer>> getSolutionsXNodeConstraint() {
     return solutionsXNodeConstraint;
+  }
+
+
+  /**
+   * implement  method  optional of interface.
+   * @param solutions
+   */
+  @Override
+  public void setPopulation(List<IntegerSolution> solutions) {
+    this.localPopulation = solutions.stream().map(s -> (DefaultIntegerSolution) s.copy()).collect(Collectors.toList());
+
   }
 
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,

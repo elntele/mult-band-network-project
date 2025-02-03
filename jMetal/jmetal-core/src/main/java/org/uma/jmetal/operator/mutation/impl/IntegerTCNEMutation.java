@@ -102,35 +102,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   private void doMutation(IntegerSolution solution) {
     // inserted to make debug, it isn't part of algorithm, include iMuted and jMuted
     System.out.println("Operador de Mutação");
-
-    Integer[] degree= new Integer[numNodes];
-    Arrays.fill(degree,0);
-    for (int i=0; i<numNodes; i++){
-      for (int w=i+1; w<numNodes; w++){
-        var index= Equipments.getLinkPosition(i,w,numNodes,setSize);
-        if (solution.variables().get(index)>0){
-          degree[i]+=1;
-          degree[w]+=1;
-        }
-      }
-      if (degree[i]!=((DefaultIntegerSolution)solution).degrees[i]){
-        // se parar aqui ta com bronca no cruzamento
-        System.out.println("");
-      }
-    }
-
-
-
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
     print((DefaultIntegerSolution) solution, muted, "original");
-    System.out.println("degrees originais");
-    for (int w=0;w<numNodes; w++){
-      System.out.print(  String.format("%02d", w) + ";");
-
-    }
-    System.out.println();
-    Arrays.stream(((DefaultIntegerSolution) solution).degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-    System.out.println();
     var selected = selectNodes((DefaultIntegerSolution)solution);
     for (int i = 0; i < selected.size(); i++) {
       mutation(((DefaultIntegerSolution) solution), selected.get(i), muted);
@@ -192,50 +165,30 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
     var disconnection = Bands.isDisconnection(newLink[0], oldLink);
     var connection= Bands.isConnection(newLink[0], oldLink);
-    if ((solution.degrees[i] == 0 || solution.degrees[j] == 0) && disconnection) {
-      var test = solution.variables().get(index);
-      // se parar aqui ta com bronca na mutação
-      System.out.print("");
-    }
+
     for (int y = 0; y < setSize; y++) {
       solution.variables().set(index + y, newLink[y]);
     }
 
     if (disconnection) {
-      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println(" Diminuiu" + i+", "+j);
       solution.degrees[i] -= 1;
       solution.degrees[j] -= 1;
-      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println();
     }
 
     if(connection) {
-      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println(" Aumentei" + i+", "+j);
       solution.degrees[i] += 1;
       solution.degrees[j] += 1;
-      Arrays.stream(solution.degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-      System.out.println();
     }
 
     if (i < j) {
       muted.add(new Pair<>(i, j));
-      //   System.out.println("pares mudados: i=" + i + "; j=" + j);
     } else {
       muted.add(new Pair<>(j, i));
-      //   System.out.println("pares mudados: i=" + j + "; j=" + i);
     }
 
   }
 
 
-  private boolean isNotADisconnection(Integer[] newSet) {
-    var sun = Arrays.stream(Arrays.stream(newSet)
-        .mapToInt(Integer::intValue)
-        .toArray()).sum();
-    return sun > 0;
-  }
 
   private boolean existEdge(DefaultIntegerSolution s, int index) {
     for (int i = 0; i < setSize; i++) {
@@ -244,7 +197,11 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     return false;
   }
 
-
+  /**
+   * select nodes with
+   * @param solution
+   * @return
+   */
   private List<Integer> selectNodes(DefaultIntegerSolution solution) {
     List<Integer> weights = new ArrayList<>();
     int weight = 0;
@@ -280,6 +237,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     return selectedNodes.stream().toList();
   }
 
+
+  private List<Integer> selectNodes() {
+    Set<Integer> nodos = new HashSet<>();
+    while (nodos.size() < 3) {
+      var node = randomGenerator.nextInt(numNodes);
+      nodos.add(node);
+    }
+    return nodos.stream().toList();
+  }
 
   private void print(DefaultIntegerSolution s1, List<Pair<Integer, Integer>> PairMutated, String tipo) {
 

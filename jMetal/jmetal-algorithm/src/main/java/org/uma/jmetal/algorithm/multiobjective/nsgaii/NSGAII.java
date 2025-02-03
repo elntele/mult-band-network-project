@@ -145,6 +145,8 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
    */
   @Override
   protected List<S> selection(List<S> population) {
+    //next line added by Jorge Candeias
+    problem.setPopulation(population);
     List<S> matingPopulation = new ArrayList<>(population.size());
     for (int i = 0; i < matingPoolSize; i++) {
       S solution = selectionOperator.execute(population);
