@@ -68,4 +68,14 @@ public abstract class AbstractIntegerProblem implements IntegerProblem{
   public List<Bounds<Integer>> variableBounds() {
     return bounds;
   }
+
+  /**
+   * owner: Jorge Candeias
+   * implement  method  optional of interface.
+   * @param solutions
+   */
+  @Override
+  public void setPopulation(List<IntegerSolution> solutions) {
+    IntegerProblem.super.setPopulation(solutions);
+  }
 }

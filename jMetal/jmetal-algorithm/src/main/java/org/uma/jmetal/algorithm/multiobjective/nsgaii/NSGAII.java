@@ -129,7 +129,7 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
         var constraint2 = ((Solution) s).constraints()[1];
 
         PrintPopulation.printMatrix(((Solution) s).variables(), numNodes, Double.toString(constraint1),
-            Double.toString(constraint2), ((DefaultIntegerSolution) s).file);
+            Double.toString(constraint2), ((DefaultIntegerSolution) s).file, 1);
       });
     }
 
@@ -145,6 +145,8 @@ public class NSGAII<S extends Solution<?>> extends AbstractGeneticAlgorithm<S, L
    */
   @Override
   protected List<S> selection(List<S> population) {
+    //next line added by Jorge Candeias
+    problem.setPopulation(population);
     List<S> matingPopulation = new ArrayList<>(population.size());
     for (int i = 0; i < matingPoolSize; i++) {
       S solution = selectionOperator.execute(population);

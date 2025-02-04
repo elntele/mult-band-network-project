@@ -1,19 +1,21 @@
 package org.uma.jmetal.operator.crossover.impl;
 
+import static br.cns24.services.Bands.isConnection;
+import static br.cns24.services.Bands.isDisconnection;
+
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
+import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.crossover.CrossoverOperator;
 import org.uma.jmetal.solution.Solution;
 import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.Check;
 import org.uma.jmetal.util.errorchecking.JMetalException;
-import org.uma.jmetal.util.errorchecking.exception.InvalidProbabilityValueException;
-import org.uma.jmetal.util.pseudorandom.RandomGenerator;
+import org.uma.jmetal.utilities.CrossOverParam;
 
 import br.cns24.services.Equipments;
 import br.cns24.services.PrintPopulation;
@@ -23,34 +25,23 @@ import br.cns24.services.PrintPopulation;
  * parent solutions (Integer encoding)
  */
 public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> {
-  private Integer crossoverProbability;
-  private Integer[] possibleEdgeTypes;
+  private Double crossoverProbability;
   private Random randomGenerator;
-  private Map<String, List<List<String>>> edgeEquivalences = new HashMap<>();
   private int numNodes;
-  private int setPosition;
   private int setSize;
 
   /**
    * Constructor
    */
   public IntegerTCNECrossover(
-      int crossoverProbability,
-     Random randomGenerator,
-    /*  Integer[] possibleEdgeTypes,
-      Map<String, List<List<String>>> edgeEquivalences,*/
+      Double crossoverProbability,
+      Random randomGenerator,
       int numNodes,
       int setSize
   ) {
-    //Check.probabilityIsValid(crossoverProbability);
-    if ((crossoverProbability < 0.0) || (crossoverProbability > 100)) {
-      throw new InvalidProbabilityValueException(crossoverProbability) ;
-    }
-
+    Check.probabilityIsValid(crossoverProbability);
     this.crossoverProbability = crossoverProbability;
     this.randomGenerator = randomGenerator;
-    /*this.possibleEdgeTypes = possibleEdgeTypes;
-    this.edgeEquivalences = edgeEquivalences;*/
     this.numNodes = numNodes;
     this.setSize = setSize;
   }
@@ -66,119 +57,72 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       throw new JMetalException("There must be two parents instead of " + solutions.size());
     }
 
-    return doCrossover(crossoverProbability, solutions.get(0), solutions.get(1));
+    return doCrossover(crossoverProbability, (DefaultIntegerSolution) solutions.get(0),
+        (DefaultIntegerSolution) solutions.get(1));
   }
 
   /**
    * doCrossover method
    */
   public List<IntegerSolution> doCrossover(
-      double probability, IntegerSolution parent1, IntegerSolution parent2) {
-    System.out.println("Operador de cruzamento");
+      double probability, DefaultIntegerSolution p1, DefaultIntegerSolution p2) {
+    //test(parent1, parent2);
+    List<Pair<Integer, Integer>> crossed1 = new ArrayList<>();
+    List<Pair<Integer, Integer>> crossed2 = new ArrayList<>();
+   /* System.out.println("Operador de cruzamento");
+    print(p1, p2, crossed1, crossed1, "pai", 0, 0);*/
+
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
-    var solutionSize = parent1.variables().size();
-    var nodePartBegin = solutionSize - (numNodes + 1);
-    var nodesParent1 = parent1.variables().subList(nodePartBegin, solutionSize - 1);
-    var nodesParent2 = parent2.variables().subList(nodePartBegin, solutionSize - 1);
+    var san1 = p1.copy();
+    var san2 = p2.copy();
 
-    offspring.add((IntegerSolution) parent1.copy());
-    offspring.add((IntegerSolution) parent2.copy());
-    var variableSize= offspring.get(0).variables().size();
+    var temp1 = randomGenerator.nextInt(numNodes);
+    int temp2 = temp1 + 4;
+    if (temp2 >= numNodes - 1) temp2 = numNodes - 1;
 
-    //parte colocada pra fazer o debug
-    System.out.println("solução pai 1");
-    var constraint1 = ((Solution) parent1).constraints()[0];
-    var constraint2 = ((Solution) parent1).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) parent1).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), List.of(), List.of(), setSize);
-    System.out.println("solução pai 2");
-    constraint1 = ((Solution) parent2).constraints()[0];
-    constraint2 = ((Solution) parent2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) parent2).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), List.of(), List.of(), setSize);
-    List<Integer> iCrossed = new ArrayList<>();
-    List<Integer> jCrossed = new ArrayList<>();
-
-    for (int i = 0; i < numNodes-2; i++) {
-      for (int j = i + 1; j < numNodes; j++) {
-          if (randomGenerator.nextInt(100) <= probability) {
-            iCrossed.add(i);
-            jCrossed.add(j);
-            // cruzamento do w
-            if(j==1){
-             var tail=  variableSize-1;
-              int lastAleloOne= offspring.getFirst().variables().get(tail);
-              int lastAleloTwo= offspring.get(1).variables().get(tail);
-              offspring.getFirst().variables().set(tail,lastAleloTwo);
-              offspring.get(1).variables().set(tail,lastAleloOne);
-            }
-
-            var NodeBeginPart = variableSize - (numNodes + 1);
-            var NodeI_S0 = nodesParent1.get(i);
-            var NodeI_S1 = nodesParent2.get(i);
-            var NodeJ_S0 = nodesParent1.get(j);
-            var NodeJ_S1 = nodesParent2.get(j);
-            var initialIndex = Equipments.getLinkPosition(i, j, numNodes, setSize);
-            var connectionSetAsAListS0 = getConnectionSetAsAList(offspring.get(0), initialIndex);
-            var connectionSetAsAListS1 = getConnectionSetAsAList(offspring.get(1), initialIndex);
-            // Node's switch crossover
-            offspring.get(0).variables().set((i + NodeBeginPart), NodeI_S1);
-            offspring.get(1).variables().set((i + NodeBeginPart), NodeI_S0);
-            offspring.get(0).variables().set((j + NodeBeginPart), NodeJ_S1);
-            offspring.get(1).variables().set((j + NodeBeginPart), NodeJ_S0);
-            var linksInSetS0 = 0;
-            var linksInSetS1 = 0;
-            //crossover of set
-            for (int l = 0; l < setSize; l++) {
-              // parte do file, comentado porque não esta em uso
-             /* if (connectionSetAsAListS0[l] > 0) linksInSetS0 += 1;
-              if (connectionSetAsAListS1[l] > 0) linksInSetS1 += 1;*/
-              offspring.get(0).variables().set(initialIndex + l, connectionSetAsAListS1[l]);
-              offspring.get(1).variables().set(initialIndex + l, connectionSetAsAListS0[l]);
-            }
-
-
-
-            // parte do file, comentado porque não esta em uso
-           /* // maintenance of files:
-            // if set connections in the other solution is full zero
-            // remove reference in this solution file because it
-            // was crossed.
-            if (linksInSetS0 == 0) {
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(i).remove(j);
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(j).remove(i);
-            } else {
-              // if set connections in the other solution is not zero
-              // add a reference in this solution file because it
-              // was crossed. If it is already exists no problem, because set
-              // don't add duplicate registers.
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(i).add(j);
-              ((DefaultIntegerSolution) offspring.get(1)).file.get(j).add(i);
-            }
-            if (linksInSetS1 == 0) {
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(i).remove(j);
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(j).remove(i);
-            } else {
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(i).add(j);
-              ((DefaultIntegerSolution) offspring.get(0)).file.get(j).add(i);
-            }*/
+    var initialNodeSelected = Math.min(temp1, temp2);
+    initialNodeSelected += 1;
+    var finalNodeSelected = Math.max(temp1, temp2);
+    finalNodeSelected -= 1;
+    var offset = 0;
+    if (randomGenerator.nextDouble() < probability) {
+      for (int i = 0; i <= finalNodeSelected + 1; i++) {
+        if (i != initialNodeSelected) {
+          if (i < initialNodeSelected) {
+            var matrixIndexOne = Equipments.getLinkPosition(i, initialNodeSelected, numNodes, setSize);
+            var matrixIndexTwo = Equipments.getLinkPosition(i, finalNodeSelected, numNodes, setSize);
+            CrossOverParam cp1 = new CrossOverParam(san1, p2, matrixIndexOne, matrixIndexTwo,
+                crossed1, i, initialNodeSelected);
+            CrossOverParam cp2 = new CrossOverParam(san2, p1, matrixIndexOne, matrixIndexTwo, crossed2, i,
+                initialNodeSelected);
+            updateEdge(cp1);
+            updateEdge(cp2);
+          } else {
+            var jMoved = initialNodeSelected + offset;
+            var lastJ = numNodes - 1;
+            var matrixIndex1 = Equipments.getLinkPosition(i, jMoved, numNodes, setSize);
+            var matrixIndex2 = Equipments.getLinkPosition(jMoved, lastJ, numNodes, setSize);
+            CrossOverParam cp1 = new CrossOverParam(san1, p2, matrixIndex1, matrixIndex2, crossed1, i, jMoved);
+            CrossOverParam cp2 = new CrossOverParam(san2, p1, matrixIndex1, matrixIndex2, crossed2, i, jMoved);
+            updateEdge(cp1);
+            updateEdge(cp2);
+            offset += 1;
           }
+        }
       }
 
     }
-    //parte colocada pra fazer o debug
-    var f1= offspring.get(0);
-    var f2= offspring.get(1);
-    System.out.println("solução filho 1");
-    constraint1 = ((Solution) f1).constraints()[0];
-    constraint2 = ((Solution) f2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) f1).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed, jCrossed, setSize);
-    System.out.println("solução filho 2");
-    constraint1 = ((Solution) f1).constraints()[0];
-    constraint2 = ((Solution) f2).constraints()[1];
-    PrintPopulation.printMatrixFull(((Solution) f2).variables(), numNodes, Double.toString(constraint1),
-        Double.toString(constraint2), iCrossed,jCrossed, setSize);
+    //   w crossover
+    if (randomGenerator.nextDouble() < probability) {
+      var size = p1.variables().size() - 1;
+      san1.variables().set(size, p2.variables().get(size));
+      san2.variables().set(size, p1.variables().get(size));
+
+    }
+
+   /* print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);*/
+    offspring.add(san1);
+    offspring.add(san2);
     return offspring;
   }
 
@@ -197,20 +141,92 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     return 2;
   }
 
-  /**
-   * this method returns a connection set
-   * as a list of integers
-   *
-   * @param parent
-   * @param initialIndex
-   */
-  private Integer[] getConnectionSetAsAList( IntegerSolution parent, int initialIndex) {
-    Integer[] set = new Integer[setSize];
-    for (int w = 0; w < setSize; w++) {
-      set[w] = parent.variables().get(initialIndex + w);
+
+  private void print(Solution s1, Solution s2, List<Pair<Integer, Integer>> crossed1,
+      List<Pair<Integer, Integer>> crossed2, String familiar, int begin, int end) {
+
+    System.out.println("inicio " + begin);
+    System.out.println("fim " + end);
+    System.out.println("solução " + familiar + " 1");
+    var constraint1 = s1.constraints()[0];
+    var constraint2 = s1.constraints()[1];
+    PrintPopulation.printMatrixFull(s1.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), crossed1, setSize);
+    System.out.println("inicio " + begin);
+    System.out.println("fim " + end);
+    System.out.println("solução " + familiar + " 2");
+    constraint1 = s2.constraints()[0];
+    constraint2 = s2.constraints()[1];
+    PrintPopulation.printMatrixFull(s2.variables(), numNodes, Double.toString(constraint1),
+        Double.toString(constraint2), crossed2, setSize);
+  }
+
+  private void updateEdge(CrossOverParam parameters) {
+    // san Solution.
+    var s = parameters.san();
+    // father solution.
+    var p = parameters.parent();
+    //index in matrix connection to first selected node.
+    var matrixIndexOne = parameters.matrixIndexOne();
+    // index in matrix connection to second node selected, has 3 column between this and the other one(included)
+    var matrixIndexTwo = parameters.matrixIndexTwo();
+    // list fot print
+    var crossed = parameters.crossed();
+    // 'i' witch come from loop to 0 until last node selected
+    // when i< initialNodeSelected, 'i' is the line, otherwise 'i' is column.
+    var i = parameters.i();
+    // the first node selected to be crossed.
+    var initialNodeSelected = parameters.initialNodeSelected();
+
+    var step = 0;
+    for (int w = matrixIndexOne; w <= matrixIndexTwo; w++) {
+      var oldLink = s.variables().get(w);
+      var newLink = p.variables().get(w);
+      s.variables().set(w, newLink);
+      // it can be a disconnection, a connection a technology exchange or a replacement of 0 for 0.
+      // if it is a connection or a disconnection update de node degree.
+      var disconnection = isDisconnection(newLink, oldLink);
+      var connection = isConnection(newLink, oldLink);
+      if (i < initialNodeSelected) {
+        if (connection) {
+          s.degrees[i] += 1;
+          s.degrees[initialNodeSelected + step] += 1;
+        }
+        if (disconnection) {
+          s.degrees[i] -= 1;
+          s.degrees[initialNodeSelected + step] -= 1;
+        }
+        crossed.add(new Pair<>(i, initialNodeSelected + step));
+      } else {
+        if (connection) {
+          s.degrees[initialNodeSelected] += 1;
+          s.degrees[i + step] += 1;
+        }
+        if (disconnection) {
+          s.degrees[initialNodeSelected] -= 1;
+          s.degrees[i + step] -= 1;
+        }
+        crossed.add(new Pair<>(initialNodeSelected, i + step));
+      }
+      step += 1;
     }
-    this.setPosition = initialIndex;
-    return set;
+  }
+
+  private void test(IntegerSolution s1, IntegerSolution s2) {
+    var beginNodes = s1.variables().size() - (numNodes + 1);
+    for (int i = 0; i < numNodes; i++) {
+      s1.variables().set(beginNodes + i, 1);
+      s2.variables().set(beginNodes + i, 3);
+      for (int j = i + 1; j < numNodes; j++) {
+
+        var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
+        for (int w = 0; w < setSize; w++) {
+          s1.variables().set(index, 1);
+          s2.variables().set(index, 3);
+
+        }
+      }
+    }
   }
 
 

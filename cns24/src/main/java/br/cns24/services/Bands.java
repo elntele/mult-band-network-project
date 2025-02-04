@@ -102,5 +102,46 @@ public enum Bands {
     }
   }
 
+  public static List<Integer> getThreeAleloValue(Integer link) {
+    switch (link) {
+      case 0: return List.of(0, 0, 0);
+      case 1: return List.of(0, 0, 1);
+      case 2: return List.of(0, 0, 2);
+      case 3: return List.of(0, 0, 3);
+      case 4: return List.of(0, 1, 1);
+      case 5: return List.of(0, 1, 2);
+      case 6: return List.of(0, 1, 3);
+      case 7: return List.of(0, 2, 2);
+      case 8: return List.of(0, 2, 3);
+      case 9: return List.of(0, 3, 3);
+      case 10: return List.of(1, 1, 1);
+      case 11: return List.of(1, 1, 2);
+      case 12: return List.of(1, 1, 3);
+      case 13: return List.of(1, 2, 2);
+      case 14: return List.of(1, 2, 3);
+      case 15: return List.of(1, 3, 3);
+      case 16: return List.of(2, 2, 2);
+      case 17: return List.of(2, 2, 3);
+      case 18: return List.of(2, 3, 3);
+      case 19: return List.of(3, 3, 3);
+      default: throw new IllegalArgumentException("Invalid link value: " + link);
+    }
+  }
+
+  public static boolean isDisconnection(int newEdge, int oldEdge) {
+    if (oldEdge != 0 && newEdge == 0) {
+      return true;
+    }
+    return false;
+  }
+
+  public static boolean isConnection(int newEdge, int oldEdge) {
+    if (oldEdge == 0 && newEdge != 0) {
+      return true;
+    }
+    return false;
+  }
+
+
 }
 

@@ -8,6 +8,8 @@ import java.util.Set;
 
 import javax.print.DocFlavor;
 
+import org.apache.commons.math3.util.Pair;
+
 public class PrintPopulation {
   // Método estático que imprime uma lista de cromossomos 1 a 1
   public static void print(List<List<Integer>> population, int numNodes) {
@@ -51,7 +53,7 @@ public class PrintPopulation {
   }
 
   public static void printMatrix(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
-      Map<Integer, Set<Integer>> file) {
+      Map<Integer, Set<Integer>> file, int setSize) {
     System.out.println("Constraints: " + constraintOne + ", " + constraintTwo);
     int index = 0;
     var beginNodePart = solution.size() - (numNodes + 1);
@@ -62,27 +64,44 @@ public class PrintPopulation {
     System.out.println("\n");
     System.out.println("file: " + file);
     System.out.println("\n");
+    // Espaço para alinhar com os rótulos das linhas
+    System.out.print("  ");
     // Imprime os cabeçalhos das colunas (nós)
-    System.out.print("  "); // Espaço para alinhar com os rótulos das linhas
     for (int i = 0; i < numNodes; i++) {
-      System.out.printf("  %d   ", i);
+      if (i < 10) {
+        System.out.printf("   %d ", i);
+      } else {
+        System.out.printf("  %d ", i);
+      }
     }
     System.out.println(); // Quebra de linha após os cabeçalhos
 
     // Percorre a lista e imprime os valores como uma matriz
     for (int i = 0; i < numNodes; i++) {
       // Imprime o rótulo da linha
-      System.out.printf("%d  ", i);
+      if (i < 10) {
+        System.out.printf("%d  ", i);
+      } else {
+        System.out.printf("%d ", i);
+      }
 
       for (int j = 0; j < numNodes; j++) {
         if (i == j) {
           System.out.print("  x  "); // Diagonal principal (sem conexão)
         } else if (j > i) {
           // Imprime três valores em sequência da lista
-          System.out.printf("(%d%d%d) ", solution.get(index), solution.get(index + 1), solution.get(index + 2));
-          index += 3;
+          for (int w = 0; w < setSize; w++) {
+            var alelo = solution.get(index + w);
+            if (alelo.toString().length() > 1) {
+              System.out.printf("(%d) ", alelo);
+            } else {
+              System.out.printf("( %d) ", alelo);
+            }
+          }
+          index += setSize;
         } else {
-          System.out.print("      "); // Espaço para elementos abaixo da diagonal
+          // Espaço para elementos abaixo da diagonal
+          System.out.print("     ");
         }
       }
       System.out.println(); // Quebra de linha após cada linha da matriz
@@ -92,9 +111,10 @@ public class PrintPopulation {
 
 
   public static void printMatrixFull(List<Integer> solution, int numNodes, String constraintOne, String constraintTwo,
-      List<Integer> lI, List<Integer> lJ, int setSize) {
-    List<Integer> iS = new ArrayList<>(lI);
-    List<Integer> jS = new ArrayList<>(lJ);
+      List<Pair<Integer, Integer>> nodePairs, int setSize) {
+    /*List<Integer> nodePairs = new ArrayList<>(lI);
+    List<Integer> jS = new ArrayList<>(lJ);*/
+    System.out.println(nodePairs);
     System.out.println("Constraints: " + constraintOne + ", " + constraintTwo);
     int index = 0;
     var beginNodePart = solution.size() - (numNodes + 1);
@@ -107,13 +127,13 @@ public class PrintPopulation {
     System.out.print("  N  \u27F6");
     // imprime o número dos nós
     for (int i = 0; i < numNodes; i++) {
-      if(i==0){
+      if (i == 0) {
         System.out.printf("   %d  ", i);
-      }else{
+      } else {
         if (i < 10) {
-          System.out.printf("  %d   ", i);
+          System.out.printf("  %d  ", i);
         } else {
-          System.out.printf(" %d   ", i);
+          System.out.printf(" %d  ", i);
         }
       }
     }
@@ -125,10 +145,10 @@ public class PrintPopulation {
     System.out.print(" R\u2193 \u2192");
     // imprime os ROADMs
     for (int i = 0; i < numNodes; i++) {
-      if (i==0){
+      if (i == 0) {
         System.out.printf(" %d    ", solution.get(beginNodePart + i));
-      }else{
-        System.out.printf("%d     ", solution.get(beginNodePart + i));
+      } else {
+        System.out.printf("%d    ", solution.get(beginNodePart + i));
       }
     }
     // Quebra de linha após os cabeçalhos
@@ -146,31 +166,50 @@ public class PrintPopulation {
         if (i == j) {
           System.out.print(" x  "); // Diagonal principal (sem conexão)
         } else if (j > i) {
-          // Imprime três valores em sequência da lista
-          List<String> indexes = new ArrayList<>();
+          // Imprime valores em sequência da lista
           var set = "";
           for (int w = 0; w < setSize; w++) {
             set += solution.get(index + w).toString();
           }
-          if (iS.contains(i) && jS.contains(j)) {
-            if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set, indexes)) {
-              System.out.printf("\033[0;33m" + "(" + set + ") " + "\033[0m");
+          if (containsPair(i, j, nodePairs)) {
+            if (set.length() > 1) {
+              if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set)) {
+                System.out.printf(Colors.YELLOW + "(" + set + ") " + Colors.RESET);
+              } else {
+                System.out.printf(Colors.GREEN + "(" + set + ") " + Colors.RESET);
+              }
             } else {
-              System.out.printf("\033[0;32m" + "(" + set + ") " + "\033[0m");
-            }
+              if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set)) {
+                System.out.printf(Colors.YELLOW + "( " + set + ") " + Colors.RESET);
+              } else {
+                System.out.printf(Colors.GREEN + "( " + set + ") " + Colors.RESET);
+              }
 
-            iS.remove(Integer.valueOf(i));
-            jS.remove(Integer.valueOf(j));
+            }
+          System.out.print("");
+          /*  nodePairs.remove(Integer.valueOf(i));
+            jS.remove(Integer.valueOf(j));*/
           } else {
-            if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set, indexes)) {
-              System.out.printf("\033[0;31m" + "(" + set + ") " + "\033[0m");
+            if (set.length() > 1) {
+              if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set)) {
+                System.out.printf("\033[0;31m" + "(" + set + ") " + "\033[0m");
+              } else {
+                System.out.printf("(" + set + ") ");
+              }
+
             } else {
-              System.out.printf("(" + set + ") ");
+              if (hasConstraint(solution.get(beginNodePart + i), solution.get(beginNodePart + j), set)) {
+                System.out.printf(Colors.RED + "( " + set + ") " + Colors.RESET);
+              } else {
+                System.out.printf("( " + set + ") ");
+              }
+
             }
           }
-          index += 3;
+          index += setSize;
         } else {
-          System.out.print("      "); // Espaço para elementos abaixo da diagonal
+          // Espaço para elementos abaixo da diagonal
+          System.out.print("     ");
         }
 
       }
@@ -181,33 +220,20 @@ public class PrintPopulation {
   }
 
 
-  private static boolean hasConstraint(int i, int j, String s, List<String> nodes) {
-    var result = 0;
-    var hasConstraint = false;
-    var array = s.split("");
+  private static boolean hasConstraint(int i, int j, String s) {
 
-    var maxValue = 0;
-    if (array.length > 0) {
-      try {
-        maxValue = Arrays.stream(array)
-            .mapToInt(Integer::parseInt)
-            .max()
-            .orElseThrow();
-      } catch (NumberFormatException e) {
-        System.out.println("O array contém valores não numéricos em hasConstraint PrintPopulation");
-      }
-    } else {
-      return false;
+    if (!LevelNode.thisNodeAddressThisLink(i, Integer.parseInt(s))) {
+      return true;
     }
-    if (maxValue > i) {
-      hasConstraint = true;
-      nodes.add("i");
+    if (!LevelNode.thisNodeAddressThisLink(j, Integer.parseInt(s))) {
+      return true;
     }
-    if (maxValue > j) {
-      hasConstraint = true;
-      nodes.add("j");
-    }
-    return hasConstraint;
+    return false;
+  }
+
+  private static boolean containsPair(int i, int j, List<Pair<Integer, Integer>> pairs) {
+    return pairs.stream()
+        .anyMatch(pair -> pair.getKey().equals(i) && pair.getValue().equals(j));
   }
 
 }

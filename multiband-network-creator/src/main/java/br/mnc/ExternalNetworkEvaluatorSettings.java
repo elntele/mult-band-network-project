@@ -59,44 +59,48 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution createSolution() {
     IntegerSolution integerSolution = new DefaultIntegerSolution(variableBounds(), numberOfObjectives(),
-        numberOfConstraints());
+        numberOfConstraints(), gml.getNodes().size());
     createRandomNetworkWithNodeNeighborhoodInformation(((DefaultIntegerSolution) integerSolution));
-    PrintPopulation.printMatrix(integerSolution.variables(), gml.getNodes().size(), "none", "none",
-        ((DefaultIntegerSolution) integerSolution).file);
     return integerSolution;
   }
 
 
-  void createRandomNetworkWithNodeNeighborhoodInformation(IntegerSolution solution) {
-    fullFillFile((DefaultIntegerSolution) solution);
+  void createRandomNetworkWithNodeNeighborhoodInformation(DefaultIntegerSolution solution) {
+    fullFillFile(solution);
+    Arrays.fill(solution.degrees, 0);
     Random random = new Random();
-    var possibleConnection = AllowedConnectionTable.getPossibleConnection();
+    var possibleConnection = AllowedConnectionTable.getPossibleConnection(3, setSize);
+
     for (int i = 0; i < gml.getNodes().size(); i++) {
       for (int j = i + 1; j < gml.getNodes().size(); j++) {
         var index = Equipments.getLinkPosition(i, j, gml.getNodes().size(), setSize);
         var result = random.nextInt(100);
 
-        if (result <= 80) {
+        if (result <= 84) {
           for (int w = 0; w < setSize; w++) {
             solution.variables()
                 .set(index + w, 0);
           }
 
         } else {
-          // in 20% of times randomly chosen the one type of connection: 0,1,3,5,7.
+          // in 20% of times randomly chosen the one type of connection: 1...19.
           // remembering that 0 means no connection and consequently no edge/fiber
-          //feed file attribute of neighborhood
-          for (int w = 0; w < setSize; w++) {
-            var edge = possibleConnection[random.nextInt(possibleConnection.length)];
-            solution.variables().set(index + w, edge);
-            if (edge != 0) {
-              ((DefaultIntegerSolution) solution).file.get(i).add(j);
-              ((DefaultIntegerSolution) solution).file.get(j).add(i);
-            }
+
+          var edge = possibleConnection[random.nextInt(possibleConnection.length)];
+          solution.variables().set(index, edge);
+          if (edge != 0) {
+            solution.file.get(i).add(j);
+            solution.file.get(j).add(i);
+            solution.degrees[i] += 1;
+            solution.degrees[j] += 1;
+
           }
         }
       }
     }
+
+    PrintPopulation.printMatrix(solution.variables(), gml.getNodes().size(), "none", "none",
+        solution.file, setSize);
   }
 
 
@@ -105,6 +109,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       var set = new HashSet<Integer>();
       solution.file.put(i, set);
     }
+
   }
 
 
@@ -117,26 +122,39 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
   @Override
   public IntegerSolution evaluate(IntegerSolution solution) {
     evaluateConstraints((DefaultIntegerSolution) solution);
+    var numberOfNodes = gml.getNodes().size();
+    var sizeThreeAlelos = 3 * numberOfNodes * (numberOfNodes - 1) / 2 + numberOfNodes + 1;
+    var connectionsSize = solution.variables().size() - (numberOfNodes + 1);
+    Integer[] vars = new Integer[sizeThreeAlelos];
+    var count = 0;
+    for (int i = 0; i < solution.variables().size(); i++) {
+      if (i < connectionsSize) {
+        var aleloList = Bands.getThreeAleloValue((Integer) solution.variables()
+            .get(i));
+        for (int w = 0; w < aleloList.size(); w++) {
+          vars[(i * 3) + w] = aleloList.get(w);
+        }
 
-    Integer[] vars = new Integer[solution.variables()
-        .size()];
-    for (int i = 0; i < vars.length; i++) {
-      vars[i] = (Integer) solution.variables()
-          .get(i);
+      } else {
+        vars[(connectionsSize * 3) + count] = (Integer) solution.variables()
+            .get(i);
+        count += 1;
+      }
     }
+
 
     System.out.println("conte Evaluate: " + this.contEvaluate);
     this.contEvaluate += 1;
     GmlData gmlData = getGmlData(gml.getNodes(), vars);
-    if (solution.constraints()[0] == 1) {
-      solution.objectives()[0] = 1.0;
+    if (solution.constraints()[0] >= 1.0) {
+      solution.objectives()[0] = 2.0;
       solution.objectives()[1] = 3;
     } else if (solution.constraints()[1] > 0) {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
       var dataToReloadProblem = setProblemCharacteristic(solution);
       P.reloadProblemWithMultiBand(load, gmlData, dataToReloadProblem);
       Double[] objectives = P.evaluate(vars);
-      solution.objectives()[0] = objectives[0];
+      solution.objectives()[0] = objectives[0] + 1;
       solution.objectives()[1] = objectives[1] / maxCapex + 1 + solution.constraints()[1];
     } else {
       OpticalNetworkMultiBandProblem P = new OpticalNetworkMultiBandProblem();
@@ -151,19 +169,19 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
         solution.objectives()[1] = objectives[1] / maxCapex;
       }
     }
-    localPopulation.add((DefaultIntegerSolution) solution);
+    //localPopulation.add((DefaultIntegerSolution) solution);
     if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
       countSolutionWithRestriction();
       countNodeXConstraint();
       printPopulation();
     }
 
-    if (localPopulation.size() == populationSize) {
-      if(getIteration()<100){
+    if (isIterationLimit()) {
+      if (getIteration() < 100) {
         countNodeXConstraint();
       }
       localPopulation.clear();
-      nodesWithRestriction.replaceAll(i->0);
+      nodesWithRestriction.replaceAll(i -> 0);
       solutionsXNodeConstraint.entrySet().stream()
           .sorted(Map.Entry.comparingByKey())
           .forEach(entry -> System.out.println(entry.getValue()));
@@ -180,7 +198,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   private void countNodeXConstraint() {
     var iteration = getIteration();
-    ArrayList<Integer> list= new ArrayList<>();
+    ArrayList<Integer> list = new ArrayList<>();
     list.addAll(this.nodesWithRestriction);
     solutionsXNodeConstraint.put(iteration, list);
   }
@@ -193,8 +211,13 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     printFinalSolutionSet(localPopulation, varName, funName);
   }
 
-  private int getIteration(){
+  private int getIteration() {
     return contEvaluate / populationSize;
+  }
+
+  private boolean isIterationLimit(){
+    if (contEvaluate>99 && contEvaluate%populationSize==0) return true;
+    return false;
   }
 
 
@@ -209,7 +232,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     net.setCn(getLocalComplexNetWork(solution));
     var algebraicConnectivityEvaluator = new AlgebraicConnectivityEvaluator();
     var algebraicConnectivity = algebraicConnectivityEvaluator.evaluate(net).getValue();
-    var inverseAlgebraicConnectivity = 1 / (algebraicConnectivity + 1);
+    var inverseAlgebraicConnectivity = 1.0 / (algebraicConnectivity + 1.0);
     solution.constraints()[0] = inverseAlgebraicConnectivity;
     solution.constraints()[1] = inadequateEquipment(solution);
   }
@@ -255,18 +278,18 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
           }
           if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(i), link)) {
             nodeNoteAttend += 1;
-            // the line below is control of metrics, it not make parto off constraint calculation
-            if(!nodesVisited.get(i)){
-              nodesVisited.set(i,true);
+            // the line below is control of metrics, it not make part of constraint calculation
+            if (!nodesVisited.get(i)) {
+              nodesVisited.set(i, true);
               var value = this.nodesWithRestriction.get(i) + 1;
               this.nodesWithRestriction.set(i, value);
             }
           }
           if (!LevelNode.thisNodeAddressThisLink(wssNodes.get(j), link)) {
             nodeNoteAttend += 1;
-            // the line below is control of metrics, it not make parto off constraint calculation
-            if(!nodesVisited.get(j)){
-              nodesVisited.set(j,true);
+            // the line below is control of metrics, it not make part of constraint calculation
+            if (!nodesVisited.get(j)) {
+              nodesVisited.set(j, true);
               var value = this.nodesWithRestriction.get(j) + 1;
               this.nodesWithRestriction.set(j, value);
             }
@@ -464,6 +487,17 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     return solutionsXNodeConstraint;
   }
 
+
+  /**
+   * implement  method  optional of interface.
+   * @param solutions
+   */
+  @Override
+  public void setPopulation(List<IntegerSolution> solutions) {
+    this.localPopulation = solutions.stream().map(s -> (DefaultIntegerSolution) s.copy()).collect(Collectors.toList());
+
+  }
+
   public ExternalNetworkEvaluatorSettings(Integer setSize, int populationSize, String path, int iterationsToPrint,
       int execution, int load) {
     super();
@@ -491,9 +525,9 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
     for (int i = 0; i < matrixConnectionPart; i++) {
       ll.add(0);
-      ul.add(3);
+      ul.add(19);
       this.lowerBounds[i] = 0;
-      this.upperBounds[i] = 3;
+      this.upperBounds[i] = 19;
     }
 
     for (int i = numberOfVariables - roadmPlusW_Part; i < numberOfVariables; i++) {

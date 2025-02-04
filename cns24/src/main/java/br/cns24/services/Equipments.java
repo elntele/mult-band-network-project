@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -377,6 +378,12 @@ public class Equipments {
       }
       default -> throw new RuntimeException("illegal Band in equipments getOltCostForTheBand method");
     }
+  }
+
+  public static int getRandomROADM(){
+    var ROADMs = Arrays.asList(1,2,3);
+    var random = new Random().nextInt(ROADMs.size());
+    return ROADMs.get(random);
   }
 
 

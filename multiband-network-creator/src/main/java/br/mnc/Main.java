@@ -43,26 +43,26 @@ public class Main {
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 15000;
-    var iterationsToPrint = 20;
-    var setSize = 3;
-    var load = 900;
+    var maxEvaluations = 100000;
+    var iterationsToPrint = 40;
+    var setSize = 1;
+    var load = 1500;
     var numNodes = 26;
     var numberOfExecutions = 1;
     var printGML=false;
-    var mixedDistribution=0;
+    Double mixedDistribution=50.0;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
       // it compares with a Random chosen between 0 and 1
-      Integer crossoverProbability = 30;
+      Double crossoverProbability = 0.30;
       double crossoverDistributionIndex = 20.0;
       //crossover = new IntegerSBXCrossover(crossoverProbability, crossoverDistributionIndex);
       crossover = new IntegerTCNECrossover(crossoverProbability, new Random(), numNodes, setSize);
       double mutationProbability = 1.0 / problem.numberOfVariables();
       double mutationDistributionIndex = 20.0;
       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize, mixedDistribution);
+      mutation = new IntegerTCNEMutation(0.12, new Random(), numNodes, setSize, mixedDistribution, 0.16);
 
       // new: create a comparator of constraint violation
       OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
