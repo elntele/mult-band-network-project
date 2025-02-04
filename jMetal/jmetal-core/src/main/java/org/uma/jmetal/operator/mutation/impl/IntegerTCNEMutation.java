@@ -105,6 +105,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
     //print((DefaultIntegerSolution) solution, muted, "original");
     var selected = selectNodes((DefaultIntegerSolution)solution);
+   // var selected = selectNodesUniformly();
     for (int i = 0; i < selected.size(); i++) {
       mutation(((DefaultIntegerSolution) solution), selected.get(i), muted);
     }

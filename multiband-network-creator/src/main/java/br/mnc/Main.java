@@ -50,7 +50,7 @@ public class Main {
     var numNodes = 26;
     var numberOfExecutions = 1;
     var printGML=false;
-    Double mixedDistribution=0.0;
+    Double mixedDistribution=50.0;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
