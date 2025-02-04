@@ -101,17 +101,17 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
    */
   private void doMutation(IntegerSolution solution) {
     // inserted to make debug, it isn't part of algorithm, include iMuted and jMuted
-    System.out.println("Operador de Mutação");
+    //System.out.println("Operador de Mutação");
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
-    print((DefaultIntegerSolution) solution, muted, "original");
+    //print((DefaultIntegerSolution) solution, muted, "original");
     var selected = selectNodes((DefaultIntegerSolution)solution);
     for (int i = 0; i < selected.size(); i++) {
       mutation(((DefaultIntegerSolution) solution), selected.get(i), muted);
     }
 
     // inserted to make debug, it isn't part of algorithm
-    System.out.println("Operador de mutação");
-    print((DefaultIntegerSolution) solution, muted, "mudada");
+    //System.out.println("Operador de mutação");
+   // print((DefaultIntegerSolution) solution, muted, "mudada");
     Arrays.stream(((DefaultIntegerSolution) solution).degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
     System.out.println();
   }
@@ -150,6 +150,12 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
           }
         }
       }
+    }
+
+    if (randomGenerator.nextDouble() < mutationProbability) {
+      var size = solution.variables().size() - 1;
+      var newW = randomGenerator.nextInt(100 - 10 + 1) + 10;
+      solution.variables().set(size, newW);
     }
   }
 
@@ -225,24 +231,27 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     }
 
     Set<Integer> selectedNodes = new HashSet<>();
-    while (selectedNodes.size() < 3) {
-      var randomValue = randomGenerator.nextInt(totalWeights);
-      for (int i = 0; i < ranges.size(); i++) {
-        if (randomValue < ranges.get(i)) {
-          selectedNodes.add(i);
-          break;
+      for (int w = 0; w<numNodes; w++){
+        if (randomGenerator.nextDouble()< mutationProbability){
+          var randomValue = randomGenerator.nextInt(totalWeights);
+          for (int i = 0; i < ranges.size(); i++) {
+            if (randomValue < ranges.get(i)) {
+              selectedNodes.add(i);
+              break;
+            }
+          }
         }
       }
-    }
     return selectedNodes.stream().toList();
   }
 
 
-  private List<Integer> selectNodes() {
+  private List<Integer> selectNodesUniformly() {
     Set<Integer> nodos = new HashSet<>();
-    while (nodos.size() < 3) {
-      var node = randomGenerator.nextInt(numNodes);
-      nodos.add(node);
+    for (int i=0; i<numNodes; i++){
+      if (randomGenerator.nextDouble()<mutationProbability){
+        nodos.add(i);
+      }
     }
     return nodos.stream().toList();
   }

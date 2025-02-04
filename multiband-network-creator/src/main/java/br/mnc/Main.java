@@ -43,14 +43,14 @@ public class Main {
     String path = "./selectedCityInPernabucoState.gml";
     //var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 2000;
-    var iterationsToPrint = 5;
+    var maxEvaluations = 100000;
+    var iterationsToPrint = 40;
     var setSize = 1;
     var load = 1500;
     var numNodes = 26;
     var numberOfExecutions = 1;
     var printGML=false;
-    Double mixedDistribution=0.5;
+    Double mixedDistribution=0.0;
     for (int i = 1; i <= numberOfExecutions; i++) {
       problem = new ExternalNetworkEvaluatorSettings(setSize, populationSize, path, iterationsToPrint, i, load);
       // ****************************
@@ -62,7 +62,7 @@ public class Main {
       double mutationProbability = 1.0 / problem.numberOfVariables();
       double mutationDistributionIndex = 20.0;
       // mutation = new IntegerPolynomialMutation(mutationProbability, mutationDistributionIndex);
-      mutation = new IntegerTCNEMutation(50, new Random(), numNodes, setSize, mixedDistribution, 0.16);
+      mutation = new IntegerTCNEMutation(0.12, new Random(), numNodes, setSize, mixedDistribution, 0.16);
 
       // new: create a comparator of constraint violation
       OverallConstraintViolationDegreeComparator<IntegerSolution> constraintComparator = new OverallConstraintViolationDegreeComparator<>();
