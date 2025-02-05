@@ -69,8 +69,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     //test(parent1, parent2);
     List<Pair<Integer, Integer>> crossed1 = new ArrayList<>();
     List<Pair<Integer, Integer>> crossed2 = new ArrayList<>();
-   /* System.out.println("Operador de cruzamento");
-    print(p1, p2, crossed1, crossed1, "pai", 0, 0);*/
+    System.out.println("Operador de cruzamento");
+    print(p1, p2, crossed1, crossed1, "pai", 0, 0);
 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var san1 = p1.copy();
@@ -120,7 +120,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
 
     }
 
-   /* print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);*/
+    print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);
     offspring.add(san1);
     offspring.add(san2);
     return offspring;

@@ -23,6 +23,7 @@ import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Bands;
 import br.cns24.services.Equipments;
 import br.cns24.services.LevelNode;
+import br.cns24.services.Operation;
 import br.cns24.services.PrintPopulation;
 
 
@@ -101,20 +102,18 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
    */
   private void doMutation(IntegerSolution solution) {
     // inserted to make debug, it isn't part of algorithm, include iMuted and jMuted
-    //System.out.println("Operador de Mutação");
+    System.out.println("Operador de Mutação");
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
-    //print((DefaultIntegerSolution) solution, muted, "original");
-    var selected = selectNodes((DefaultIntegerSolution)solution);
-   // var selected = selectNodesUniformly();
+    print((DefaultIntegerSolution) solution, muted, "original");
+    //var selected = selectNodes((DefaultIntegerSolution)solution);
+    var selected = selectNodesUniformly();
     for (int i = 0; i < selected.size(); i++) {
       mutation(((DefaultIntegerSolution) solution), selected.get(i), muted);
     }
 
     // inserted to make debug, it isn't part of algorithm
-    //System.out.println("Operador de mutação");
-   // print((DefaultIntegerSolution) solution, muted, "mudada");
-    Arrays.stream(((DefaultIntegerSolution) solution).degrees).forEach(value -> System.out.print(String.format("%02d", value) + ";"));
-    System.out.println();
+    System.out.println("Operador de mutação");
+    print((DefaultIntegerSolution) solution, muted, "mudada");
   }
 
   private void mutation(DefaultIntegerSolution solution, int j, List<Pair<Integer, Integer>> muted) {
@@ -143,9 +142,15 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
         var roadmNodeDestine = solution.variables().get(nodePartBegin + i);
         var parameters = new MutatorParameters(solution, index, newSet, i, j, muted);
-        boolean notCauseConstraint = LevelNode.thisNodeAddressThisLink(roadmNodeDestine, maxBand);
+        var oldLink =   solution.variables().get(index);
+        var destine = Math.max(i,j);
+        var destineDegree=solution.degrees[destine];
+        var operation = Operation.getOpeOperation(oldLink,newSet[0]);
+        boolean localCA= Operation.CauseADegreeFarAway(destineDegree,graphDensity,operation, numNodes);
+        boolean localEquipInadequate = LevelNode.thisNodeAddressThisLink(roadmNodeDestine, maxBand);
+        var increaseConstraint= (localCA||!localEquipInadequate);
         boolean existeEdge = existEdge(solution, index);
-        if (notCauseConstraint) {
+        if (!  increaseConstraint) {
           if (maxBand != 0 || (existeEdge)) {
             updateEdge(parameters);
           }
