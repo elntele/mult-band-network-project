@@ -8,32 +8,45 @@ public enum Operation {
   Operation(Integer action) {
   }
 
-  public static boolean CauseADegreeFarAway(int destineNodeDegree, Double graphDensity, Operation operation,
+  /**
+   * returns true if it don't cause
+   * a reinforcement to constraint.
+   * is good if returns true.
+   *
+   * @param destineNodeDegree
+   * @param graphDensity
+   * @param operation
+   * @param numNode
+   */
+  public static boolean notCauseADegreeFarAway(int destineNodeDegree, Double graphDensity, Operation operation,
       int numNode) {
     var nodeDegreeTarget = graphDensity * (numNode - 1);
     switch (operation) {
-      case DECREASE -> {
-        if (destineNodeDegree < nodeDegreeTarget) {
-          return true;
-        }
-      }
-      case REPLACEMENT -> {
-        return false;
-      }
-      case INCREASE -> {
-        if (destineNodeDegree > nodeDegreeTarget) {
-          return true;
-        }
-      }
+      case DECREASE:
+        return destineNodeDegree > nodeDegreeTarget;
+      case REPLACEMENT:
+        return true;
+      case INCREASE:
+        return destineNodeDegree < nodeDegreeTarget;
     }
     return false;
   }
 
-  public static Operation getOpeOperation(int oldLink, int newLink){
-    if(oldLink>0 && newLink==0) return DECREASE;
-    if(oldLink==0 && newLink==0) return REPLACEMENT;
-    if(oldLink>0 && newLink>0) return REPLACEMENT;
-    if(oldLink==0 && newLink>0) return INCREASE;
+  /**
+   * return an operation
+   * decrease; replacement;
+   * increase accord to old
+   * and new link
+   *
+   * @param oldLink
+   * @param newLink
+   */
+
+  public static Operation getOpeOperation(int oldLink, int newLink) {
+    if (oldLink > 0 && newLink == 0) return DECREASE;
+    if (oldLink == 0 && newLink == 0) return REPLACEMENT;
+    if (oldLink > 0 && newLink > 0) return REPLACEMENT;
+    if (oldLink == 0 && newLink > 0) return INCREASE;
     return REPLACEMENT;
   }
 

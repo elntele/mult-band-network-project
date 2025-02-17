@@ -75,7 +75,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var san1 = p1.copy();
     var san2 = p2.copy();
-
+    var indexNodes = p1.variables().size();
     var temp1 = randomGenerator.nextInt(numNodes);
     int temp2 = temp1 + 4;
     if (temp2 >= numNodes - 1) temp2 = numNodes - 1;
@@ -86,6 +86,8 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     finalNodeSelected -= 1;
     var offset = 0;
     if (randomGenerator.nextDouble() < probability) {
+      // ROADM crossover
+      roadmCrossover(san1,san2,p1,p2, indexNodes, initialNodeSelected, finalNodeSelected);
       for (int i = 0; i <= finalNodeSelected + 1; i++) {
         if (i != initialNodeSelected) {
           if (i < initialNodeSelected) {
@@ -110,15 +112,14 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
           }
         }
       }
-
+      //   w crossover
+      if (randomGenerator.nextDouble() < probability) {
+        var size = p1.variables().size() - 1;
+        san1.variables().set(size, p2.variables().get(size));
+        san2.variables().set(size, p1.variables().get(size));
+      }
     }
-    //   w crossover
-    if (randomGenerator.nextDouble() < probability) {
-      var size = p1.variables().size() - 1;
-      san1.variables().set(size, p2.variables().get(size));
-      san2.variables().set(size, p1.variables().get(size));
 
-    }
 
     print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);
     offspring.add(san1);
@@ -173,7 +174,6 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     // list fot print
     var crossed = parameters.crossed();
     // 'i' witch come from loop to 0 until last node selected
-    // when i< initialNodeSelected, 'i' is the line, otherwise 'i' is column.
     var i = parameters.i();
     // the first node selected to be crossed.
     var initialNodeSelected = parameters.initialNodeSelected();
@@ -227,6 +227,25 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
         }
       }
     }
+  }
+
+  private void roadmCrossover(
+      DefaultIntegerSolution s1,
+      DefaultIntegerSolution s2,
+      DefaultIntegerSolution p1,
+      DefaultIntegerSolution p2,
+      int indexNodes,
+      int initialNodeSelected,
+      int finalNodeSelected) {
+
+    s1.variables().set(indexNodes + initialNodeSelected, p2.variables().get(indexNodes + initialNodeSelected));
+    s1.variables().set(indexNodes + initialNodeSelected + 1, p2.variables().get(indexNodes + initialNodeSelected + 1));
+    s1.variables().set(indexNodes + finalNodeSelected, p2.variables().get(indexNodes + finalNodeSelected));
+
+    s2.variables().set(indexNodes + initialNodeSelected, p1.variables().get(indexNodes + initialNodeSelected));
+    s2.variables().set(indexNodes + initialNodeSelected +1, p1.variables().get(indexNodes + initialNodeSelected+1));
+    s2.variables().set(indexNodes + finalNodeSelected, p1.variables().get(indexNodes + finalNodeSelected));
+
   }
 
 

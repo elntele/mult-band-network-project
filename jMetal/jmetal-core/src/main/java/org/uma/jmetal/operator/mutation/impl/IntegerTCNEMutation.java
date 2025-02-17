@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.Pair;
 import org.uma.jmetal.operator.mutation.MutationOperator;
@@ -16,8 +15,6 @@ import org.uma.jmetal.solution.integersolution.IntegerSolution;
 import org.uma.jmetal.solution.integersolution.impl.DefaultIntegerSolution;
 import org.uma.jmetal.util.errorchecking.JMetalException;
 import org.uma.jmetal.utilities.MutatorParameters;
-
-import com.sun.xml.bind.v2.runtime.output.MTOMXmlOutput;
 
 import br.cns24.services.AllowedConnectionTable;
 import br.cns24.services.Bands;
@@ -142,15 +139,16 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
         var index = Equipments.getLinkPosition(i, j, numNodes, setSize);
         var roadmNodeDestine = solution.variables().get(nodePartBegin + i);
         var parameters = new MutatorParameters(solution, index, newSet, i, j, muted);
-        var oldLink =   solution.variables().get(index);
-        var destine = Math.max(i,j);
-        var destineDegree=solution.degrees[destine];
-        var operation = Operation.getOpeOperation(oldLink,newSet[0]);
-        boolean localCA= Operation.CauseADegreeFarAway(destineDegree,graphDensity,operation, numNodes);
-        boolean localEquipInadequate = LevelNode.thisNodeAddressThisLink(roadmNodeDestine, maxBand);
-        var increaseConstraint= (localCA||!localEquipInadequate);
+        var oldLink = solution.variables().get(index);
+        var destine = Math.max(i, j);
+        var destineDegree = solution.degrees[destine];
+        var operation = Operation.getOpeOperation(oldLink, newSet[0]);
+        boolean notCauseLocalCA = Operation.notCauseADegreeFarAway(destineDegree, graphDensity, operation, numNodes);
+        boolean notCauseLocalEquipInadequate = LevelNode.thisNodeAddressThisLink(roadmNodeDestine, maxBand);
+        var notIncreaseConstraint = (notCauseLocalCA && notCauseLocalEquipInadequate);
         boolean existeEdge = existEdge(solution, index);
-        if (!  increaseConstraint) {
+        if(notCauseLocalEquipInadequate){
+ //       if (notIncreaseConstraint) {
           if (maxBand != 0 || (existeEdge)) {
             updateEdge(parameters);
           }
@@ -173,10 +171,10 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     var i = parameters.i();
     var j = parameters.j();
     var muted = parameters.muted();
-    var oldLink =   solution.variables().get(index);
+    var oldLink = solution.variables().get(index);
 
     var disconnection = Bands.isDisconnection(newLink[0], oldLink);
-    var connection= Bands.isConnection(newLink[0], oldLink);
+    var connection = Bands.isConnection(newLink[0], oldLink);
 
     for (int y = 0; y < setSize; y++) {
       solution.variables().set(index + y, newLink[y]);
@@ -187,7 +185,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
       solution.degrees[j] -= 1;
     }
 
-    if(connection) {
+    if (connection) {
       solution.degrees[i] += 1;
       solution.degrees[j] += 1;
     }
@@ -201,7 +199,6 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
   }
 
 
-
   private boolean existEdge(DefaultIntegerSolution s, int index) {
     for (int i = 0; i < setSize; i++) {
       if (s.variables().get(index + i) > 0) return true;
@@ -211,8 +208,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
 
   /**
    * select nodes with
+   *
    * @param solution
-   * @return
    */
   private List<Integer> selectNodes(DefaultIntegerSolution solution) {
     List<Integer> weights = new ArrayList<>();
@@ -220,7 +217,7 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     for (int i = 0; i < numNodes; i++) {
       var reference = (int) Math.ceil(graphDensity * (numNodes - 1));
       var distance = solution.degrees[i] - reference;
-      if (distance == -1 || distance == 1 || distance==0) {
+      if (distance == -1 || distance == 1 || distance == 0) {
         weight = 1;
       } else if (distance < 0) {
         weight = Math.abs(distance) * 3;
@@ -237,25 +234,25 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     }
 
     Set<Integer> selectedNodes = new HashSet<>();
-      for (int w = 0; w<numNodes; w++){
-        if (randomGenerator.nextDouble()< mutationProbability){
-          var randomValue = randomGenerator.nextInt(totalWeights);
-          for (int i = 0; i < ranges.size(); i++) {
-            if (randomValue < ranges.get(i)) {
-              selectedNodes.add(i);
-              break;
-            }
+    for (int w = 0; w < numNodes; w++) {
+      if (randomGenerator.nextDouble() < mutationProbability) {
+        var randomValue = randomGenerator.nextInt(totalWeights);
+        for (int i = 0; i < ranges.size(); i++) {
+          if (randomValue < ranges.get(i)) {
+            selectedNodes.add(i);
+            break;
           }
         }
       }
+    }
     return selectedNodes.stream().toList();
   }
 
 
   private List<Integer> selectNodesUniformly() {
     Set<Integer> nodos = new HashSet<>();
-    for (int i=0; i<numNodes; i++){
-      if (randomGenerator.nextDouble()<mutationProbability){
+    for (int i = 0; i < numNodes; i++) {
+      if (randomGenerator.nextDouble() < mutationProbability) {
         nodos.add(i);
       }
     }
