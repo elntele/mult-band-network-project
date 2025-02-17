@@ -170,7 +170,9 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
       }
     }
     //localPopulation.add((DefaultIntegerSolution) solution);
-    if (contEvaluate != 0 && contEvaluate % (populationSize * this.iterationsToPrint) == 0) {
+    if (contEvaluate != 0 &&
+        contEvaluate % (populationSize * this.iterationsToPrint) == 0 ||
+        contEvaluate == 200) {
       countSolutionWithRestriction();
       countNodeXConstraint();
       printPopulation();
@@ -215,8 +217,8 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
     return contEvaluate / populationSize;
   }
 
-  private boolean isIterationLimit(){
-    if (contEvaluate>99 && contEvaluate%populationSize==0) return true;
+  private boolean isIterationLimit() {
+    if (contEvaluate > 99 && contEvaluate % populationSize == 0) return true;
     return false;
   }
 
@@ -490,6 +492,7 @@ public class ExternalNetworkEvaluatorSettings extends AbstractIntegerProblem {
 
   /**
    * implement  method  optional of interface.
+   *
    * @param solutions
    */
   @Override

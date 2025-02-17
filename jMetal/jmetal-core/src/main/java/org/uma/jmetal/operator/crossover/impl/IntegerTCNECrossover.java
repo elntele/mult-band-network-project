@@ -69,13 +69,13 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     //test(parent1, parent2);
     List<Pair<Integer, Integer>> crossed1 = new ArrayList<>();
     List<Pair<Integer, Integer>> crossed2 = new ArrayList<>();
-    System.out.println("Operador de cruzamento");
-    print(p1, p2, crossed1, crossed1, "pai", 0, 0);
+   /* System.out.println("Operador de cruzamento");
+    print(p1, p2, crossed1, crossed1, "pai", 0, 0);*/
 
     List<IntegerSolution> offspring = new ArrayList<IntegerSolution>(2);
     var san1 = p1.copy();
     var san2 = p2.copy();
-    var indexNodes = p1.variables().size();
+    var indexNodes = p1.variables().size() - (numNodes + 1);
     var temp1 = randomGenerator.nextInt(numNodes);
     int temp2 = temp1 + 4;
     if (temp2 >= numNodes - 1) temp2 = numNodes - 1;
@@ -87,7 +87,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     var offset = 0;
     if (randomGenerator.nextDouble() < probability) {
       // ROADM crossover
-      roadmCrossover(san1,san2,p1,p2, indexNodes, initialNodeSelected, finalNodeSelected);
+      roadmCrossover(san1, san2, p1, p2, indexNodes, initialNodeSelected, finalNodeSelected);
       for (int i = 0; i <= finalNodeSelected + 1; i++) {
         if (i != initialNodeSelected) {
           if (i < initialNodeSelected) {
@@ -121,7 +121,7 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
     }
 
 
-    print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);
+    /* print(san1, san2, crossed1, crossed2, "filho", initialNodeSelected, finalNodeSelected);*/
     offspring.add(san1);
     offspring.add(san2);
     return offspring;
@@ -237,15 +237,14 @@ public class IntegerTCNECrossover implements CrossoverOperator<IntegerSolution> 
       int indexNodes,
       int initialNodeSelected,
       int finalNodeSelected) {
-
-    s1.variables().set(indexNodes + initialNodeSelected, p2.variables().get(indexNodes + initialNodeSelected));
-    s1.variables().set(indexNodes + initialNodeSelected + 1, p2.variables().get(indexNodes + initialNodeSelected + 1));
-    s1.variables().set(indexNodes + finalNodeSelected, p2.variables().get(indexNodes + finalNodeSelected));
-
-    s2.variables().set(indexNodes + initialNodeSelected, p1.variables().get(indexNodes + initialNodeSelected));
-    s2.variables().set(indexNodes + initialNodeSelected +1, p1.variables().get(indexNodes + initialNodeSelected+1));
-    s2.variables().set(indexNodes + finalNodeSelected, p1.variables().get(indexNodes + finalNodeSelected));
-
+    var w = 0;
+    for (int i = initialNodeSelected; i < finalNodeSelected; i++) {
+      s1.variables().set(indexNodes + initialNodeSelected + w,
+          p2.variables().get(indexNodes + initialNodeSelected + w));
+      s2.variables().set(indexNodes + initialNodeSelected + w,
+          p1.variables().get(indexNodes + initialNodeSelected + w));
+      w += 1;
+    }
   }
 
 

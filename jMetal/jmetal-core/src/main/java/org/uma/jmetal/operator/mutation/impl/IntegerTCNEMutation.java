@@ -99,9 +99,9 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
    */
   private void doMutation(IntegerSolution solution) {
     // inserted to make debug, it isn't part of algorithm, include iMuted and jMuted
-    System.out.println("Operador de Mutação");
     List<Pair<Integer, Integer>> muted = new ArrayList<>();
-    print((DefaultIntegerSolution) solution, muted, "original");
+    /*System.out.println("Operador de Mutação");
+    print((DefaultIntegerSolution) solution, muted, "original");*/
     //var selected = selectNodes((DefaultIntegerSolution)solution);
     var selected = selectNodesUniformly();
     for (int i = 0; i < selected.size(); i++) {
@@ -109,8 +109,8 @@ public class IntegerTCNEMutation implements MutationOperator<IntegerSolution> {
     }
 
     // inserted to make debug, it isn't part of algorithm
-    System.out.println("Operador de mutação");
-    print((DefaultIntegerSolution) solution, muted, "mudada");
+    /*System.out.println("Operador de mutação");
+    print((DefaultIntegerSolution) solution, muted, "mudada");*/
   }
 
   private void mutation(DefaultIntegerSolution solution, int j, List<Pair<Integer, Integer>> muted) {

@@ -40,14 +40,14 @@ public class Main {
     CrossoverOperator<IntegerSolution> crossover; // do Jmetal
     MutationOperator<IntegerSolution> mutation; // do Jmetal
     SelectionOperator<List<IntegerSolution>, IntegerSolution> selection; // do
-    //String path = "./selectedCityInPernabucoState.gml";
-    var path = "./teste2.gml";
+    String path = "./selectedCityInPernabucoState.gml";
+   // var path = "./teste2.gml";
     var populationSize = 100;
-    var maxEvaluations = 100000;
+    var maxEvaluations = 3000;
     var iterationsToPrint = 40;
     var setSize = 1;
     var load = 1500;
-    var numNodes = 10;
+    var numNodes = 26;
     var numberOfExecutions = 11;
     var printGML=false;
     Double mixedDistribution=0.0;

@@ -117,10 +117,10 @@ public class ResultsMetricsDao {
           ConstrainsMetrics metrics = value;
           // Escrevendo no arquivo no formato linha separada por ponto e vírgula
           gravarArq.printf(
-              "iteration: %d; numberOfSolutionWithCAInZero: %d; " +
-                  "numberOfSolutionWithInadequateEquipment: %d; " +
-                  "meanRateInadequateEquipment: %.2f; " +
-                  "standardDeviationInadequateEquipment: %.2f%n",
+              "iteration: %d; ca0Rest1: %d; " +
+                  "eqInadRest2: %d; " +
+                  "medianrest2: %.2f; " +
+                  "StdRest2: %.2f%n",
               metrics.iteration(),
               metrics.numberOfSolutionWithCAInZero(),
               metrics.numberOfSolutionWithInadequateEquipment(),
